@@ -126,5 +126,4 @@ RetailCore POS is designed as a long-term, full-stack SaaS-style system that mir
 
 ---
 
-## 📦 Project Structure (Planned)
 

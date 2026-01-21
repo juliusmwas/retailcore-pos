@@ -4,15 +4,20 @@ function Index() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center space-y-6">
-        <h1 className="text-4xl font-bold text-gray-800">
-          RetailCore POS
-        </h1>
-
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 overflow-hidden">
+      {/* With a cropped image, a simple flex container handles perfect centering */}
+      <div className="flex flex-col items-center animate-in fade-in duration-1000">
+        
+        <img 
+          src="/public/lg.png" 
+          alt="Logo" 
+          className="w-96 h-auto block" 
+        />
+        
+        {/* With the whitespace gone, you only need a small standard margin (mt-4) */}
         <button
           onClick={() => navigate("/login")}
-          className="px-6 py-3 bg-blue-600 text-white rounded-lg text-lg hover:bg-blue-700 transition"
+          className="mt-10 px-6 py-3 bg-blue-600 font-semibold cursor-pointer text-white rounded-lg text-lg hover:bg-blue-700  transition-all shadow-lg "
         >
           Login
         </button>

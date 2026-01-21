@@ -17,7 +17,7 @@ function Index() {
         {/* With the whitespace gone, you only need a small standard margin (mt-4) */}
         <button
           onClick={() => navigate("/login")}
-          className="mt-10 px-6 py-3 bg-blue-600 font-semibold cursor-pointer text-white rounded-lg text-lg hover:bg-blue-700  transition-all shadow-lg "
+          className="mt-15 px-6 py-3 bg-blue-600 font-semibold cursor-pointer text-white rounded-lg text-lg hover:bg-blue-700  transition-all shadow-lg "
         >
           Login
         </button>

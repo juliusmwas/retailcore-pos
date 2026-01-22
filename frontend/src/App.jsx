@@ -4,7 +4,7 @@ import ProtectedRoute from "./auth/ProtectedRoute";
 
 // Pages
 import Index from "./pages/Index";
-import Login from "./pages/auth/Login";
+import Login from "./pages/Login";
 import SelectBranch from "./pages/SelectBranch";
 import POS from "./pages/POS";
 import AdminDashboard from "./pages/AdminDashboard";

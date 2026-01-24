@@ -28,23 +28,18 @@ function Login() {
     setLoading(true);
 
     try {
-      const res = await axios.post("http://localhost:5000/auth/login", {
+      const res = await axios.post("http://localhost:5000/api/auth/login", {
         email,
-        password
+        password,
       });
 
-      /**
-       * Expected backend response:
-       * {
-       *   user: { id, name, role },
-       *   branches: [],
-       *   token
-       * }
-       */
+      const { token, user } = res.data;
 
-      login(res.data);
+      // Save token & user in context and localStorage
+      login({ token, user });
 
-      const role = res.data.user.role;
+      // Determine role from first branch (backend returns branches array)
+      const role = user.branches[0]?.role;
 
       // 🔑 ROLE BASED REDIRECT
       if (role === "OWNER" || role === "ADMIN") {
@@ -54,7 +49,6 @@ function Login() {
       } else {
         setError("Unauthorized role");
       }
-
     } catch (err) {
       setError(err.response?.data?.message || "Invalid login credentials");
     } finally {
@@ -73,16 +67,22 @@ function Login() {
     }
 
     try {
-      await axios.post("http://localhost:5000/auth/register", {
+      const res = await axios.post("http://localhost:5000/api/auth/register", {
         fullName,
         businessName,
         email: regEmail,
-        password: regPassword
+        password: regPassword,
       });
 
-      alert("Business created successfully. Please log in.");
+      alert(res.data.message || "Business created successfully. Please log in.");
       setActiveTab("login");
 
+      // Reset registration form
+      setFullName("");
+      setBusinessName("");
+      setRegEmail("");
+      setRegPassword("");
+      setConfirmPassword("");
     } catch (err) {
       setError(err.response?.data?.message || "Registration failed");
     }
@@ -91,7 +91,6 @@ function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100">
       <div className="w-full max-w-md bg-white p-8 rounded-xl shadow-lg">
-        
         <h2 className="text-2xl font-bold text-center mb-6">
           Business Management System
         </h2>
@@ -120,11 +119,9 @@ function Login() {
           </button>
         </div>
 
-        {error && (
-          <p className="text-red-500 text-sm mb-4 text-center">{error}</p>
-        )}
+        {error && <p className="text-red-500 text-sm mb-4 text-center">{error}</p>}
 
-        {/* LOGIN */}
+        {/* LOGIN FORM */}
         {activeTab === "login" && (
           <form onSubmit={handleLogin} className="space-y-4">
             <input
@@ -152,7 +149,7 @@ function Login() {
           </form>
         )}
 
-        {/* REGISTER */}
+        {/* REGISTER FORM */}
         {activeTab === "register" && (
           <form onSubmit={handleRegister} className="space-y-4">
             <input

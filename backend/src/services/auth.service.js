@@ -1,9 +1,7 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import pkg from "@prisma/client";
+import prisma from "../lib/prisma.js";
 
-const { PrismaClient } = pkg;
-const prisma = new PrismaClient();
 
 /**
  * REGISTER OWNER (Create Business + Main Branch + Owner User)

@@ -15,21 +15,13 @@ export default function Sidebar({ collapsed }) {
       </div>
 
       <nav className="mt-4">
-        <NavLink to="/admin/dashboard" className={linkClass}>
-          📊 {!collapsed && "Dashboard"}
-        </NavLink>
-        <NavLink to="/admin/sales" className={linkClass}>
-          💰 {!collapsed && "Sales"}
-        </NavLink>
-        <NavLink to="/admin/staff" className={linkClass}>
-          👥 {!collapsed && "Staff"}
-        </NavLink>
-        <NavLink to="/admin/inventory" className={linkClass}>
-          📦 {!collapsed && "Inventory"}
-        </NavLink>
-        <NavLink to="/admin/reports" className={linkClass}>
-          📑 {!collapsed && "Reports"}
-        </NavLink>
+        <NavLink to="/admin/dashboard">Dashboard</NavLink>
+        <NavLink to="/admin/branches">Branches</NavLink>
+        <NavLink to="/admin/staff">Staff</NavLink>
+        <NavLink to="/admin/products">Products</NavLink>
+        <NavLink to="/admin/sales">Sales</NavLink>
+        <NavLink to="/admin/reports">Reports</NavLink>
+        <NavLink to="/admin/settings">Settings</NavLink>
       </nav>
     </aside>
   );

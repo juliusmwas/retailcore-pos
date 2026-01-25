@@ -7,32 +7,31 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import SelectBranch from "./pages/SelectBranch";
 import POS from "./pages/POS";
-import AdminDashboard from "./pages/AdminDashboard";
+import Dashboard from "./pages/admin/Dashboard";
 
 function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          {/* Public pages */}
+          {/* Public */}
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
 
-          {/* After login */}
+          {/* Cashier / Staff */}
           <Route
             path="/select-branch"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute roles={["CASHIER"]}>
                 <SelectBranch />
               </ProtectedRoute>
             }
           />
 
-          {/* Staff POS */}
           <Route
             path="/pos"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute roles={["CASHIER"]}>
                 <POS />
               </ProtectedRoute>
             }
@@ -40,10 +39,10 @@ function App() {
 
           {/* Admin / Owner */}
           <Route
-            path="/admin"
+            path="/admin/dashboard"
             element={
-              <ProtectedRoute>
-                <AdminDashboard />
+              <ProtectedRoute roles={["OWNER", "ADMIN"]}>
+                <Dashboard />
               </ProtectedRoute>
             }
           />

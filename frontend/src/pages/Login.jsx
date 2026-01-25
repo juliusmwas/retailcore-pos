@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import axios from "axios";
@@ -6,7 +6,7 @@ import axios from "axios";
 function Login() {
   const [activeTab, setActiveTab] = useState("login");
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, user: authUser } = useAuth();
 
   // Login state
   const [email, setEmail] = useState("");
@@ -14,12 +14,29 @@ function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Register (Owner)
+  // Register state
   const [fullName, setFullName] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+
+  // ===== AUTO REDIRECT IF ALREADY LOGGED IN =====
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const storedUser = localStorage.getItem("user");
+
+    if (token && storedUser) {
+      const parsedUser = JSON.parse(storedUser);
+      const role = parsedUser.branches?.[0]?.role;
+
+      if (role === "OWNER" || role === "ADMIN") {
+        navigate("/admin/dashboard", { replace: true });
+      } else if (role === "CASHIER") {
+        navigate("/select-branch", { replace: true });
+      }
+    }
+  }, []);
 
   // ================= LOGIN =================
   const handleLogin = async (e) => {
@@ -35,17 +52,17 @@ function Login() {
 
       const { token, user } = res.data;
 
-      // Save token & user in context and localStorage
+      // Save token & user in AuthContext and localStorage
       login({ token, user });
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user));
 
-      // Determine role from first branch (backend returns branches array)
-      const role = user.branches[0]?.role;
-
-      // 🔑 ROLE BASED REDIRECT
+      // Role-based redirect
+      const role = user.branches?.[0]?.role;
       if (role === "OWNER" || role === "ADMIN") {
-        navigate("/admin/dashboard");
+        navigate("/admin/dashboard", { replace: true });
       } else if (role === "CASHIER") {
-        navigate("/select-branch");
+        navigate("/select-branch", { replace: true });
       } else {
         setError("Unauthorized role");
       }
@@ -119,6 +136,7 @@ function Login() {
           </button>
         </div>
 
+        {/* Error message */}
         {error && <p className="text-red-500 text-sm mb-4 text-center">{error}</p>}
 
         {/* LOGIN FORM */}

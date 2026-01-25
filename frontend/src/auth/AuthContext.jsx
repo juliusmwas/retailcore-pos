@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 
 const AuthContext = createContext(null);
 
@@ -8,11 +8,31 @@ export function AuthProvider({ children }) {
   const [branches, setBranches] = useState([]);
   const [activeBranch, setActiveBranch] = useState(null);
   const [role, setRole] = useState(null);
+  const [token, setToken] = useState(null);
 
-  const login = ({ user, business, branches }) => {
+  // 🔁 Restore session on refresh
+  useEffect(() => {
+    const storedAuth = localStorage.getItem("auth");
+
+    if (storedAuth) {
+      const parsed = JSON.parse(storedAuth);
+      setUser(parsed.user);
+      setBusiness(parsed.business || null);
+      setBranches(parsed.branches || []);
+      setToken(parsed.token);
+    }
+  }, []);
+
+  const login = ({ user, business, branches, token }) => {
     setUser(user);
-    setBusiness(business);
-    setBranches(branches);
+    setBusiness(business || null);
+    setBranches(branches || []);
+    setToken(token);
+
+    localStorage.setItem(
+      "auth",
+      JSON.stringify({ user, business, branches, token })
+    );
   };
 
   const selectBranch = (branch) => {
@@ -26,6 +46,8 @@ export function AuthProvider({ children }) {
     setBranches([]);
     setActiveBranch(null);
     setRole(null);
+    setToken(null);
+    localStorage.removeItem("auth");
   };
 
   return (
@@ -36,6 +58,7 @@ export function AuthProvider({ children }) {
         branches,
         activeBranch,
         role,
+        token,
         login,
         selectBranch,
         logout

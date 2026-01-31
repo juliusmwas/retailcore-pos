@@ -9,8 +9,9 @@ export function AuthProvider({ children }) {
   const [activeBranch, setActiveBranch] = useState(null);
   const [role, setRole] = useState(null);
   const [token, setToken] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
 
-  // 🔁 Restore session on refresh
+  // 🔁 Restore session
   useEffect(() => {
     const storedAuth = localStorage.getItem("auth");
 
@@ -19,8 +20,10 @@ export function AuthProvider({ children }) {
       setUser(parsed.user);
       setBusiness(parsed.business || null);
       setBranches(parsed.branches || []);
-      setToken(parsed.token);
+      setToken(parsed.token || null);
     }
+
+    setAuthLoading(false);
   }, []);
 
   const login = ({ user, business, branches, token }) => {
@@ -37,7 +40,7 @@ export function AuthProvider({ children }) {
 
   const selectBranch = (branch) => {
     setActiveBranch(branch);
-    setRole(branch.role);
+    setRole(branch?.role || null);
   };
 
   const logout = () => {
@@ -59,9 +62,10 @@ export function AuthProvider({ children }) {
         activeBranch,
         role,
         token,
+        authLoading,
         login,
         selectBranch,
-        logout
+        logout,
       }}
     >
       {children}

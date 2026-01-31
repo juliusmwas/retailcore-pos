@@ -4,9 +4,11 @@ import { useAuth } from "../auth/AuthContext";
 import axios from "axios";
 
 function Login() {
-  const [activeTab, setActiveTab] = useState("login");
   const navigate = useNavigate();
-  const { login, user: authUser } = useAuth();
+  const { login } = useAuth();
+
+  const [activeTab, setActiveTab] = useState("login");
+  const [checkingAuth, setCheckingAuth] = useState(true);
 
   // Login state
   const [email, setEmail] = useState("");
@@ -20,32 +22,28 @@ function Login() {
   const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [checkingAuth, setCheckingAuth] = useState(true);
-
 
   // ===== AUTO REDIRECT IF ALREADY LOGGED IN =====
   useEffect(() => {
-  const token = localStorage.getItem("token");
-  const storedUser = localStorage.getItem("user");
+    const storedAuth = localStorage.getItem("auth");
 
-  if (token && storedUser) {
-    const parsedUser = JSON.parse(storedUser);
-    const role = parsedUser.branches?.[0]?.role;
+    if (storedAuth) {
+      const parsed = JSON.parse(storedAuth);
+      const role = parsed.user?.branches?.[0]?.role;
 
-    if (role === "OWNER" || role === "ADMIN") {
-      navigate("/admin/dashboard", { replace: true });
-    } else if (role === "CASHIER") {
-      navigate("/select-branch", { replace: true });
+      if (role === "OWNER" || role === "ADMIN") {
+        navigate("/admin/dashboard", { replace: true });
+      } else if (role === "CASHIER") {
+        navigate("/select-branch", { replace: true });
+      }
     }
+
+    setCheckingAuth(false);
+  }, [navigate]);
+
+  if (checkingAuth) {
+    return null; // prevents flashing
   }
-
-  setCheckingAuth(false);
-}, []);
-
-if (checkingAuth) {
-  return null; // or spinner
-}
-
 
   // ================= LOGIN =================
   const handleLogin = async (e) => {
@@ -54,20 +52,18 @@ if (checkingAuth) {
     setLoading(true);
 
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/login", {
-        email,
-        password,
-      });
+      const res = await axios.post(
+        "http://localhost:5000/api/auth/login",
+        { email, password }
+      );
 
-      const { token, user } = res.data;
+      const { token, user, business, branches } = res.data;
 
-      // Save token & user in AuthContext and localStorage
-      login({ token, user });
-      localStorage.setItem("token", token);
-      localStorage.setItem("user", JSON.stringify(user));
+      // ✅ Single source of truth
+      login({ token, user, business, branches });
 
-      // Role-based redirect
       const role = user.branches?.[0]?.role;
+
       if (role === "OWNER" || role === "ADMIN") {
         navigate("/admin/dashboard", { replace: true });
       } else if (role === "CASHIER") {
@@ -82,7 +78,7 @@ if (checkingAuth) {
     }
   };
 
-  // ================= REGISTER OWNER =================
+  // ================= REGISTER =================
   const handleRegister = async (e) => {
     e.preventDefault();
     setError("");
@@ -93,17 +89,16 @@ if (checkingAuth) {
     }
 
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/register", {
+      await axios.post("http://localhost:5000/api/auth/register", {
         fullName,
         businessName,
         email: regEmail,
         password: regPassword,
       });
 
-      alert(res.data.message || "Business created successfully. Please log in.");
+      alert("Business created successfully. Please log in.");
       setActiveTab("login");
 
-      // Reset registration form
       setFullName("");
       setBusinessName("");
       setRegEmail("");
@@ -145,10 +140,11 @@ if (checkingAuth) {
           </button>
         </div>
 
-        {/* Error message */}
-        {error && <p className="text-red-500 text-sm mb-4 text-center">{error}</p>}
+        {error && (
+          <p className="text-red-500 text-sm mb-4 text-center">{error}</p>
+        )}
 
-        {/* LOGIN FORM */}
+        {/* LOGIN */}
         {activeTab === "login" && (
           <form onSubmit={handleLogin} className="space-y-4">
             <input
@@ -176,7 +172,7 @@ if (checkingAuth) {
           </form>
         )}
 
-        {/* REGISTER FORM */}
+        {/* REGISTER */}
         {activeTab === "register" && (
           <form onSubmit={handleRegister} className="space-y-4">
             <input

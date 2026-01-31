@@ -2,7 +2,12 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "./AuthContext";
 
 export default function ProtectedRoute({ children, roles }) {
-  const { user, token, role } = useAuth();
+  const { user, token, authLoading } = useAuth();
+
+  // ⏳ Wait for auth to load
+  if (authLoading) {
+    return null; // or spinner
+  }
 
   // ⛔ Not logged in
   if (!token || !user) {
@@ -10,7 +15,11 @@ export default function ProtectedRoute({ children, roles }) {
   }
 
   // ⛔ Role protection
-  if (roles && (!role || !roles.includes(role))) {
+  if (
+    roles &&
+    (!user.branches?.length ||
+      !roles.includes(user.branches[0].role))
+  ) {
     return <Navigate to="/login" replace />;
   }
 

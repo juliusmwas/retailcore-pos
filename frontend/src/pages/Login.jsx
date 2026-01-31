@@ -20,23 +20,32 @@ function Login() {
   const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [checkingAuth, setCheckingAuth] = useState(true);
+
 
   // ===== AUTO REDIRECT IF ALREADY LOGGED IN =====
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    const storedUser = localStorage.getItem("user");
+  const token = localStorage.getItem("token");
+  const storedUser = localStorage.getItem("user");
 
-    if (token && storedUser) {
-      const parsedUser = JSON.parse(storedUser);
-      const role = parsedUser.branches?.[0]?.role;
+  if (token && storedUser) {
+    const parsedUser = JSON.parse(storedUser);
+    const role = parsedUser.branches?.[0]?.role;
 
-      if (role === "OWNER" || role === "ADMIN") {
-        navigate("/admin/dashboard", { replace: true });
-      } else if (role === "CASHIER") {
-        navigate("/select-branch", { replace: true });
-      }
+    if (role === "OWNER" || role === "ADMIN") {
+      navigate("/admin/dashboard", { replace: true });
+    } else if (role === "CASHIER") {
+      navigate("/select-branch", { replace: true });
     }
-  }, []);
+  }
+
+  setCheckingAuth(false);
+}, []);
+
+if (checkingAuth) {
+  return null; // or spinner
+}
+
 
   // ================= LOGIN =================
   const handleLogin = async (e) => {

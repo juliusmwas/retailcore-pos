@@ -1,6 +1,13 @@
 // src/pages/admin/Branches.jsx
 import { useState } from "react";
-import { Plus, MapPin, Users, Power } from "lucide-react";
+import {
+  Plus,
+  MapPin,
+  Users,
+  Power,
+  Building2,
+  Calendar,
+} from "lucide-react";
 
 export default function Branches() {
   const [branches, setBranches] = useState([
@@ -36,84 +43,129 @@ export default function Branches() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="space-y-8">
+      {/* ===== HEADER ===== */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Branches</h1>
-          <p className="text-gray-500 text-sm">
-            Manage all business branches
+          <h1 className="text-3xl font-bold">Branches</h1>
+          <p className="text-gray-500">
+            Manage, activate, and monitor all business branches
           </p>
         </div>
 
-        <button className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+        <button className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-xl shadow hover:bg-blue-700 transition">
           <Plus size={18} />
           Add Branch
         </button>
       </div>
 
-      {/* Branches Table */}
-      <div className="bg-white rounded-xl shadow overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-100 text-left text-sm">
-            <tr>
-              <th className="px-6 py-3">Branch</th>
-              <th className="px-6 py-3">Location</th>
-              <th className="px-6 py-3">Staff</th>
-              <th className="px-6 py-3">Status</th>
-              <th className="px-6 py-3">Actions</th>
-            </tr>
-          </thead>
+      {/* ===== BRANCH CARDS ===== */}
+      {branches.length > 0 ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {branches.map((branch) => (
+            <div
+              key={branch.id}
+              className="bg-white rounded-2xl shadow-sm border hover:shadow-md transition p-6 flex flex-col gap-6"
+            >
+              {/* TOP SECTION */}
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-4">
+                  <div className="p-3 rounded-xl bg-blue-50 text-blue-600">
+                    <Building2 size={22} />
+                  </div>
 
-          <tbody className="divide-y">
-            {branches.map((branch) => (
-              <tr key={branch.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 font-medium">
-                  {branch.name}
-                </td>
+                  <div>
+                    <h2 className="text-xl font-semibold">
+                      {branch.name}
+                    </h2>
 
-                <td className="px-6 py-4 text-gray-600 flex items-center gap-2">
-                  <MapPin size={16} />
-                  {branch.location}
-                </td>
+                    <div className="flex items-center gap-2 text-gray-500 text-sm mt-1">
+                      <MapPin size={14} />
+                      {branch.location}
+                    </div>
+                  </div>
+                </div>
 
-                <td className="px-6 py-4 flex items-center gap-2">
-                  <Users size={16} />
-                  {branch.staffCount}
-                </td>
+                {/* STATUS */}
+                <span
+                  className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                    branch.status === "ACTIVE"
+                      ? "bg-green-100 text-green-700"
+                      : "bg-red-100 text-red-700"
+                  }`}
+                >
+                  {branch.status}
+                </span>
+              </div>
 
-                <td className="px-6 py-4">
-                  <span
-                    className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                      branch.status === "ACTIVE"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-red-100 text-red-700"
-                    }`}
-                  >
-                    {branch.status}
-                  </span>
-                </td>
+              {/* MIDDLE METRICS */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-4">
+                  <Users size={18} className="text-gray-600" />
+                  <div>
+                    <p className="text-sm text-gray-500">
+                      Staff Members
+                    </p>
+                    <p className="font-semibold text-lg">
+                      {branch.staffCount}
+                    </p>
+                  </div>
+                </div>
 
-                <td className="px-6 py-4">
-                  <button
-                    onClick={() => toggleStatus(branch.id)}
-                    className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
-                  >
-                    <Power size={16} />
-                    Toggle Status
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-4">
+                  <Calendar size={18} className="text-gray-600" />
+                  <div>
+                    <p className="text-sm text-gray-500">
+                      Created On
+                    </p>
+                    <p className="font-semibold text-sm">
+                      {branch.createdAt}
+                    </p>
+                  </div>
+                </div>
+              </div>
 
-        {branches.length === 0 && (
-          <div className="text-center py-10 text-gray-500">
-            No branches found
+              {/* ACTIONS */}
+              <div className="flex items-center justify-between pt-4 border-t">
+                <button className="text-sm text-blue-600 font-medium hover:underline">
+                  View Details
+                </button>
+
+                <button
+                  onClick={() => toggleStatus(branch.id)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition ${
+                    branch.status === "ACTIVE"
+                      ? "bg-red-50 text-red-600 hover:bg-red-100"
+                      : "bg-green-50 text-green-600 hover:bg-green-100"
+                  }`}
+                >
+                  <Power size={16} />
+                  {branch.status === "ACTIVE"
+                    ? "Deactivate"
+                    : "Activate"}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        /* ===== EMPTY STATE ===== */
+        <div className="bg-white rounded-2xl border p-12 text-center">
+          <div className="mx-auto mb-4 w-14 h-14 flex items-center justify-center rounded-full bg-blue-50 text-blue-600">
+            <Building2 size={28} />
           </div>
-        )}
-      </div>
+          <h3 className="text-lg font-semibold mb-1">
+            No branches yet
+          </h3>
+          <p className="text-gray-500 mb-6">
+            Start by adding your first business branch
+          </p>
+          <button className="inline-flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-xl hover:bg-blue-700">
+            <Plus size={18} />
+            Add Branch
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -18,10 +18,11 @@ export default function Topbar({ collapsed, toggleSidebar }) {
   };
 
   const handleConfirmLogout = () => {
-    logout();               // clear auth
+    logout();
     setShowLogoutModal(false);
-    navigate("/login");     // redirect to login
+    navigate("/login", { replace: true });
   };
+
 
   return (
     <>

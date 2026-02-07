@@ -9,7 +9,20 @@ import {
   Calendar,
 } from "lucide-react";
 
+
 export default function Branches() {
+
+  const [showAddModal, setShowAddModal] = useState(false);
+
+  const [newBranch, setNewBranch] = useState({
+    name: "",
+    location: "",
+    staffCount: "",
+    status: "ACTIVE",
+  });
+
+
+
   const [branches, setBranches] = useState([
     {
       id: 1,
@@ -42,6 +55,40 @@ export default function Branches() {
     );
   };
 
+  const handleInputChange = (e) => {
+  const { name, value } = e.target;
+  setNewBranch((prev) => ({ ...prev, [name]: value }));
+};
+
+const handleAddBranch = () => {
+  if (!newBranch.name || !newBranch.location) {
+    alert("Branch name and location are required");
+    return;
+  }
+
+  const branch = {
+      id: Date.now(),
+      name: newBranch.name,
+      location: newBranch.location,
+      staffCount: Number(newBranch.staffCount || 0),
+      status: newBranch.status,
+      createdAt: new Date().toISOString().split("T")[0],
+    };
+
+    setBranches((prev) => [branch, ...prev]);
+
+    // reset
+    setNewBranch({
+      name: "",
+      location: "",
+      staffCount: "",
+      status: "ACTIVE",
+    });
+
+    setShowAddModal(false);
+  };
+
+
   return (
     <div className="space-y-8">
       {/* ===== HEADER ===== */}
@@ -53,10 +100,14 @@ export default function Branches() {
           </p>
         </div>
 
-        <button className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-xl shadow hover:bg-blue-700 transition">
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-xl shadow hover:bg-blue-700 transition"
+        >
           <Plus size={18} />
           Add Branch
         </button>
+
       </div>
 
       {/* ===== BRANCH CARDS ===== */}
@@ -166,6 +217,73 @@ export default function Branches() {
           </button>
         </div>
       )}
+
+      {showAddModal && (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
+      <div className="bg-white rounded-2xl w-full max-w-lg p-6 shadow-lg">
+        <h2 className="text-xl font-bold mb-1">Add New Branch</h2>
+        <p className="text-gray-500 text-sm mb-6">
+          Create a new business branch
+        </p>
+
+        <div className="space-y-4">
+          <input
+            name="name"
+            value={newBranch.name}
+            onChange={handleInputChange}
+            placeholder="Branch Name"
+            className="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500"
+          />
+
+          <input
+            name="location"
+            value={newBranch.location}
+            onChange={handleInputChange}
+            placeholder="Location (e.g. Westlands)"
+            className="w-full border rounded-lg px-4 py-3"
+          />
+
+          <input
+            name="staffCount"
+            type="number"
+            value={newBranch.staffCount}
+            onChange={handleInputChange}
+            placeholder="Initial Staff Count"
+            className="w-full border rounded-lg px-4 py-3"
+          />
+
+          <select
+            name="status"
+            value={newBranch.status}
+            onChange={handleInputChange}
+            className="w-full border rounded-lg px-4 py-3"
+          >
+            <option value="ACTIVE">Active</option>
+            <option value="INACTIVE">Inactive</option>
+          </select>
+        </div>
+
+        {/* ACTIONS */}
+        <div className="flex justify-end gap-3 mt-6">
+          <button
+            onClick={() => setShowAddModal(false)}
+            className="px-4 py-2 rounded-lg border hover:bg-gray-100"
+          >
+            Cancel
+          </button>
+
+          <button
+            onClick={handleAddBranch}
+            className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+          >
+            Add Branch
+          </button>
+        </div>
+      </div>
+    </div>
+  )}
+
+
     </div>
   );
 }

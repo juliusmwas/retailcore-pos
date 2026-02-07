@@ -162,6 +162,13 @@ const generateCode = (name) => {
   return `${prefix}-${random}`;
 };
 
+const SummaryItem = ({ label, value }) => (
+  <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+    <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400">{label}</p>
+    <p className="text-sm font-medium text-gray-800 truncate">{value || "N/A"}</p>
+  </div>
+);
+
 
   return (
     <div className="space-y-8">
@@ -463,20 +470,38 @@ const generateCode = (name) => {
   )}
 
   {/* STEP 5 – FINANCE & LEGAL */}
-  {step === 5 && (
-    <section className="space-y-6 animate-in slide-in-from-right-4 duration-300">
-      <div className="border-l-4 border-blue-500 pl-4">
-        <h3 className="text-lg font-bold text-gray-800">Financial Setup</h3>
-        <p className="text-sm text-gray-500">Tax and currency requirements <span className="text-red-500">*</span></p>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+{step === 5 && (
+  <section className="space-y-6 animate-in slide-in-from-right-4 duration-300">
+    <div className="border-l-4 border-blue-500 pl-4">
+      <h3 className="text-lg font-bold text-gray-800">Financial Setup</h3>
+      <p className="text-sm text-gray-500">Tax and currency requirements <span className="text-red-500">*</span></p>
+    </div>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
         <input className={getInputClass(branchForm.currency, true)} name="currency" placeholder="Currency (KES, USD) *" onChange={handleChange} value={branchForm.currency} />
-        <input className={getInputClass(branchForm.taxRegion, true)} name="taxRegion" placeholder="Tax Region / VAT Type *" onChange={handleChange} value={branchForm.taxRegion} />
-        <input className={baseInputClass} name="registrationNumber" placeholder="Business Reg No." onChange={handleChange} value={branchForm.registrationNumber} />
-        <input className={baseInputClass} name="licenseNumber" placeholder="License Number" onChange={handleChange} value={branchForm.licenseNumber} />
+        <ErrorMsg value={branchForm.currency} isRequired={true} />
       </div>
-    </section>
-  )}
+      <div>
+        <select 
+            className={getInputClass(branchForm.taxRegion, true)} 
+            name="taxRegion" 
+            onChange={handleChange} 
+            value={branchForm.taxRegion}
+          >
+            <option value="">Select Tax Region *</option>
+            <option>Standard VAT (16%)</option>
+            <option>Zero Rated (0%)</option>
+            <option>Exempt</option>
+            <option>Export / International</option>
+          </select>
+        {/* FIXED THE TYPO BELOW */}
+        <ErrorMsg value={branchForm.taxRegion} isRequired={true} /> 
+      </div>
+      <input className={baseInputClass} name="registrationNumber" placeholder="Business Reg No." onChange={handleChange} value={branchForm.registrationNumber} />
+      <input className={baseInputClass} name="licenseNumber" placeholder="License Number" onChange={handleChange} value={branchForm.licenseNumber} />
+    </div>
+  </section>
+)}
 
   {/* STEP 6 – REVIEW SUMMARY */}
   {step === 6 && (
@@ -512,11 +537,11 @@ const generateCode = (name) => {
   )}
 </div>
 
-      {/* ===== MODAL FOOTER ===== */}
+            {/* ===== MODAL FOOTER ===== */}
       <div className="px-8 py-5 border-t border-gray-100 bg-gray-50/50 flex justify-between items-center">
         <button
           onClick={step === 1 ? () => setShowAddModal(false) : prevStep}
-          className="px-6 py-2.5 rounded-xl border border-gray-300 font-semibold text-gray-700 hover:bg-white hover:shadow-sm transition-all"
+          className="px-6 py-2.5 rounded-xl border border-gray-300 font-semibold text-gray-700 hover:bg-white transition-all"
         >
           {step === 1 ? "Cancel" : "Back"}
         </button>
@@ -525,17 +550,31 @@ const generateCode = (name) => {
           <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mr-2">
             Step {step} / 6
           </span>
+          
           {step < 6 ? (
             <button
               onClick={nextStep}
-              className="px-8 py-2.5 rounded-xl bg-blue-600 text-white font-semibold shadow-lg shadow-blue-200 hover:bg-blue-700 transform active:scale-95 transition-all"
+              // FIX 1: Add the disabled attribute here
+              disabled={!isStepValid()} 
+              // FIX 2: Add conditional styling so the user sees it is disabled
+              className={`px-8 py-2.5 rounded-xl font-semibold shadow-lg transition-all transform active:scale-95 ${
+                isStepValid() 
+                  ? "bg-blue-600 text-white shadow-blue-200 hover:bg-blue-700" 
+                  : "bg-gray-300 text-gray-500 cursor-not-allowed shadow-none"
+              }`}
             >
               Continue
             </button>
           ) : (
             <button
               onClick={handleSubmitBranch}
-              className="px-8 py-2.5 rounded-xl bg-green-600 text-white font-semibold shadow-lg shadow-green-200 hover:bg-green-700 transform active:scale-95 transition-all"
+              // FIX 3: Also disable the final submit button if data is missing
+              disabled={!isStepValid()}
+              className={`px-8 py-2.5 rounded-xl font-semibold shadow-lg transition-all transform active:scale-95 ${
+                isStepValid() 
+                  ? "bg-green-600 text-white shadow-green-200 hover:bg-green-700" 
+                  : "bg-gray-300 text-gray-500 cursor-not-allowed shadow-none"
+              }`}
             >
               Create Branch
             </button>

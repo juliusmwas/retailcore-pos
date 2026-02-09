@@ -1,5 +1,8 @@
 // src/pages/admin/Branches.jsx
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+import { getBranches, createBranch, toggleBranchStatus } from "../../services/branchService";
+
 import {
   Plus,
   MapPin,
@@ -12,14 +15,31 @@ import {
 
 export default function Branches() {
 
+    const [branches, setBranches] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
+
+
+    useEffect(() => {
+    const fetchBranches = async () => {
+      try {
+        setIsLoading(true);
+        const res = await getBranches();
+        setBranches(res.data);
+      } catch (error) {
+        console.error("Failed to fetch branches", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchBranches();
+  }, []);
+
+
+
   const [showAddModal, setShowAddModal] = useState(false);
 
 
-  const [branches, setBranches] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-
-
- 
 
   const [step, setStep] = useState(1);
 
@@ -77,6 +97,18 @@ const [branchForm, setBranchForm] = useState({
 });
 
 
+const toggleStatus = async (id) => {
+  try {
+    await toggleBranchStatus(id);
+    const res = await getBranches();
+    setBranches(res.data);
+  } catch (error) {
+    console.error("Failed to toggle branch status", error);
+  }
+};
+
+
+
 const handleChange = (e) => {
   const { name, value, type, checked } = e.target;
   setBranchForm((prev) => ({
@@ -88,13 +120,69 @@ const handleChange = (e) => {
 const nextStep = () => setStep((s) => Math.min(s + 1, 6));
 const prevStep = () => setStep((s) => Math.max(s - 1, 1));
 
-const handleSubmitBranch = () => {
-  console.log("FINAL BRANCH DATA:", branchForm);
+const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // later → API call here
+const handleSubmitBranch = async () => {
+  try {
+    setIsSubmitting(true);
+    await createBranch(branchForm);
+
+    // refresh list
+    const res = await getBranches();
+    setBranches(res.data);
+
+    handleCloseModal();
+  } catch (error) {
+    console.error("Failed to create branch", error);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
+const handleCloseModal = () => {
   setShowAddModal(false);
   setStep(1);
+  setBranchForm({
+    name: "",
+    code: "",
+    type: "",
+    status: "ACTIVE",
+    openingDate: "",
+    country: "",
+    city: "",
+    address: "",
+    building: "",
+    postalCode: "",
+    mapsLink: "",
+    managerName: "",
+    managerEmail: "",
+    managerPhone: "",
+    assistantManager: "",
+    reportingTo: "",
+    initialStaff: "",
+    maxStaff: "",
+    departments: "",
+    shiftType: "",
+    currency: "",
+    taxRegion: "",
+    costCenter: "",
+    budget: "",
+    revenueTarget: "",
+    registrationNumber: "",
+    licenseNumber: "",
+    insuranceProvider: "",
+    insurancePolicy: "",
+    enableSales: true,
+    enableInventory: true,
+    enableReports: true,
+    defaultDashboard: "",
+    notes: "",
+    setupStatus: "Pending",
+  });
 };
+
+
+
 
 const isStepValid = () => {
   switch (step) {
@@ -165,12 +253,24 @@ const SummaryItem = ({ label, value }) => (
 
       </div>
 
+    {isLoading && (
+      <div className="text-center py-10 text-gray-500 font-medium">
+        Loading branches...
+      </div>
+    )}
+
+
+
       {/* ===== QUICK STATS ===== */}
 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
   {[
     { label: "Total Branches", value: branches.length, icon: Building2, color: "text-blue-600", bg: "bg-blue-50" },
     { label: "Active Sites", value: branches.filter(b => b.status === "ACTIVE").length, icon: Power, color: "text-green-600", bg: "bg-green-50" },
-    { label: "Total Workforce", value: branches.reduce((acc, b) => acc + b.staffCount, 0), icon: Users, color: "text-purple-600", bg: "bg-purple-50" },
+  {
+  label: "Total Workforce",
+  value: branches.reduce((acc, b) => acc + (b.staffCount || 0), 0),  icon: Users,  color:"text-purple-600",bg: "bg-purple-50"
+},
+
     { label: "Regional Hubs", value: "2", icon: MapPin, color: "text-orange-600", bg: "bg-orange-50" },
   ].map((stat, i) => (
     <div key={i} className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
@@ -250,12 +350,13 @@ const SummaryItem = ({ label, value }) => (
         <div className="space-y-3 mb-6">
           <div className="flex justify-between items-end">
             <span className="text-xs font-semibold text-gray-500 uppercase">Staffing Capacity</span>
-            <span className="text-xs font-bold text-gray-900">{branch.staffCount} / 20</span>
+            <span className="text-xs font-bold text-gray-900">{(branch.staffCount || 0)} / 20</span>
+
           </div>
           <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
             <div 
               className="h-full bg-blue-500 rounded-full transition-all duration-1000" 
-              style={{ width: `${(branch.staffCount / 20) * 100}%` }}
+              style={{ width: `${((branch.staffCount || 0) / 20) * 100}%` }}
             />
           </div>
         </div>
@@ -311,7 +412,7 @@ const SummaryItem = ({ label, value }) => (
       {/* ===== MODAL HEADER ===== */}
       <div className="px-8 py-6 border-b border-gray-100 bg-white relative">
         <button 
-          onClick={() => setShowAddModal(false)}
+          onClick={handleCloseModal}
           className="absolute right-6 top-6 text-gray-400 hover:text-gray-600 transition-colors"
         >
           <Plus size={24} className="rotate-45" />
@@ -572,16 +673,16 @@ const SummaryItem = ({ label, value }) => (
           ) : (
             <button
               onClick={handleSubmitBranch}
-              // FIX 3: Also disable the final submit button if data is missing
-              disabled={!isStepValid()}
+              disabled={!isStepValid() || isSubmitting}
               className={`px-8 py-2.5 rounded-xl font-semibold shadow-lg transition-all transform active:scale-95 ${
-                isStepValid() 
-                  ? "bg-green-600 text-white shadow-green-200 hover:bg-green-700" 
+                isStepValid() && !isSubmitting
+                  ? "bg-green-600 text-white shadow-green-200 hover:bg-green-700"
                   : "bg-gray-300 text-gray-500 cursor-not-allowed shadow-none"
               }`}
             >
-              Create Branch
+              {isSubmitting ? "Creating..." : "Create Branch"}
             </button>
+
           )}
         </div>
       </div>

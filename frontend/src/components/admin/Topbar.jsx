@@ -29,7 +29,7 @@ export default function Topbar({ collapsed, toggleSidebar }) {
       <header className="h-16 bg-white shadow flex items-center justify-between px-4">
         <button
           onClick={toggleSidebar}
-          className="text-xl font-bold"
+          className="text-xl font-bold  cursor-pointer"
         >
           ☰
         </button>
@@ -50,7 +50,7 @@ export default function Topbar({ collapsed, toggleSidebar }) {
 
           <button
             onClick={() => setShowLogoutModal(true)}
-            className="text-red-600 font-semibold"
+            className="text-red-600 font-semibold  cursor-pointer"
           >
             Logout
           </button>
@@ -71,14 +71,14 @@ export default function Topbar({ collapsed, toggleSidebar }) {
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setShowLogoutModal(false)}
-                className="px-4 py-2 rounded border hover:bg-gray-100"
+                className="px-4 py-2 rounded border hover:bg-gray-100 cursor-pointer"
               >
                 Cancel
               </button>
 
               <button
                 onClick={handleConfirmLogout}
-                className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700"
+                className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 cursor-pointer"
               >
                 Logout
               </button>

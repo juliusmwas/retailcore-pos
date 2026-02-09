@@ -191,113 +191,143 @@ const SummaryItem = ({ label, value }) => (
 
       </div>
 
-      {/* ===== BRANCH CARDS ===== */}
-      {branches.length > 0 ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {branches.map((branch) => (
-            <div
-              key={branch.id}
-              className="bg-white rounded-2xl shadow-sm border hover:shadow-md transition p-6 flex flex-col gap-6"
-            >
-              {/* TOP SECTION */}
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-4">
-                  <div className="p-3 rounded-xl bg-blue-50 text-blue-600">
-                    <Building2 size={22} />
-                  </div>
+      {/* ===== QUICK STATS ===== */}
+<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+  {[
+    { label: "Total Branches", value: branches.length, icon: Building2, color: "text-blue-600", bg: "bg-blue-50" },
+    { label: "Active Sites", value: branches.filter(b => b.status === "ACTIVE").length, icon: Power, color: "text-green-600", bg: "bg-green-50" },
+    { label: "Total Workforce", value: branches.reduce((acc, b) => acc + b.staffCount, 0), icon: Users, color: "text-purple-600", bg: "bg-purple-50" },
+    { label: "Regional Hubs", value: "2", icon: MapPin, color: "text-orange-600", bg: "bg-orange-50" },
+  ].map((stat, i) => (
+    <div key={i} className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
+      <div className={`p-3 rounded-xl ${stat.bg} ${stat.color}`}>
+        <stat.icon size={22} />
+      </div>
+      <div>
+        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">{stat.label}</p>
+        <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+      </div>
+    </div>
+  ))}
+</div>
 
-                  <div>
-                    <h2 className="text-xl font-semibold">
-                      {branch.name}
-                    </h2>
+{/* ===== UTILITY BAR ===== */}
+<div className="flex flex-col md:flex-row gap-4 mb-6">
+  <div className="relative flex-1">
+    <input 
+      type="text" 
+      placeholder="Search by branch name, code or location..." 
+      className="w-full pl-11 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all"
+    />
+    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+      <Plus size={18} className="rotate-[225deg]" /> {/* Using Plus as a makeshift search icon or use Search from lucide */}
+    </div>
+  </div>
+  <div className="flex gap-2">
+    <select className="px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-600 outline-none focus:border-blue-500">
+      <option>All Types</option>
+      <option>Retail</option>
+      <option>Warehouse</option>
+    </select>
+    <button className="p-2.5 bg-white border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50">
+      <Users size={18} />
+    </button>
+  </div>
+</div>
 
-                    <div className="flex items-center gap-2 text-gray-500 text-sm mt-1">
-                      <MapPin size={14} />
-                      {branch.location}
-                    </div>
-                  </div>
-                </div>
-
-                {/* STATUS */}
-                <span
-                  className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                    branch.status === "ACTIVE"
-                      ? "bg-green-100 text-green-700"
-                      : "bg-red-100 text-red-700"
-                  }`}
-                >
-                  {branch.status}
-                </span>
-              </div>
-
-              {/* MIDDLE METRICS */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-4">
-                  <Users size={18} className="text-gray-600" />
-                  <div>
-                    <p className="text-sm text-gray-500">
-                      Staff Members
-                    </p>
-                    <p className="font-semibold text-lg">
-                      {branch.staffCount}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-4">
-                  <Calendar size={18} className="text-gray-600" />
-                  <div>
-                    <p className="text-sm text-gray-500">
-                      Created On
-                    </p>
-                    <p className="font-semibold text-sm">
-                      {branch.createdAt}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* ACTIONS */}
-              <div className="flex items-center justify-between pt-4 border-t">
-                <button className="text-sm text-blue-600 font-medium hover:underline">
-                  View Details
-                </button>
-
-                <button
-                  onClick={() => toggleStatus(branch.id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition ${
-                    branch.status === "ACTIVE"
-                      ? "bg-red-50 text-red-600 hover:bg-red-100"
-                      : "bg-green-50 text-green-600 hover:bg-green-100"
-                  }`}
-                >
-                  <Power size={16} />
-                  {branch.status === "ACTIVE"
-                    ? "Deactivate"
-                    : "Activate"}
-                </button>
-              </div>
+<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  {branches.map((branch) => (
+    <div
+      key={branch.id}
+      className="group bg-white rounded-2xl shadow-sm border border-gray-100 hover:border-blue-200 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300 overflow-hidden"
+    >
+      <div className="p-6">
+        {/* TOP: Identity & Status */}
+        <div className="flex justify-between items-start mb-6">
+          <div className="flex gap-4">
+            <div className="p-3 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 text-blue-600 group-hover:from-blue-600 group-hover:to-blue-700 group-hover:text-white transition-all duration-500">
+              <Building2 size={24} />
             </div>
-          ))}
-        </div>
-      ) : (
-        /* ===== EMPTY STATE ===== */
-        <div className="bg-white rounded-2xl border p-12 text-center">
-          <div className="mx-auto mb-4 w-14 h-14 flex items-center justify-center rounded-full bg-blue-50 text-blue-600">
-            <Building2 size={28} />
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-bold text-gray-900">{branch.name}</h2>
+                <span className="text-[10px] font-mono bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded leading-none">BR-{branch.id}09</span>
+              </div>
+              <p className="text-sm text-gray-500 flex items-center gap-1 mt-0.5">
+                <MapPin size={14} className="text-gray-400" />
+                {branch.location}
+              </p>
+            </div>
           </div>
-          <h3 className="text-lg font-semibold mb-1">
-            No branches yet
-          </h3>
-          <p className="text-gray-500 mb-6">
-            Start by adding your first business branch
-          </p>
-          <button className="inline-flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-xl hover:bg-blue-700">
-            <Plus size={18} />
-            Add Branch
+          
+          <div className="flex flex-col items-end gap-2">
+            <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold tracking-wide ${
+              branch.status === "ACTIVE" 
+                ? "bg-green-100 text-green-700" 
+                : "bg-gray-100 text-gray-500"
+            }`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${branch.status === "ACTIVE" ? "bg-green-500 animate-pulse" : "bg-gray-400"}`} />
+              {branch.status}
+            </span>
+          </div>
+        </div>
+
+        {/* MIDDLE: Workforce Capacity */}
+        <div className="space-y-3 mb-6">
+          <div className="flex justify-between items-end">
+            <span className="text-xs font-semibold text-gray-500 uppercase">Staffing Capacity</span>
+            <span className="text-xs font-bold text-gray-900">{branch.staffCount} / 20</span>
+          </div>
+          <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-blue-500 rounded-full transition-all duration-1000" 
+              style={{ width: `${(branch.staffCount / 20) * 100}%` }}
+            />
+          </div>
+        </div>
+
+        {/* BOTTOM: Meta Info */}
+        <div className="grid grid-cols-2 gap-4 py-4 border-t border-gray-50">
+          <div className="flex items-center gap-2">
+            <div className="p-2 rounded-lg bg-gray-50 text-gray-400">
+              <Calendar size={14} />
+            </div>
+            <div>
+              <p className="text-[10px] text-gray-400 uppercase font-bold">Opened</p>
+              <p className="text-xs font-semibold text-gray-700">{branch.createdAt}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="p-2 rounded-lg bg-gray-50 text-gray-400">
+              <Users size={14} />
+            </div>
+            <div>
+              <p className="text-[10px] text-gray-400 uppercase font-bold">Manager</p>
+              <p className="text-xs font-semibold text-gray-700">J. Mwas</p>
+            </div>
+          </div>
+        </div>
+
+        {/* ACTION FOOTER */}
+        <div className="flex gap-2 mt-4">
+          <button className="flex-1 py-2 text-sm font-bold text-blue-600 bg-blue-50 rounded-xl hover:bg-blue-600 hover:text-white transition-all">
+            Manage Branch
+          </button>
+          <button 
+            onClick={() => toggleStatus(branch.id)}
+            className={`px-4 py-2 rounded-xl transition-colors ${
+              branch.status === "ACTIVE" 
+                ? "bg-red-50 text-red-600 hover:bg-red-600 hover:text-white" 
+                : "bg-green-50 text-green-600 hover:bg-green-600 hover:text-white"
+            }`}
+          >
+            <Power size={18} />
           </button>
         </div>
-      )}
+      </div>
+    </div>
+  ))}
+</div>
 
       {/* ===== ADD MODAL ===== */}
 {showAddModal && (

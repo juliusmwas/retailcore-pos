@@ -15,37 +15,11 @@ export default function Branches() {
   const [showAddModal, setShowAddModal] = useState(false);
 
 
-  const [branches, setBranches] = useState([
-    {
-      id: 1,
-      name: "Main Branch",
-      location: "Nairobi CBD",
-      staffCount: 12,
-      status: "ACTIVE",
-      createdAt: "2024-10-01",
-    },
-    {
-      id: 2,
-      name: "Westlands Branch",
-      location: "Westlands",
-      staffCount: 6,
-      status: "INACTIVE",
-      createdAt: "2024-11-12",
-    },
-  ]);
+  const [branches, setBranches] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const toggleStatus = (id) => {
-    setBranches((prev) =>
-      prev.map((branch) =>
-        branch.id === id
-          ? {
-              ...branch,
-              status: branch.status === "ACTIVE" ? "INACTIVE" : "ACTIVE",
-            }
-          : branch
-      )
-    );
-  };
+
+ 
 
   const [step, setStep] = useState(1);
 

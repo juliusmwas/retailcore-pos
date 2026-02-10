@@ -108,18 +108,16 @@ const [branchForm, setBranchForm] = useState({
   setupStatus: "Pending",
 });
 
-
 const toggleStatus = async (id) => {
   try {
     await toggleBranchStatus(id);
     const res = await getBranches();
-    setBranches(res.data);
+    // Extract the array from the 'data' property of the response
+    setBranches(res.data.data || res.data); 
   } catch (error) {
     console.error("Failed to toggle branch status", error);
   }
 };
-
-
 
 const handleChange = (e) => {
   const { name, value, type, checked } = e.target;
@@ -134,14 +132,15 @@ const prevStep = () => setStep((s) => Math.max(s - 1, 1));
 
 const [isSubmitting, setIsSubmitting] = useState(false);
 
+
 const handleSubmitBranch = async () => {
   try {
     setIsSubmitting(true);
     await createBranch(branchForm);
 
-    // refresh list
     const res = await getBranches();
-    setBranches(res.data);
+    // Fix: Ensure we set the array, not the full response object
+    setBranches(res.data.data || res.data);
 
     handleCloseModal();
   } catch (error) {
@@ -360,11 +359,15 @@ const SummaryItem = ({ label, value }) => (
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-bold text-gray-900">{branch.name}</h2>
-                <span className="text-[10px] font-mono bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded leading-none">BR-{branch.id}09</span>
+                {/* FIX: Use real branch.code */}
+                <span className="text-[10px] font-mono bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded leading-none">
+                  {branch.code}
+                </span>
               </div>
               <p className="text-sm text-gray-500 flex items-center gap-1 mt-0.5">
                 <MapPin size={14} className="text-gray-400" />
-                {branch.location}
+                {/* FIX: Show City/Country instead of static "location" */}
+                {branch.city}, {branch.country}
               </p>
             </div>
           </div>
@@ -385,13 +388,15 @@ const SummaryItem = ({ label, value }) => (
         <div className="space-y-3 mb-6">
           <div className="flex justify-between items-end">
             <span className="text-xs font-semibold text-gray-500 uppercase">Staffing Capacity</span>
-            <span className="text-xs font-bold text-gray-900">{(branch.staffCount || 0)} / 20</span>
-
+            {/* FIX: Use real initialStaff and maxStaff */}
+            <span className="text-xs font-bold text-gray-900">
+              {branch.initialStaff || 0} / {branch.maxStaff || 20}
+            </span>
           </div>
           <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
             <div 
               className="h-full bg-blue-500 rounded-full transition-all duration-1000" 
-              style={{ width: `${((branch.staffCount || 0) / 20) * 100}%` }}
+              style={{ width: `${((branch.initialStaff || 0) / (branch.maxStaff || 20)) * 100}%` }}
             />
           </div>
         </div>
@@ -404,7 +409,12 @@ const SummaryItem = ({ label, value }) => (
             </div>
             <div>
               <p className="text-[10px] text-gray-400 uppercase font-bold">Opened</p>
-              <p className="text-xs font-semibold text-gray-700">{branch.createdAt}</p>
+              {/* FIX: Format the date properly */}
+              <p className="text-xs font-semibold text-gray-700">
+                {branch.openingDate 
+                  ? new Date(branch.openingDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric'}) 
+                  : "N/A"}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -413,7 +423,8 @@ const SummaryItem = ({ label, value }) => (
             </div>
             <div>
               <p className="text-[10px] text-gray-400 uppercase font-bold">Manager</p>
-              <p className="text-xs font-semibold text-gray-700">J. Mwas</p>
+              {/* FIX: Use real managerName */}
+              <p className="text-xs font-semibold text-gray-700">{branch.managerName || "N/A"}</p>
             </div>
           </div>
         </div>
@@ -547,16 +558,19 @@ const SummaryItem = ({ label, value }) => (
           <ErrorMsg value={branchForm.type} isRequired={true} />
         </div>
 
-        {/* OPENING DATE */}
-        <div className="flex flex-col gap-1">
-          <input
-            className={getInputClass(branchForm.openingDate)}
-            type="date"
-            name="openingDate"
-            onChange={handleChange}
-            value={branchForm.openingDate}
-          />
-        </div>
+       {/* OPENING DATE */}
+<div className="flex flex-col gap-1">
+  <input
+    type="date"
+    className={getInputClass(branchForm.openingDate, true)}
+    name="openingDate"
+    value={branchForm.openingDate}
+    onChange={handleChange}
+  />
+  <p className="text-[10px] text-gray-400 font-medium ml-1">Opening Date *</p>
+  <ErrorMsg value={branchForm.openingDate} isRequired={true} />
+</div>
+
       </div>
     </section>
   )}

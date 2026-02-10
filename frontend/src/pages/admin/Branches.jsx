@@ -19,21 +19,33 @@ export default function Branches() {
     const [isLoading, setIsLoading] = useState(false);
 
 
-    useEffect(() => {
-    const fetchBranches = async () => {
-      try {
-        setIsLoading(true);
-        const res = await getBranches();
-        setBranches(res.data);
-      } catch (error) {
-        console.error("Failed to fetch branches", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+   useEffect(() => {
+  const fetchBranches = async () => {
+    try {
+      setIsLoading(true);
+      const res = await getBranches();
+      
+      // LOG THIS to see exactly what the backend is sending
+      console.log("Backend Response:", res.data);
 
-    fetchBranches();
-  }, []);
+      // Fix: Ensure we are setting an array
+      if (res.data && Array.isArray(res.data.data)) {
+        setBranches(res.data.data);
+      } else if (Array.isArray(res.data)) {
+        setBranches(res.data);
+      } else {
+        setBranches([]); // Fallback to empty array if data is weird
+      }
+    } catch (error) {
+      console.error("Failed to fetch branches", error);
+      setBranches([]); // Prevent crash on error
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  fetchBranches();
+}, []);
 
 
 
@@ -260,18 +272,41 @@ const SummaryItem = ({ label, value }) => (
     )}
 
 
-
-      {/* ===== QUICK STATS ===== */}
+{/* ===== QUICK STATS ===== */}
 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
   {[
-    { label: "Total Branches", value: branches.length, icon: Building2, color: "text-blue-600", bg: "bg-blue-50" },
-    { label: "Active Sites", value: branches.filter(b => b.status === "ACTIVE").length, icon: Power, color: "text-green-600", bg: "bg-green-50" },
-  {
-  label: "Total Workforce",
-  value: branches.reduce((acc, b) => acc + (b.staffCount || 0), 0),  icon: Users,  color:"text-purple-600",bg: "bg-purple-50"
-},
-
-    { label: "Regional Hubs", value: "2", icon: MapPin, color: "text-orange-600", bg: "bg-orange-50" },
+    { 
+      label: "Total Branches", 
+      value: Array.isArray(branches) ? branches.length : 0, 
+      icon: Building2, 
+      color: "text-blue-600", 
+      bg: "bg-blue-50" 
+    },
+    { 
+      label: "Active Sites", 
+      value: Array.isArray(branches) 
+        ? branches.filter(b => b?.status === "ACTIVE").length 
+        : 0, 
+      icon: Power, 
+      color: "text-green-600", 
+      bg: "bg-green-50" 
+    },
+    {
+      label: "Total Workforce",
+      value: Array.isArray(branches)
+        ? branches.reduce((acc, b) => acc + (Number(b?.initialStaff) || 0), 0)
+        : 0,
+      icon: Users,
+      color: "text-purple-600",
+      bg: "bg-purple-50"
+    },
+    { 
+      label: "Regional Hubs", 
+      value: "2", 
+      icon: MapPin, 
+      color: "text-orange-600", 
+      bg: "bg-orange-50" 
+    },
   ].map((stat, i) => (
     <div key={i} className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
       <div className={`p-3 rounded-xl ${stat.bg} ${stat.color}`}>

@@ -5,8 +5,7 @@ dotenv.config();
 
 export default defineConfig({
   datasource: {
-    db: {
-      url: process.env.DATABASE_URL
-    }
+    // Prisma 7 looks for the connection string here for migrations
+    url: process.env.DATABASE_URL 
   }
 });

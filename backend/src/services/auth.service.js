@@ -11,47 +11,27 @@ export const registerOwnerService = async ({
   businessName,
   email,
   password,
-  phone,        // New: Contact for support/2FA
-  country,      // New: Sets Currency/Tax defaults
-  industryType, // New: Customizes system features
+  phone,
+  country,
+  industryType,
 }) => {
-  // 1. Safety Check
-  const existingUser = await prisma.user.findUnique({
-    where: { email },
-  });
-
-  if (existingUser) {
-    throw new Error("This email is already registered to a business.");
-  }
+  const existingUser = await prisma.user.findUnique({ where: { email } });
+  if (existingUser) throw new Error("Email already registered.");
 
   const hashedPassword = await bcrypt.hash(password, 10);
 
-  // 2. Atomic Transaction: Create everything or nothing
-  // This prevents "orphaned" users if the business creation fails
   return await prisma.$transaction(async (tx) => {
-    
-    // Create the Business Entity
+    // 1. Create ONLY the Business (No branches yet)
     const business = await tx.business.create({
       data: {
         name: businessName,
         phone: phone,
         country: country,
         industry: industryType,
-        // Automatically create the first branch within the business
-        branches: {
-          create: {
-            name: "Main Branch",
-            code: "MAIN-001",
-            status: "ACTIVE",
-            country: country,
-            managerName: fullName,
-          },
-        },
       },
-      include: { branches: true },
     });
 
-    // Create the Primary Admin User
+    // 2. Create the User
     const user = await tx.user.create({
       data: {
         fullName,
@@ -62,39 +42,15 @@ export const registerOwnerService = async ({
       },
     });
 
-    // Link User to the Main Branch with OWNER permissions
-    await tx.userBranch.create({
-      data: {
-        userId: user.id,
-        branchId: business.branches[0].id,
-        role: "OWNER",
-      },
-    });
+    // Note: We don't create UserBranch here because no branches exist yet!
 
-    // Generate JWT for immediate login
     const token = jwt.sign(
-      { 
-        userId: user.id, 
-        businessId: business.id 
-      },
+      { userId: user.id, businessId: business.id },
       process.env.JWT_SECRET,
       { expiresIn: "1d" }
     );
 
-    return {
-      token,
-      user: {
-        id: user.id,
-        fullName: user.fullName,
-        businessId: user.businessId,
-        role: "OWNER"
-      },
-      business: {
-        id: business.id,
-        name: business.name
-      },
-      message: "Business and Admin account created successfully",
-    };
+    return { token, user, business };
   });
 };
 

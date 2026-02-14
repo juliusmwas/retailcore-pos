@@ -136,15 +136,42 @@ const [isSubmitting, setIsSubmitting] = useState(false);
 const handleSubmitBranch = async () => {
   try {
     setIsSubmitting(true);
-    await createBranch(branchForm);
 
-    const res = await getBranches();
-    // Fix: Ensure we set the array, not the full response object
-    setBranches(res.data.data || res.data);
+    // 1. Prepare and Clean the data
+    const payload = {
+      ...branchForm,
+      // Ensure numeric fields are numbers, not strings
+      initialStaff: Number(branchForm.initialStaff) || 0,
+      maxStaff: Number(branchForm.maxStaff) || 20,
+      budget: Number(branchForm.budget) || 0,
+      revenueTarget: Number(branchForm.revenueTarget) || 0,
+      // Ensure the date is in a format the DB recognizes
+      openingDate: branchForm.openingDate ? new Date(branchForm.openingDate).toISOString() : new Date().toISOString(),
+    };
 
-    handleCloseModal();
+    console.log("Attempting to save branch with code:", payload.code);
+
+    // 2. Send the request
+    const response = await createBranch(payload);
+
+    // 3. Success Logic
+    if (response.status === 201 || response.status === 200) {
+      const res = await getBranches();
+      // Use res.data.data because your backend wraps the array
+      setBranches(res.data.data || res.data);
+      handleCloseModal();
+      alert("Branch created successfully!");
+    }
   } catch (error) {
-    console.error("Failed to create branch", error);
+    // 4. Detailed Error Handling
+    const serverMsg = error.response?.data?.message || "Unknown server error";
+    console.error("Server rejected the request:", error.response?.data);
+    
+    if (serverMsg.includes("unique")) {
+      alert("Error: The Branch Code already exists. Please regenerate the code in Step 1.");
+    } else {
+      alert(`Error: ${serverMsg}. Ensure all required fields (Name, Code, Type, Country, City, Manager) are filled.`);
+    }
   } finally {
     setIsSubmitting(false);
   }
@@ -197,12 +224,16 @@ const handleCloseModal = () => {
 
 const isStepValid = () => {
   switch (step) {
-    case 1: return branchForm.name && branchForm.code && branchForm.type;
-    case 2: return branchForm.country && branchForm.city && branchForm.address;
-    case 3: return branchForm.managerName && branchForm.managerEmail && branchForm.managerPhone;
-    case 5: return branchForm.currency && branchForm.taxRegion;
-    case 6: return true; // Review step is always "valid" to submit
-    default: return true;
+    case 1: 
+      return branchForm.name && branchForm.code && branchForm.type && branchForm.openingDate;
+    case 2: 
+      return branchForm.country && branchForm.city && branchForm.address;
+    case 3: 
+      return branchForm.managerName && branchForm.managerEmail && branchForm.managerPhone;
+    case 5: 
+      return branchForm.currency && branchForm.taxRegion;
+    default: 
+      return true;
   }
 };
 
@@ -229,10 +260,10 @@ const ErrorMsg = ({ value, isRequired }) => {
 
 const generateCode = (name) => {
   if (!name) return "";
-  // Take first 3 letters, uppercase them, add a random 4-digit number
   const prefix = name.replace(/\s/g, "").substring(0, 3).toUpperCase();
-  const random = Math.floor(1000 + Math.random() * 9000);
-  return `${prefix}-${random}`;
+  // Using Date.now().toString(36) adds a time-based unique string
+  const randomStr = Math.random().toString(36).substring(2, 6).toUpperCase();
+  return `${prefix}-${randomStr}`;
 };
 
 const SummaryItem = ({ label, value }) => (

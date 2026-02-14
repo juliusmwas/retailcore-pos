@@ -4,62 +4,101 @@ import { prisma } from "../lib/prisma.js";
 
 
 
-/**
- * REGISTER OWNER (Create Business + Main Branch + Owner User)
- */
+/*** REGISTER OWNER (Create Business + Main Branch + Owner User)*/
+
 export const registerOwnerService = async ({
   fullName,
   businessName,
   email,
   password,
+  phone,        // New: Contact for support/2FA
+  country,      // New: Sets Currency/Tax defaults
+  industryType, // New: Customizes system features
 }) => {
+  // 1. Safety Check
   const existingUser = await prisma.user.findUnique({
     where: { email },
   });
 
   if (existingUser) {
-    throw new Error("Email already in use");
+    throw new Error("This email is already registered to a business.");
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
 
-  const business = await prisma.business.create({
-    data: {
-      name: businessName,
-      branches: {
-        create: {
-          name: "Main Branch",
+  // 2. Atomic Transaction: Create everything or nothing
+  // This prevents "orphaned" users if the business creation fails
+  return await prisma.$transaction(async (tx) => {
+    
+    // Create the Business Entity
+    const business = await tx.business.create({
+      data: {
+        name: businessName,
+        phone: phone,
+        country: country,
+        industry: industryType,
+        // Automatically create the first branch within the business
+        branches: {
+          create: {
+            name: "Main Branch",
+            code: "MAIN-001",
+            status: "ACTIVE",
+            country: country,
+            managerName: fullName,
+          },
         },
       },
-    },
-    include: { branches: true },
-  });
+      include: { branches: true },
+    });
 
-  const user = await prisma.user.create({
-    data: {
-      fullName,
-      email,
-      password: hashedPassword,
-      businessId: business.id,
-    },
-  });
+    // Create the Primary Admin User
+    const user = await tx.user.create({
+      data: {
+        fullName,
+        email,
+        password: hashedPassword,
+        phone: phone,
+        businessId: business.id,
+      },
+    });
 
-  await prisma.userBranch.create({
-    data: {
-      userId: user.id,
-      branchId: business.branches[0].id,
-      role: "OWNER",
-    },
-  });
+    // Link User to the Main Branch with OWNER permissions
+    await tx.userBranch.create({
+      data: {
+        userId: user.id,
+        branchId: business.branches[0].id,
+        role: "OWNER",
+      },
+    });
 
-  return {
-    message: "Business registered successfully",
-  };
+    // Generate JWT for immediate login
+    const token = jwt.sign(
+      { 
+        userId: user.id, 
+        businessId: business.id 
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
+
+    return {
+      token,
+      user: {
+        id: user.id,
+        fullName: user.fullName,
+        businessId: user.businessId,
+        role: "OWNER"
+      },
+      business: {
+        id: business.id,
+        name: business.name
+      },
+      message: "Business and Admin account created successfully",
+    };
+  });
 };
 
-/**
- * LOGIN
- */
+/** * LOGIN */
 export const loginService = async ({ email, password }) => {
   const user = await prisma.user.findUnique({
     where: { email },

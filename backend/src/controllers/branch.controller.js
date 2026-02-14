@@ -11,6 +11,9 @@ export const getBranches = async (req, res) => {
   }
 };
 
+
+
+
 export const createBranch = async (req, res) => {
   try {
     const newBranch = await prisma.branch.create({

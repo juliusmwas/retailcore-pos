@@ -37,10 +37,16 @@ function Login() {
     const storedAuth = localStorage.getItem("auth");
     if (storedAuth) {
       const parsed = JSON.parse(storedAuth);
-      const role = parsed.user?.branches?.[0]?.role || "OWNER";
+      
+      // Use the same robust role check here!
+      const role = parsed.user?.role || parsed.user?.branches?.[0]?.role || "OWNER";
 
       if (role === "OWNER" || role === "ADMIN") {
-        navigate("/admin/dashboard", { replace: true });
+        // If they have 0 branches, send them to /admin/branches to set one up
+        const hasBranches = parsed.user?.branches?.length > 0 || parsed.branches?.length > 0;
+        const target = hasBranches ? "/admin/dashboard" : "/admin/branches";
+        
+        navigate(target, { replace: true });
       } else if (role === "CASHIER") {
         navigate("/select-branch", { replace: true });
       }
@@ -56,19 +62,21 @@ function Login() {
     setError("");
     setLoading(true);
 
-    try {
-      const res = await axios.post("http://localhost:5000/api/auth/login", { email, password });
-      const { token, user, business, branches } = res.data;
+   try {
+    const res = await axios.post("http://localhost:5000/api/auth/login", { email, password });
+    const { token, user, business, branches } = res.data;
 
-      login({ token, user, business, branches });
+    login({ token, user, business, branches });
 
-      const role = user.branches?.[0]?.role || "OWNER";
-      if (role === "OWNER" || role === "ADMIN") {
-        navigate("/admin/dashboard", { replace: true });
-      } else {
-        navigate("/select-branch", { replace: true });
-      }
-    } catch (err) {
+    // FIX: Check user.role FIRST, then check branch role.
+    const userRole = user.role || user.branches?.[0]?.role || "OWNER";
+    
+    if (userRole === "OWNER" || userRole === "ADMIN") {
+      navigate("/admin/branches", { replace: true }); // Go straight to branches to see empty state
+    } else {
+      navigate("/select-branch", { replace: true });
+    }
+  } catch (err) {
       setError(err.response?.data?.message || "Invalid login credentials");
     } finally {
       setLoading(false);
@@ -93,7 +101,7 @@ function Login() {
       // If backend returns a token, log them in immediately
       if (res.data.token) {
         login(res.data);
-        navigate("/admin/dashboard", { replace: true });
+        navigate("/admin/branches", { replace: true });
       } else {
         alert("Registration successful! Please log in.");
         setActiveTab("login");

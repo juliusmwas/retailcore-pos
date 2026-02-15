@@ -2,28 +2,30 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "./AuthContext";
 
 export default function ProtectedRoute({ children, roles }) {
-  const { user, token, authLoading } = useAuth();
+  // Extract 'role' directly—this is the one we normalized in AuthContext
+  const { user, token, role, authLoading } = useAuth();
 
-  if (authLoading) return null;
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <p className="text-gray-500 animate-pulse">Verifying credentials...</p>
+      </div>
+    );
+  }
 
-  // 1. Not logged in
   if (!token || !user) {
     return <Navigate to="/login" replace />;
   }
 
-  // 2. Role protection
   if (roles) {
-    // Check if the user has the required role globally (on the User object)
-    // OR if their first branch has the required role.
-    const userGlobalRole = user.role; // e.g., "OWNER"
-    const userBranchRole = user.branches?.[0]?.role;
+    // We use the 'role' from useAuth which we already forced to UPPERCASE
+    const userRole = role?.toUpperCase();
+    const normalizedRequiredRoles = roles.map(r => r.toUpperCase());
 
-    const hasAccess = roles.includes(userGlobalRole) || roles.includes(userBranchRole);
+    console.log("Guard Check:", { userRole, allowed: normalizedRequiredRoles });
 
-    if (!hasAccess) {
-      // If they are authenticated but don't have the right role, 
-      // maybe send them to a "Not Authorized" page instead of login 
-      // to prevent loops.
+    if (!userRole || !normalizedRequiredRoles.includes(userRole)) {
+      console.error("Access Denied: Missing required role", roles);
       return <Navigate to="/login" replace />;
     }
   }

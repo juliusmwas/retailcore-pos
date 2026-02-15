@@ -31,7 +31,7 @@ function App() {
           <Route
             path="/select-branch"
             element={
-              <ProtectedRoute roles={["CASHIER"]}>
+              <ProtectedRoute roles={["OWNER", "ADMIN", "CASHIER"]}>
                 <SelectBranch />
               </ProtectedRoute>
             }

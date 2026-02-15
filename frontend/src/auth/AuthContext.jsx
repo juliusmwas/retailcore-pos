@@ -11,36 +11,65 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
 
-  // 🔁 Restore session
+  // 🔁 Restore session on app load
   useEffect(() => {
     const storedAuth = localStorage.getItem("auth");
-
     if (storedAuth) {
-      const parsed = JSON.parse(storedAuth);
-      setUser(parsed.user);
-      setBusiness(parsed.business || null);
-      setBranches(parsed.branches || []);
-      setToken(parsed.token || null);
+      try {
+        const parsed = JSON.parse(storedAuth);
+        
+        // 1. Set basic states
+        setUser(parsed.user);
+        setBusiness(parsed.business || null);
+        setBranches(parsed.branches || []);
+        setToken(parsed.token || null);
+        
+        // 2. Determine Role (Crucial for ProtectedRoute)
+        // We check: user.role -> branch[0].role -> Default to "OWNER" if user exists
+        const rawRole = parsed.user?.role || parsed.branches?.[0]?.role || (parsed.user ? "OWNER" : null);
+        
+        if (rawRole) {
+          setRole(rawRole.toUpperCase());
+        }
+      } catch (error) {
+        console.error("Auth Restoration Failed:", error);
+        localStorage.removeItem("auth"); 
+      }
     }
-
     setAuthLoading(false);
   }, []);
 
+  // ✅ Login function - used by Login and Register pages
   const login = ({ user, business, branches, token }) => {
+    // 1. Update State
     setUser(user);
     setBusiness(business || null);
     setBranches(branches || []);
     setToken(token);
+    
+    // 2. Normalize and Set Role
+    // This ensures ProtectedRoute sees "OWNER" instead of undefined or null
+    const assignedRole = user?.role || branches?.[0]?.role || "OWNER";
+    const normalizedRole = assignedRole.toUpperCase();
+    setRole(normalizedRole);
 
-    localStorage.setItem(
-      "auth",
-      JSON.stringify({ user, business, branches, token })
-    );
+    // 3. Persist to LocalStorage
+    // We add the role to the user object inside storage to be safe
+    const authData = { 
+      user: { ...user, role: assignedRole }, 
+      business, 
+      branches, 
+      token 
+    };
+    
+    localStorage.setItem("auth", JSON.stringify(authData));
   };
 
   const selectBranch = (branch) => {
     setActiveBranch(branch);
-    setRole(branch?.role || null);
+    if (branch?.role) {
+      setRole(branch.role.toUpperCase());
+    }
   };
 
   const logout = () => {
@@ -74,5 +103,9 @@ export function AuthProvider({ children }) {
 }
 
 export function useAuth() {
-  return useContext(AuthContext);
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
 }

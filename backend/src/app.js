@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import authRoutes from "./routes/auth.routes.js";
 import branchRoutes from "./routes/branch.routes.js";
+import dashboardRoutes from "./routes/dashboard.routes.js";
 
 const app = express();
 
@@ -20,6 +21,7 @@ app.use(express.json());
 // 3. Routes
 app.use("/api/branches", branchRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
 // Optional health check
 app.get("/", (req, res) => {

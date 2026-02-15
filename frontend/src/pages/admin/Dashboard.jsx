@@ -1,202 +1,208 @@
-// src/pages/admin/Dashboard.jsx
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { useAuth } from "../../auth/AuthContext";
 import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, BarChart, Bar, AreaChart, Area
 } from "recharts";
+import { 
+  FiTrendingUp, FiUsers, FiBox, FiDollarSign, 
+  FiAlertCircle, FiPlus, FiDownload, FiActivity 
+} from "react-icons/fi";
 
 export default function Dashboard() {
-  // Mock admin data (UI preview only)
-  const data = {
-   kpis: [
-      { title: "Total Revenue", value: "$45,230", trend: "+12%", type: "profit" },
-      { title: "Orders Today", value: "120", trend: "+5%", type: "profit" },
-      { title: "Active Staff", value: "15", trend: "Stable", type: "neutral" },
-      { title: "Products", value: "88", trend: "-2%", type: "loss" },
-    ],
+  const { activeBranch, business } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState(null);
 
-    salesOverTime: [
-      { day: "Mon", sales: 1200 },
-      { day: "Tue", sales: 2100 },
-      { day: "Wed", sales: 800 },
-      { day: "Thu", sales: 1600 },
-      { day: "Fri", sales: 2500 },
-      { day: "Sat", sales: 1900 },
-      { day: "Sun", sales: 3000 },
-    ],
-    topProducts: [
-      { name: "Product A", sold: 120 },
-      { name: "Product B", sold: 95 },
-      { name: "Product C", sold: 80 },
-    ],
-    orders: [
-      { id: "#101", customer: "John Doe", amount: 2500, status: "Completed" },
-      { id: "#102", customer: "Jane Smith", amount: 1800, status: "Pending" },
-      { id: "#103", customer: "Mike Johnson", amount: 3200, status: "Completed" },
-      { id: "#104", customer: "Alice Brown", amount: 1500, status: "Cancelled" },
-    ],
-    alerts: [
-      "3 products are low on stock",
-      "2 orders pending approval",
-      "Sales dropped in Branch B yesterday",
-    ],
-  };
+  // 🔄 Fetch real data based on activeBranch
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      setLoading(true);
+      try {
+        // Here you will eventually call your API: 
+        // const url = activeBranch ? `/api/stats/${activeBranch.id}` : '/api/stats/all';
+        // const res = await api.get(url);
+        
+        // Simulating API delay for the "Production" feel
+        await new Promise(resolve => setTimeout(resolve, 800));
+        
+        setStats({
+          kpis: [
+            { title: "Revenue", value: "$45,230", trend: "+12.5%", icon: <FiDollarSign />, color: "text-blue-600", bg: "bg-blue-100" },
+            { title: "Sales Count", value: "1,240", trend: "+5.2%", icon: <FiTrendingUp />, color: "text-green-600", bg: "bg-green-100" },
+            { title: "Team Members", value: activeBranch ? "8" : "45", trend: "Active", icon: <FiUsers />, color: "text-purple-600", bg: "bg-purple-100" },
+            { title: "Stock Items", value: "342", trend: "-2", icon: <FiBox />, color: "text-orange-600", bg: "bg-orange-100" },
+          ],
+          chartData: [
+            { name: "Mon", sales: 4000, orders: 240 },
+            { name: "Tue", sales: 3000, orders: 198 },
+            { name: "Wed", sales: 2000, orders: 150 },
+            { name: "Thu", sales: 2780, orders: 190 },
+            { name: "Fri", sales: 1890, orders: 120 },
+            { name: "Sat", sales: 2390, orders: 210 },
+            { name: "Sun", sales: 3490, orders: 250 },
+          ],
+          recentOrders: [
+            { id: "ORD-7721", customer: "Julius Kiai", amount: 120.50, status: "Completed", time: "2 mins ago" },
+            { id: "ORD-7722", customer: "Sarah Chen", amount: 45.00, status: "Pending", time: "15 mins ago" },
+            { id: "ORD-7723", customer: "Mike Ross", amount: 210.00, status: "Completed", time: "1 hr ago" },
+          ]
+        });
+      } catch (error) {
+        console.error("Dashboard Load Error:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, [activeBranch]); // Re-run whenever the user switches branches in the Topbar
+
+  if (loading) return (
+    <div className="flex h-screen items-center justify-center bg-gray-50">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+    </div>
+  );
 
   return (
-    <div className="p-8 space-y-10 bg-gray-50 min-h-screen">
-      {/* Header */}
-      <div className="flex justify-between items-center">
+    <div className="p-4 md:p-8 bg-gray-50 min-h-screen space-y-6">
+      {/* 🚀 DASHBOARD HEADER */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-          <p className="text-gray-500 text-sm">
-            Business overview & system control
-          </p>
+          <h1 className="text-2xl font-bold text-gray-800">
+            {activeBranch ? `${activeBranch.name} Dashboard` : `${business?.name} Overview`}
+          </h1>
+          <p className="text-gray-500 text-sm">Real-time performance analytics and insights.</p>
         </div>
-        <div className="flex gap-3">
-          <button className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">
-            Export Report
+        <div className="flex items-center gap-3">
+          <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all">
+            <FiDownload /> Export
           </button>
-          <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-            Add Product
+          <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 shadow-md transition-all">
+            <FiPlus /> New Sale
           </button>
         </div>
       </div>
 
-    
-      {/* KPI INSIGHT CARDS */}
-<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-  {data.kpis.map((kpi) => (
-    <div
-      key={kpi.title}
-      className="bg-white rounded-xl shadow p-5"
-    >
-      <p className="text-gray-500 text-sm">{kpi.title}</p>
-      <p className="text-2xl font-bold mt-1">{kpi.value}</p>
-
-      <p
-        className={`text-sm mt-2 font-medium ${
-          kpi.type === "profit"
-            ? "text-green-600"
-            : kpi.type === "loss"
-            ? "text-red-600"
-            : "text-gray-500"
-        }`}
-      >
-        {kpi.trend}
-      </p>
-    </div>
-  ))}
-</div>
-
-
-      {/* ANALYTICS */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl shadow p-5">
-          <h2 className="font-semibold mb-4">Weekly Sales Trend</h2>
-          <ResponsiveContainer width="100%" height={260}>
-            <LineChart data={data.salesOverTime}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="day" />
-              <YAxis />
-              <Tooltip />
-              <Line
-                type="monotone"
-                dataKey="sales"
-                stroke="#2563eb"
-                strokeWidth={2}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="bg-white rounded-xl shadow p-5">
-          <h2 className="font-semibold mb-4">Top Selling Products</h2>
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={data.topProducts}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="sold" fill="#10b981" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+      {/* 📊 KPI GRID */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {stats?.kpis.map((kpi, idx) => (
+          <div key={idx} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="flex justify-between items-start">
+              <div className={`${kpi.bg} ${kpi.color} p-3 rounded-xl text-xl`}>
+                {kpi.icon}
+              </div>
+              <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                {kpi.trend}
+              </span>
+            </div>
+            <div className="mt-4">
+              <p className="text-gray-500 text-sm font-medium uppercase tracking-wider">{kpi.title}</p>
+              <h3 className="text-2xl font-bold text-gray-800">{kpi.value}</h3>
+            </div>
+          </div>
+        ))}
       </div>
 
-      {/* OPERATIONS CENTER */}
+      {/* 📈 MAIN CHARTS SECTION */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Orders Feed */}
-        <div className="lg:col-span-2 bg-white rounded-xl shadow p-5">
-          <h2 className="font-semibold mb-4">Recent Orders</h2>
-          <div className="space-y-3">
-            {data.orders.map((order) => (
-              <div
-                key={order.id}
-                className="flex justify-between items-center p-4 border rounded-lg hover:bg-gray-50"
-              >
+        <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="font-bold text-gray-800 flex items-center gap-2">
+              <FiActivity className="text-blue-500" /> Sales Performance
+            </h2>
+            <select className="text-sm border-none bg-gray-50 rounded-lg focus:ring-0">
+              <option>Last 7 Days</option>
+              <option>Last 30 Days</option>
+            </select>
+          </div>
+          <div className="h-[300px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={stats?.chartData}>
+                <defs>
+                  <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1}/>
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#9ca3af', fontSize: 12}} />
+                <YAxis axisLine={false} tickLine={false} tick={{fill: '#9ca3af', fontSize: 12}} />
+                <Tooltip 
+                  contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)'}}
+                />
+                <Area type="monotone" dataKey="sales" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorSales)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* 🚨 ATTENTION / INVENTORY ALERTS */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+          <h2 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <FiAlertCircle className="text-red-500" /> Inventory Alerts
+          </h2>
+          <div className="space-y-4">
+            {['Sugar (2kg)', 'Milk (1L)', 'Bread'].map((item, i) => (
+              <div key={i} className="flex items-center justify-between p-3 bg-red-50 rounded-xl border border-red-100">
                 <div>
-                  <p className="font-medium">{order.customer}</p>
-                  <p className="text-sm text-gray-500">
-                    {order.id} • ${order.amount}
-                  </p>
+                  <p className="text-sm font-bold text-red-800">{item}</p>
+                  <p className="text-xs text-red-600">Stock level below 5 units</p>
                 </div>
-                <span
-                  className={`px-3 py-1 text-sm rounded-full ${
-                    order.status === "Completed"
-                      ? "bg-green-100 text-green-700"
-                      : order.status === "Pending"
-                      ? "bg-yellow-100 text-yellow-700"
-                      : "bg-red-100 text-red-700"
-                  }`}
-                >
-                  {order.status}
-                </span>
+                <button className="text-xs bg-white text-red-600 px-3 py-1 rounded-lg border border-red-200 font-bold">
+                  Restock
+                </button>
               </div>
             ))}
           </div>
-        </div>
-
-        {/* Alerts & Admin Actions */}
-        <div className="bg-white rounded-xl shadow p-5 space-y-6">
-          <div>
-            <h2 className="font-semibold mb-3">⚠ Attention Needed</h2>
-            <ul className="space-y-2 text-sm text-gray-600">
-              {data.alerts.map((alert, i) => (
-                <li key={i} className="flex items-start gap-2">
-                  <span className="text-red-500">•</span>
-                  {alert}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div>
-            <h2 className="font-semibold mb-3">Quick Admin Actions</h2>
-            <div className="grid grid-cols-2 gap-3">
-              <ActionBtn label="Add Staff" />
-              <ActionBtn label="Manage Roles" />
-              <ActionBtn label="View Reports" />
-              <ActionBtn label="System Logs" />
-            </div>
+          <div className="mt-8">
+             <h2 className="font-bold text-gray-800 mb-4">Quick Actions</h2>
+             <div className="grid grid-cols-2 gap-2">
+                <button className="p-3 bg-gray-50 rounded-xl text-xs font-semibold hover:bg-blue-50 hover:text-blue-600 transition-all text-center">Add Staff</button>
+                <button className="p-3 bg-gray-50 rounded-xl text-xs font-semibold hover:bg-blue-50 hover:text-blue-600 transition-all text-center">Inventory</button>
+                <button className="p-3 bg-gray-50 rounded-xl text-xs font-semibold hover:bg-blue-50 hover:text-blue-600 transition-all text-center">Reports</button>
+                <button className="p-3 bg-gray-50 rounded-xl text-xs font-semibold hover:bg-blue-50 hover:text-blue-600 transition-all text-center">Settings</button>
+             </div>
           </div>
         </div>
       </div>
-    </div>
-  );
-}
 
-/* Small reusable button */
-function ActionBtn({ label }) {
-  return (
-    <button className="bg-gray-100 hover:bg-gray-200 rounded px-3 py-2 text-sm">
-      {label}
-    </button>
+      {/* 📋 RECENT TRANSACTIONS TABLE */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="p-6 border-b border-gray-50">
+          <h2 className="font-bold text-gray-800">Recent Transactions</h2>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
+              <tr>
+                <th className="px-6 py-4 font-semibold">Order ID</th>
+                <th className="px-6 py-4 font-semibold">Customer</th>
+                <th className="px-6 py-4 font-semibold">Amount</th>
+                <th className="px-6 py-4 font-semibold">Status</th>
+                <th className="px-6 py-4 font-semibold">Time</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {stats?.recentOrders.map((order, idx) => (
+                <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 text-sm font-medium text-blue-600">{order.id}</td>
+                  <td className="px-6 py-4 text-sm text-gray-700">{order.customer}</td>
+                  <td className="px-6 py-4 text-sm font-bold text-gray-900">${order.amount.toFixed(2)}</td>
+                  <td className="px-6 py-4">
+                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${
+                      order.status === 'Completed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                    }`}>
+                      {order.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-500">{order.time}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   );
 }

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../auth/AuthContext";
+import { fetchDashboardStats } from "../../services/dashboardService";
+
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, BarChart, Bar, AreaChart, Area
@@ -16,47 +18,20 @@ export default function Dashboard() {
 
   // 🔄 Fetch real data based on activeBranch
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      setLoading(true);
-      try {
-        // Here you will eventually call your API: 
-        // const url = activeBranch ? `/api/stats/${activeBranch.id}` : '/api/stats/all';
-        // const res = await api.get(url);
-        
-        // Simulating API delay for the "Production" feel
-        await new Promise(resolve => setTimeout(resolve, 800));
-        
-        setStats({
-          kpis: [
-            { title: "Revenue", value: "$45,230", trend: "+12.5%", icon: <FiDollarSign />, color: "text-blue-600", bg: "bg-blue-100" },
-            { title: "Sales Count", value: "1,240", trend: "+5.2%", icon: <FiTrendingUp />, color: "text-green-600", bg: "bg-green-100" },
-            { title: "Team Members", value: activeBranch ? "8" : "45", trend: "Active", icon: <FiUsers />, color: "text-purple-600", bg: "bg-purple-100" },
-            { title: "Stock Items", value: "342", trend: "-2", icon: <FiBox />, color: "text-orange-600", bg: "bg-orange-100" },
-          ],
-          chartData: [
-            { name: "Mon", sales: 4000, orders: 240 },
-            { name: "Tue", sales: 3000, orders: 198 },
-            { name: "Wed", sales: 2000, orders: 150 },
-            { name: "Thu", sales: 2780, orders: 190 },
-            { name: "Fri", sales: 1890, orders: 120 },
-            { name: "Sat", sales: 2390, orders: 210 },
-            { name: "Sun", sales: 3490, orders: 250 },
-          ],
-          recentOrders: [
-            { id: "ORD-7721", customer: "Julius Kiai", amount: 120.50, status: "Completed", time: "2 mins ago" },
-            { id: "ORD-7722", customer: "Sarah Chen", amount: 45.00, status: "Pending", time: "15 mins ago" },
-            { id: "ORD-7723", customer: "Mike Ross", amount: 210.00, status: "Completed", time: "1 hr ago" },
-          ]
-        });
-      } catch (error) {
-        console.error("Dashboard Load Error:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const getRealData = async () => {
+    setLoading(true);
+    try {
+      const response = await fetchDashboardStats(activeBranch?.id);
+      setStats(response.data); // This now sets the real KPIs from your DB
+    } catch (error) {
+      console.error("Error loading real dashboard:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchDashboardData();
-  }, [activeBranch]); // Re-run whenever the user switches branches in the Topbar
+  getRealData();
+}, [activeBranch]);
 
   if (loading) return (
     <div className="flex h-screen items-center justify-center bg-gray-50">

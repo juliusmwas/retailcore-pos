@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import { getBranches } from "../services/branchService";
 
 const AuthContext = createContext(null);
 
@@ -11,64 +12,73 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
 
+  // 🔄 Function to refresh branches from DB
+  const updateBranches = async () => {
+    try {
+      const response = await getBranches();
+      const branchList = response.data.data || [];
+      setBranches(branchList);
+      
+      // Update local storage so the next refresh has the latest list
+      const stored = JSON.parse(localStorage.getItem("auth"));
+      if (stored) {
+        localStorage.setItem("auth", JSON.stringify({ ...stored, branches: branchList }));
+      }
+    } catch (err) {
+      console.error("Failed to sync branches:", err);
+    }
+  };
+
   // 🔁 Restore session on app load
   useEffect(() => {
     const storedAuth = localStorage.getItem("auth");
+    const storedActiveBranch = localStorage.getItem("activeBranch");
+
     if (storedAuth) {
       try {
         const parsed = JSON.parse(storedAuth);
-        
-        // 1. Set basic states
         setUser(parsed.user);
         setBusiness(parsed.business || null);
         setBranches(parsed.branches || []);
         setToken(parsed.token || null);
-        
-        // 2. Determine Role (Crucial for ProtectedRoute)
-        // We check: user.role -> branch[0].role -> Default to "OWNER" if user exists
-        const rawRole = parsed.user?.role || parsed.branches?.[0]?.role || (parsed.user ? "OWNER" : null);
-        
-        if (rawRole) {
-          setRole(rawRole.toUpperCase());
+
+        // Restore the active branch selection if it exists
+        if (storedActiveBranch) {
+          setActiveBranch(JSON.parse(storedActiveBranch));
         }
+
+        const rawRole = parsed.user?.role || parsed.branches?.[0]?.role || (parsed.user ? "OWNER" : null);
+        if (rawRole) setRole(rawRole.toUpperCase());
+        
+        // Sync branches with server on load to ensure list is fresh
+        updateBranches();
       } catch (error) {
-        console.error("Auth Restoration Failed:", error);
         localStorage.removeItem("auth"); 
       }
     }
     setAuthLoading(false);
   }, []);
 
-  // ✅ Login function - used by Login and Register pages
   const login = ({ user, business, branches, token }) => {
-    // 1. Update State
     setUser(user);
     setBusiness(business || null);
     setBranches(branches || []);
     setToken(token);
-    
-    // 2. Normalize and Set Role
-    // This ensures ProtectedRoute sees "OWNER" instead of undefined or null
     const assignedRole = user?.role || branches?.[0]?.role || "OWNER";
-    const normalizedRole = assignedRole.toUpperCase();
-    setRole(normalizedRole);
+    setRole(assignedRole.toUpperCase());
 
-    // 3. Persist to LocalStorage
-    // We add the role to the user object inside storage to be safe
-    const authData = { 
+    localStorage.setItem("auth", JSON.stringify({ 
       user: { ...user, role: assignedRole }, 
-      business, 
-      branches, 
-      token 
-    };
-    
-    localStorage.setItem("auth", JSON.stringify(authData));
+      business, branches, token 
+    }));
   };
 
   const selectBranch = (branch) => {
     setActiveBranch(branch);
-    if (branch?.role) {
-      setRole(branch.role.toUpperCase());
+    if (branch) {
+      localStorage.setItem("activeBranch", JSON.stringify(branch));
+    } else {
+      localStorage.removeItem("activeBranch");
     }
   };
 
@@ -80,6 +90,7 @@ export function AuthProvider({ children }) {
     setRole(null);
     setToken(null);
     localStorage.removeItem("auth");
+    localStorage.removeItem("activeBranch");
   };
 
   return (
@@ -94,6 +105,7 @@ export function AuthProvider({ children }) {
         authLoading,
         login,
         selectBranch,
+        updateBranches, // New: allow pages to refresh the dropdown
         logout,
       }}
     >
@@ -102,10 +114,4 @@ export function AuthProvider({ children }) {
   );
 }
 
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
-}
+export const useAuth = () => useContext(AuthContext);

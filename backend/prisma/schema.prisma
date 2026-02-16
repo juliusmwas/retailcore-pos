@@ -6,83 +6,86 @@ generator client {
 
 datasource db {
   provider = "postgresql"
- // url      = env("DATABASE_URL")
 }
 
 enum Role {
   OWNER
   ADMIN
+  MANAGER
   CASHIER
 }
 
-model Business {
-  id           String   @id @default(uuid())
-  name         String
-  phone        String?  // Added for contact/support
-  country      String?  // Added for Tax/Currency logic
-  industry     String?  // Added for feature customization
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
 
-  branches     Branch[]
-  users        User[]
+model Business {
+  id        String   @id @default(uuid())
+  name      String
+  phone     String?
+  country   String?
+  industry  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  branches Branch[]
+  users    User[]
 }
 
 model Branch {
-  id                 String   @id @default(uuid())
-  name               String
-  code               String   @unique
-  type               String?  // e.g., Retail, Warehouse
-  location           String?
-  country            String?
-  city               String?
-  address            String?
-  managerName        String?
-  managerEmail       String?
-  managerPhone       String?
-  status             String   @default("ACTIVE")
+  id            String   @id @default(uuid())
+  name          String
+  code          String   @unique
+  type          String? // e.g., Retail, Warehouse
+  location      String?
+  city          String?
+  address       String?
+  status        String   @default("ACTIVE")
   
-  // Financials & Staffing
-  currency           String?
-  taxRegion          String?
-  initialStaff       Int      @default(0)
-  maxStaff           Int      @default(20)
-  budget             Float    @default(0)
-  revenueTarget      Float    @default(0)
-  openingDate        DateTime @default(now())
+  // Financials
+  currency      String?  @default("KES")
+  budget        Float    @default(0)
+  revenueTarget Float    @default(0)
+  openingDate   DateTime @default(now())
 
-  businessId         String
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id])
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  business           Business @relation(fields: [businessId], references: [id])
-  users              UserBranch[]
+  users UserBranch[]
 }
 
 model User {
-  id           String   @id @default(uuid())
-  fullName     String
-  email        String   @unique
-  password     String
-  phone        String?  // Added for 2FA and recovery
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id          String     @id @default(uuid())
+  staffNumber String     @unique // 🔑 Primary Login ID (Professional Requirement)
+  fullName    String
+  email       String     @unique
+  password    String
+  phone       String?
+  status      UserStatus @default(ACTIVE) // 🛡️ Account State
+  
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id])
 
-  businessId   String
-  business     Business @relation(fields: [businessId], references: [id])
-
-  branches     UserBranch[]
+  branches  UserBranch[]
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
 }
 
 model UserBranch {
-  id        String   @id @default(uuid())
-  userId    String
-  branchId  String
-  role      Role
+  id       String @id @default(uuid())
+  userId   String
+  branchId String
+  role     Role   @default(CASHIER) // 🔑 Specific role per branch
+
+  user   User   @relation(fields: [userId], references: [id])
+  branch Branch @relation(fields: [branchId], references: [id])
+
   createdAt DateTime @default(now())
 
-  user      User     @relation(fields: [userId], references: [id])
-  branch    Branch   @relation(fields: [branchId], references: [id])
-
-  @@unique([userId, branchId])
+  @@unique([userId, branchId]) // 🛡️ Prevents duplicating a user in the same branch
 }

@@ -2,46 +2,68 @@ import { prisma } from "../lib/prisma.js";
 
 export const getDashboardStats = async (req, res) => {
   try {
-    const { branchId } = req.query; // If provided, we filter by branch
-    const { businessId } = req.user; // From Auth Middleware
+    const { branchId } = req.query;
+    const { businessId } = req.user;
 
-    // Define the base filter
     const whereClause = { businessId };
     if (branchId && branchId !== "ALL") {
-      whereClause.id = branchId; // If specific branch selected
+      whereClause.id = branchId;
     }
 
-    // 1. Get Branch Data (for KPI counts)
+    // Fetch branches to get staff counts and basic info
     const branches = await prisma.branch.findMany({
       where: whereClause,
       include: {
-        _count: {
-          select: { users: true } // Counts staff linked to branches
-        }
+        _count: { select: { users: true } }
       }
     });
 
-    // 2. Aggregate KPIs
-    const totalBranches = branches.length;
-    const totalStaff = branches.reduce((acc, b) => acc + b._count.users, 0);
-    const totalBudget = branches.reduce((acc, b) => acc + (b.budget || 0), 0);
-    const totalRevenueTarget = branches.reduce((acc, b) => acc + (b.revenueTarget || 0), 0);
+    // 💡 FUTURE LOGIC: Here is where we will query prisma.sale.aggregate()
+    // For now, we provide the real keys with 0 values
+    const totalSales = 0; 
+    const netProfit = 0;
+    const transactionCount = 0;
+    const lowStockCount = 5; // Placeholder until Products table is live
 
-    // 3. Placeholder for Real Sales/Products 
-    // (Since you haven't built those tables yet, we return 0 or branch defaults)
     res.json({
       kpis: [
-        { title: "Revenue Target", value: `KES ${totalRevenueTarget.toLocaleString()}`, trend: "Target", type: "neutral" },
-        { title: "Allocated Budget", value: `KES ${totalBudget.toLocaleString()}`, trend: "Monthly", type: "profit" },
-        { title: "Team Members", value: totalStaff.toString(), trend: "Active", type: "neutral" },
-        { title: "Total Branches", value: totalBranches.toString(), trend: "Operational", type: "profit" },
+        { 
+          title: "Total Sales", 
+          value: `KES ${totalSales.toLocaleString()}`, 
+          trend: "+0%", 
+          icon: "FiDollarSign", // Pass string names for icons
+          color: "text-green-600", 
+          bg: "bg-green-100" 
+        },
+        { 
+          title: "Net Profit", 
+          value: `KES ${netProfit.toLocaleString()}`, 
+          trend: "Stable", 
+          icon: "FiTrendingUp", 
+          color: "text-blue-600", 
+          bg: "bg-blue-100" 
+        },
+        { 
+          title: "Transactions", 
+          value: transactionCount.toString(), 
+          trend: "Today", 
+          icon: "FiActivity", 
+          color: "text-purple-600", 
+          bg: "bg-purple-100" 
+        },
+        { 
+          title: "Low Stock Items", 
+          value: lowStockCount.toString(), 
+          trend: "Attention", 
+          icon: "FiBox", 
+          color: "text-red-600", 
+          bg: "bg-red-100" 
+        },
       ],
-      // For now, we return empty arrays for charts until those tables exist
       recentOrders: [],
-      chartData: [] 
+      chartData: [] // We'll fill this once we have a Sales table
     });
   } catch (error) {
-    console.error("Dashboard Error:", error);
-    res.status(500).json({ message: "Failed to fetch real dashboard data." });
+    res.status(500).json({ message: "Error updating dashboard metrics." });
   }
 };

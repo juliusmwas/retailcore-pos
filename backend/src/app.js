@@ -3,6 +3,7 @@ import cors from "cors";
 import authRoutes from "./routes/auth.routes.js";
 import branchRoutes from "./routes/branch.routes.js";
 import dashboardRoutes from "./routes/dashboard.routes.js";
+import staffRoutes from "./routes/staff.routes.js";
 
 const app = express();
 
@@ -22,6 +23,7 @@ app.use(express.json());
 app.use("/api/branches", branchRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/staff", staffRoutes);
 
 // Optional health check
 app.get("/", (req, res) => {

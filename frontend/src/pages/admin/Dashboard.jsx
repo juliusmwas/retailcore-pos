@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../auth/AuthContext";
 import { fetchDashboardStats } from "../../services/dashboardService";
+import * as Icons from "react-icons/fi";
 
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -12,7 +13,7 @@ import {
 } from "react-icons/fi";
 
 export default function Dashboard() {
-  const { activeBranch, business } = useAuth();
+  const { activeBranch, business, user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(null);
 
@@ -45,7 +46,10 @@ export default function Dashboard() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">
-            {activeBranch ? `${activeBranch.name} Dashboard` : `${business?.name} Overview`}
+            {activeBranch 
+              ? `${activeBranch.name} Dashboard` 
+              : `${business?.name || user?.businessName || "Business"} Overview`
+            }
           </h1>
           <p className="text-gray-500 text-sm">Real-time performance analytics and insights.</p>
         </div>
@@ -61,22 +65,29 @@ export default function Dashboard() {
 
       {/* 📊 KPI GRID */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats?.kpis.map((kpi, idx) => (
-          <div key={idx} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-            <div className="flex justify-between items-start">
-              <div className={`${kpi.bg} ${kpi.color} p-3 rounded-xl text-xl`}>
-                {kpi.icon}
+        {stats?.kpis.map((kpi, idx) => {
+          // Dynamically get the icon component based on the string from backend
+          const IconComponent = Icons[kpi.icon] || Icons.FiActivity;
+          
+          return (
+            <div key={idx} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+              <div className="flex justify-between items-start">
+                <div className={`${kpi.bg} ${kpi.color} p-3 rounded-xl text-xl`}>
+                  <IconComponent />
+                </div>
+                <span className={`text-xs font-bold px-2 py-1 rounded-full ${
+                  kpi.title === "Low Stock Items" ? "bg-red-50 text-red-600" : "bg-green-50 text-green-600"
+                }`}>
+                  {kpi.trend}
+                </span>
               </div>
-              <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-full">
-                {kpi.trend}
-              </span>
+              <div className="mt-4">
+                <p className="text-gray-500 text-sm font-medium uppercase tracking-wider">{kpi.title}</p>
+                <h3 className="text-2xl font-bold text-gray-800">{kpi.value}</h3>
+              </div>
             </div>
-            <div className="mt-4">
-              <p className="text-gray-500 text-sm font-medium uppercase tracking-wider">{kpi.title}</p>
-              <h3 className="text-2xl font-bold text-gray-800">{kpi.value}</h3>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* 📈 MAIN CHARTS SECTION */}

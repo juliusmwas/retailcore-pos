@@ -1,11 +1,10 @@
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs"; // Using bcryptjs as installed earlier
 import jwt from "jsonwebtoken";
 import { prisma } from "../lib/prisma.js";
 
-
-
-/*** REGISTER OWNER (Create Business + Main Branch + Owner User)*/
-
+/**
+ * REGISTER OWNER
+ */
 export const registerOwnerService = async ({
   fullName,
   businessName,
@@ -21,7 +20,7 @@ export const registerOwnerService = async ({
   const hashedPassword = await bcrypt.hash(password, 10);
 
   return await prisma.$transaction(async (tx) => {
-    // 1. Create ONLY the Business (No branches yet)
+    // 1. Create the Business
     const business = await tx.business.create({
       data: {
         name: businessName,
@@ -31,7 +30,7 @@ export const registerOwnerService = async ({
       },
     });
 
-    // 2. Create the User
+    // 2. Create the Owner User
     const user = await tx.user.create({
       data: {
         fullName,
@@ -39,26 +38,35 @@ export const registerOwnerService = async ({
         password: hashedPassword,
         phone: phone,
         businessId: business.id,
+        // Owners get a special staff number automatically
+        staffNumber: `OWNER-${Math.floor(1000 + Math.random() * 9000)}`,
+        status: "ACTIVE"
       },
     });
 
-    // Note: We don't create UserBranch here because no branches exist yet!
-
     const token = jwt.sign(
-      { userId: user.id, businessId: business.id },
+      { userId: user.id, businessId: business.id, role: "OWNER" },
       process.env.JWT_SECRET,
       { expiresIn: "1d" }
     );
 
-    return { token, user, business };
+    return { token, user: { ...user, role: "OWNER" }, business };
   });
 };
 
-/** * LOGIN */
-export const loginService = async ({ email, password }) => {
+/**
+ * LOGIN (Supports Email OR Staff Number)
+ */
+export const loginService = async ({ identifier, password }) => {
+  // 1. Detect if the user typed an email or a staff number
+  const isEmail = identifier.includes("@");
+  const queryField = isEmail ? { email: identifier } : { staffNumber: identifier };
+
+  // 2. Find User
   const user = await prisma.user.findUnique({
-    where: { email },
+    where: queryField,
     include: {
+      business: true,
       branches: {
         include: { branch: true },
       },
@@ -69,15 +77,24 @@ export const loginService = async ({ email, password }) => {
     throw new Error("Invalid credentials");
   }
 
+  // 3. Check if account is active
+  if (user.status !== "ACTIVE") {
+    throw new Error("This account has been deactivated.");
+  }
+
+  // 4. Verify Password
   const validPassword = await bcrypt.compare(password, user.password);
   if (!validPassword) {
     throw new Error("Invalid credentials");
   }
 
+  // 5. Generate Token
   const token = jwt.sign(
     {
       userId: user.id,
       businessId: user.businessId,
+      // If it's the owner email, set role OWNER, else take role from branch
+      role: user.email === user.business.email ? "OWNER" : (user.branches[0]?.role || "CASHIER")
     },
     process.env.JWT_SECRET,
     { expiresIn: "1d" }
@@ -88,8 +105,12 @@ export const loginService = async ({ email, password }) => {
     user: {
       id: user.id,
       fullName: user.fullName,
+      email: user.email,
+      staffNumber: user.staffNumber,
       businessId: user.businessId,
-      branches: user.branches,
+      businessName: user.business.name,
+      role: user.email === user.business.email ? "OWNER" : (user.branches[0]?.role || "CASHIER")
     },
+    branches: user.branches.map(ub => ub.branch)
   };
 };

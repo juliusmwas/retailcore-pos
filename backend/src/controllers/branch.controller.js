@@ -4,6 +4,11 @@ export const getBranches = async (req, res) => {
   try {
     const branches = await prisma.branch.findMany({
       where: { businessId: req.user.businessId },
+      include: {
+        _count: {
+          select: { users: true } // This counts rows in the UserBranch table for this branch
+        }
+      },
       orderBy: { createdAt: 'desc' }
     });
     res.json({ data: branches });

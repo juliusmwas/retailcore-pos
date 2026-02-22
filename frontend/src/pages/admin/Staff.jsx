@@ -33,16 +33,19 @@ export default function Staff() {
   }, [activeBranch]);
 
   const loadStaff = async () => {
-    setLoading(true);
-    try {
-      const res = await getStaff(activeBranch?.id);
-      setStaff(res.data);
-    } catch (err) {
-      console.error("Failed to load staff");
-    } finally {
-      setLoading(false);
-    }
-  };
+  setLoading(true);
+  try {
+    const res = await getStaff(activeBranch?.id);
+    // Change this line:
+    // res.data is the object from axios, res.data.data is the array from the controller
+    setStaff(res.data.data || []); 
+  } catch (err) {
+    console.error("Failed to load staff", err);
+    setStaff([]); // Fallback to empty array to prevent filter errors
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     loadStaff();
@@ -83,7 +86,7 @@ export default function Staff() {
         </div>
         <button 
           onClick={() => setShowAddModal(true)}
-          className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all transform hover:scale-105 active:scale-95"
+          className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg"
         >
           <UserPlus className="w-5 h-5" />
           Onboard New Staff
@@ -266,9 +269,11 @@ function StaffCard({ member }) {
           <Mail className="w-4 h-4 text-gray-400" />
           <span className="truncate">{member.email}</span>
         </div>
-        <div className="flex items-center gap-3 text-gray-600">
+       <div className="flex items-center gap-3 text-gray-600">
           <MapPin className="w-4 h-4 text-gray-400" />
-          <span>{member.branches?.[0]?.branch?.name || "Global / Unassigned"}</span>
+          <span className="font-medium text-blue-600">
+            {member.branchName}
+          </span>
         </div>
         <div className="flex items-center gap-3">
           {member.status === "ACTIVE" ? (

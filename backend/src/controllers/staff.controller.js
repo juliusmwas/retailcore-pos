@@ -67,27 +67,41 @@ export const getStaff = async (req, res) => {
     const { branchId } = req.query;
     const { businessId } = req.user;
 
-    // Fetch through UserBranch to get the roles and branch names
-    const staffAssignments = await prisma.userBranch.findMany({
+    // 1. Fetch from User table so we don't miss Admins/Owners
+    const staff = await prisma.user.findMany({
       where: {
-        branchId: branchId && branchId !== "ALL" ? branchId : undefined,
-        user: { businessId: businessId }
+        businessId: businessId,
+        // Filter by branch if branchId is provided and not "ALL"
+        ...(branchId && branchId !== "ALL" ? {
+          branches: {
+            some: { branchId: branchId }
+          }
+        } : {})
       },
       include: {
-        user: true,
-        branch: { select: { name: true } }
+        branches: {
+          include: {
+            branch: { select: { name: true } }
+          }
+        }
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { fullName: 'asc' }
     });
 
-    // Flatten data for the frontend
-    const formattedStaff = staffAssignments.map(sa => ({
-      ...sa.user,
-      role: sa.role,
-      branch: sa.branch
-    }));
+    // 2. Flatten the data so the frontend gets a clean object
+    const formattedStaff = staff.map(member => {
+      // Get the first branch name if they are assigned to one
+      const assignedBranchName = member.branches?.[0]?.branch?.name;
+      
+      return {
+        ...member,
+        // We use the role from the User model, or fallback to the junction table role
+        role: member.branches?.[0]?.role || "ADMIN", 
+        branchName: assignedBranchName || (member.staffNumber ? "Unassigned" : "Global/Head Office")
+      };
+    });
 
-    res.json(formattedStaff);
+    res.json({ data: formattedStaff });
   } catch (error) {
     console.error("Fetch Staff Error:", error);
     res.status(500).json({ message: "Error fetching staff directory." });

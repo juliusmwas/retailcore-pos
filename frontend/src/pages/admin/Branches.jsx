@@ -208,7 +208,7 @@ export default function Branches() {
             </div>
             <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Total Staffing</p>
-                <p className="text-3xl font-black text-blue-600 mt-1">{branches.reduce((acc, b) => acc + (b.initialStaff || 0), 0)}</p>
+                <p className="text-3xl font-black text-blue-600 mt-1">{branches.reduce((acc, b) => acc + (b._count?.users || 0), 0)}</p>
             </div>
           </div>
 
@@ -228,6 +228,12 @@ export default function Branches() {
                     {branch.status}
                   </span>
                 </div>
+
+                <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
+                  <Users size={14} />
+                  <span>{branch._count?.users || 0} Staff Members</span>
+                </div>
+
                 <div className="flex gap-2 mt-4">
                     <button className="flex-1 py-2.5 text-sm font-bold text-blue-600 bg-blue-50 rounded-xl hover:bg-blue-600 hover:text-white transition-all">Manage</button>
                     <button onClick={() => toggleStatus(branch.id)} className="p-2.5 rounded-xl border border-gray-100 text-gray-400 hover:text-red-600 hover:bg-red-50 transition-all"><Power size={18} /></button>

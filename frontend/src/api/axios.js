@@ -2,29 +2,38 @@ import axios from "axios";
 
 const api = axios.create({
   baseURL: "http://localhost:5000/api",
-  // Keep withCredentials if your backend is configured for CORS with cookies,
-  // but usually, for JWT, the Header is the most important part.
   withCredentials: true, 
 });
 
-// 🚀 THE FIX: Add the Request Interceptor
+// --- REQUEST: Attach the token ---
 api.interceptors.request.use(
   (config) => {
-    // 1. Get the auth data from localStorage
     const authData = localStorage.getItem("auth");
-    
     if (authData) {
       const { token } = JSON.parse(authData);
-      
-      // 2. Attach the token to the Authorization header
-      // It MUST be in the format: Bearer <token>
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
     }
     return config;
   },
+  (error) => Promise.reject(error)
+);
+
+// --- RESPONSE: Catch expired tokens ---
+api.interceptors.response.use(
+  (response) => response, 
   (error) => {
+    // If the server sends 401, the token is dead
+    if (error.response && error.response.status === 401) {
+      console.warn("Session expired. Logging out...");
+      
+      // Clear the "auth" data so the app doesn't try to use the old token again
+      localStorage.removeItem("auth"); 
+      
+      // Redirect to login page with a message in the URL
+      window.location.href = "/login?reason=expired";
+    }
     return Promise.reject(error);
   }
 );

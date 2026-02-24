@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom"; // ✅ Added useLocation
 import { useAuth } from "../auth/AuthContext";
 import axios from "axios";
 
 function Login() {
   const navigate = useNavigate();
+  const location = useLocation(); 
   const { login } = useAuth();
 
   const [activeTab, setActiveTab] = useState("login");
@@ -12,17 +13,20 @@ function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Check if we arrived here because of an expiry
+  const sessionExpired = new URLSearchParams(location.search).get("reason") === "expired";
+
   // Login state
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // Register state (Enhanced for Production)
+  // Register state
   const [regData, setRegData] = useState({
     fullName: "",
     businessName: "",
     email: "",
     phone: "",
-    country: "Kenya", // Default value
+    country: "Kenya",
     industryType: "",
     password: "",
     confirmPassword: "",
@@ -32,20 +36,15 @@ function Login() {
     setRegData({ ...regData, [e.target.name]: e.target.value });
   };
 
-  // ===== AUTO REDIRECT IF ALREADY LOGGED IN =====
   useEffect(() => {
     const storedAuth = localStorage.getItem("auth");
     if (storedAuth) {
       const parsed = JSON.parse(storedAuth);
-      
-      // Use the same robust role check here!
       const role = parsed.user?.role || parsed.user?.branches?.[0]?.role || "OWNER";
 
       if (role === "OWNER" || role === "ADMIN") {
-        // If they have 0 branches, send them to /admin/branches to set one up
         const hasBranches = parsed.user?.branches?.length > 0 || parsed.branches?.length > 0;
         const target = hasBranches ? "/admin/dashboard" : "/admin/branches";
-        
         navigate(target, { replace: true });
       } else if (role === "CASHIER") {
         navigate("/select-branch", { replace: true });
@@ -56,34 +55,31 @@ function Login() {
 
   if (checkingAuth) return null;
 
-  // ================= LOGIN =================
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
-   try {
-    const res = await axios.post("http://localhost:5000/api/auth/login", { email, password });
-    const { token, user, business, branches } = res.data;
+    try {
+      const res = await axios.post("http://localhost:5000/api/auth/login", { email, password });
+      const { token, user, business, branches } = res.data;
 
-    login({ token, user, business, branches });
+      login({ token, user, business, branches });
 
-    // FIX: Check user.role FIRST, then check branch role.
-    const userRole = user.role || user.branches?.[0]?.role || "OWNER";
-    
-    if (userRole === "OWNER" || userRole === "ADMIN") {
-      navigate("/admin/branches", { replace: true }); // Go straight to branches to see empty state
-    } else {
-      navigate("/select-branch", { replace: true });
-    }
-  } catch (err) {
+      const userRole = user.role || user.branches?.[0]?.role || "OWNER";
+      
+      if (userRole === "OWNER" || userRole === "ADMIN") {
+        navigate("/admin/branches", { replace: true }); 
+      } else {
+        navigate("/select-branch", { replace: true });
+      }
+    } catch (err) {
       setError(err.response?.data?.message || "Invalid login credentials");
     } finally {
       setLoading(false);
     }
   };
 
-  // ================= REGISTER =================
   const handleRegister = async (e) => {
     e.preventDefault();
     setError("");
@@ -97,8 +93,6 @@ function Login() {
 
     try {
       const res = await axios.post("http://localhost:5000/api/auth/register", regData);
-      
-      // If backend returns a token, log them in immediately
       if (res.data.token) {
         login(res.data);
         navigate("/admin/branches", { replace: true });
@@ -116,11 +110,21 @@ function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 p-4">
       <div className="w-full max-w-lg bg-white p-8 rounded-xl shadow-lg">
+
+        {sessionExpired && (
+          <div className="mb-6 flex items-start gap-3 bg-amber-50 border border-amber-200 p-4 rounded-xl text-amber-800 animate-pulse">
+            <div className="mt-0.5 font-bold">⚠️</div>
+            <div>
+              <p className="font-bold text-sm">Session Expired</p>
+              <p className="text-xs">For your security, you've been logged out. Please sign in again.</p>
+            </div>
+          </div>
+        )}
+
         <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">
           Business Management System
         </h2>
 
-        {/* Tabs */}
         <div className="flex mb-6 border-b">
           <button
             className={`flex-1 py-2 font-semibold transition ${activeTab === "login" ? "border-b-2 border-blue-600 text-blue-600" : "text-gray-500"}`}
@@ -138,7 +142,6 @@ function Login() {
 
         {error && <p className="bg-red-50 text-red-500 p-3 rounded-lg text-sm mb-4 text-center border border-red-100">{error}</p>}
 
-        {/* LOGIN FORM */}
         {activeTab === "login" && (
           <form onSubmit={handleLogin} className="space-y-4">
             <input
@@ -166,7 +169,6 @@ function Login() {
           </form>
         )}
 
-        {/* REGISTER FORM */}
         {activeTab === "register" && (
           <form onSubmit={handleRegister} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

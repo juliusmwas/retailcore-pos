@@ -54,12 +54,10 @@ export const registerOwnerService = async ({
   });
 };
 
-/**
- * LOGIN (Supports Email OR Staff Number)
- */
 export const loginService = async ({ identifier, password }) => {
   // 1. Detect if the user typed an email or a staff number
-  const isEmail = identifier.includes("@");
+  // Added a safety check here to ensure identifier exists
+  const isEmail = identifier?.includes("@"); 
   const queryField = isEmail ? { email: identifier } : { staffNumber: identifier };
 
   // 2. Find User
@@ -77,24 +75,26 @@ export const loginService = async ({ identifier, password }) => {
     throw new Error("Invalid credentials");
   }
 
-  // 3. Check if account is active
   if (user.status !== "ACTIVE") {
     throw new Error("This account has been deactivated.");
   }
 
-  // 4. Verify Password
   const validPassword = await bcrypt.compare(password, user.password);
   if (!validPassword) {
     throw new Error("Invalid credentials");
   }
+
+  // 🛡️ ROBUST ROLE DETECTION
+  // We check if the staffNumber starts with "OWNER" or if they are the primary account holder
+  const isOwner = user.staffNumber?.startsWith("OWNER") || user.role === "OWNER";
+  const userRole = isOwner ? "OWNER" : (user.branches[0]?.role || "CASHIER");
 
   // 5. Generate Token
   const token = jwt.sign(
     {
       userId: user.id,
       businessId: user.businessId,
-      // If it's the owner email, set role OWNER, else take role from branch
-      role: user.email === user.business.email ? "OWNER" : (user.branches[0]?.role || "CASHIER")
+      role: userRole
     },
     process.env.JWT_SECRET,
     { expiresIn: "1d" }
@@ -108,9 +108,11 @@ export const loginService = async ({ identifier, password }) => {
       email: user.email,
       staffNumber: user.staffNumber,
       businessId: user.businessId,
-      businessName: user.business.name,
-      role: user.email === user.business.email ? "OWNER" : (user.branches[0]?.role || "CASHIER")
+      // Added safety for business name
+      businessName: user.business?.name || "My Business", 
+      role: userRole
     },
-    branches: user.branches.map(ub => ub.branch)
+    // Added safety for branches map
+    branches: user.branches?.map(ub => ub.branch) || []
   };
 };

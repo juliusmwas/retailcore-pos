@@ -12,10 +12,18 @@ export const registerOwner = async (req, res) => {
 
 export const loginUser = async (req, res) => {
   try {
-    // identifier will be either the email or the staffNumber from the frontend
-    const result = await loginService(req.body);
+    // 1. Destructure email and password from the frontend request
+    const { email, password } = req.body;
+
+    // 2. Map 'email' to 'identifier' so the authService can process it
+    const result = await loginService({ 
+      identifier: email, 
+      password 
+    });
+
     res.status(200).json(result);
   } catch (err) {
+    // This will now catch the "Invalid credentials" or other errors properly
     res.status(401).json({ message: err.message });
   }
 };

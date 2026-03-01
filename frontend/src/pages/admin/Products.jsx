@@ -29,7 +29,7 @@ export default function AdminProducts() {
       barcode: "600101", 
       costPrice: 600, 
       sellingPrice: 750, 
-      category: "Grains",
+      category: "Grains & Cereals",
       inventory: [
         { branch: "Nairobi CBD", stock: 100, min: 20 },
         { branch: "Chuka Branch", stock: 20, min: 10 }
@@ -264,18 +264,6 @@ function ProductRegistrationModal({ onClose, onSave }) {
   // Inside ProductRegistrationModal
 const [isScanning, setIsScanning] = useState(false); // For the webcam toggle
 
-// 1. The Real Scanner Hook
-  const { ref } = useZxing({
-    onDecodeResult(result) {
-      // This grabs the numbers from the barcode image you showed me
-      setFormData(prev => ({ ...prev, barcode: result.getText() }));
-      setIsScanning(false); // Close scanner on success
-      
-      // Haptic feedback for mobile devices
-      if (window.navigator.vibrate) window.navigator.vibrate(100);
-    },
-    paused: !isScanning,
-  });
 
 const [formData, setFormData] = useState({
   name: "", 
@@ -294,6 +282,40 @@ const [formData, setFormData] = useState({
     { branch: "Chuka Branch", stock: 0, min: 5 }
   ]
 });
+
+
+  // 2. SOUND FUNCTION SECOND
+  const playSuccessSound = () => {
+    const context = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    oscillator.type = "sine";
+    oscillator.frequency.setValueAtTime(880, context.currentTime);
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+    gain.gain.setValueAtTime(0, context.currentTime);
+    gain.gain.linearRampToValueAtTime(0.2, context.currentTime + 0.05);
+    gain.gain.linearRampToValueAtTime(0, context.currentTime + 0.2);
+    oscillator.start();
+    oscillator.stop(context.currentTime + 0.2);
+  };
+
+  // 3. HOOK THIRD (Now it can see formData and playSuccessSound)
+  const { ref } = useZxing({
+    onDecodeResult(result) {
+      setFormData(prev => ({ ...prev, barcode: result.getText() }));
+      playSuccessSound(); // Triggers the beep
+      setIsScanning(false);
+    },
+    paused: !isScanning,
+    
+    videoConstraints: {
+    width: { ideal: 1280 },
+    height: { ideal: 720 },
+    facingMode: "environment", // Prefers the back camera on mobile
+    focusMode: "continuous"    // Tells the camera to keep focusing
+  },
+  });
 
 // VALIDATION: Button is active ONLY if these are filled
 const isBasicsComplete = 
@@ -325,24 +347,6 @@ const canProgress = activeTab === "basics" ? isBasicsComplete :
     const random = Math.floor(100 + Math.random() * 900);
     setFormData({ ...formData, sku: `${prefix}-${random}` });
   };
-
-const playSuccessSound = () => {
-  const context = new (window.AudioContext || window.webkitAudioContext)();
-  const oscillator = context.createOscillator();
-  const gain = context.createGain();
-
-  oscillator.type = "sine";
-  oscillator.frequency.setValueAtTime(880, context.currentTime); // High pitch A5
-  oscillator.connect(gain);
-  gain.connect(context.destination);
-
-  gain.gain.setValueAtTime(0, context.currentTime);
-  gain.gain.linearRampToValueAtTime(0.2, context.currentTime + 0.05);
-  gain.gain.linearRampToValueAtTime(0, context.currentTime + 0.2);
-
-  oscillator.start();
-  oscillator.stop(context.currentTime + 0.2);
-};
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-in fade-in duration-200">
@@ -376,106 +380,83 @@ const playSuccessSound = () => {
 
         {/* Scrollable Content */}
         <div className="p-8 overflow-y-auto flex-1">
-          {activeTab === "basics" && (
+         {activeTab === "basics" && (
   <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
     <div className="grid grid-cols-2 gap-6">
       {/* Full Name */}
       <div className="col-span-2">
         <label className="block text-[10px] font-black text-gray-400 uppercase mb-2">Full Product Name</label>
         <input
-          type="text" className="w-full p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500/20 outline-none font-bold"
+          type="text" className="w-full p-4 bg-gray-50 border-none rounded-2xl outline-none font-bold"
           placeholder="e.g. Premium Basmati Rice 5kg"
           value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})}
         />
       </div>
 
       {/* Category Selection */}
-      <div>
-        <label className="block text-[10px] font-black text-gray-400 uppercase mb-2">Category</label>
-        <select
-          className="w-full p-4 bg-gray-50 border-none rounded-2xl outline-none font-bold"
-          value={formData.category}
-          onChange={(e) => setFormData({...formData, category: e.target.value, subCategory: ""})}
-        >
-          {Object.keys(RETAIL_HIERARCHY).map(cat => <option key={cat} value={cat}>{cat}</option>)}
-        </select>
-      </div>
+<div>
+  <label className="block text-[10px] font-black text-gray-400 uppercase mb-2">Category</label>
+  <select
+    className="w-full p-4 bg-gray-50 border-none rounded-2xl outline-none font-bold"
+    value={formData.category}
+    onChange={(e) => setFormData({...formData, category: e.target.value, subCategory: ""})}
+  >
+    {Object.keys(RETAIL_HIERARCHY).map(cat => <option key={cat} value={cat}>{cat}</option>)}
+  </select>
+</div>
 
-      {/* Sub-Category Selection */}
-      <div>
-        <label className="block text-[10px] font-black text-gray-400 uppercase mb-2">Sub-Category</label>
-        <select
-          className={`w-full p-4 border-none rounded-2xl outline-none font-bold transition-all ${!formData.subCategory ? 'bg-orange-50 text-orange-400' : 'bg-gray-50 text-gray-900'}`}
-          value={formData.subCategory}
-          onChange={(e) => setFormData({...formData, subCategory: e.target.value})}
-        >
-          <option value="">-- Select Sub --</option>
-          {RETAIL_HIERARCHY[formData.category].map(sub => (
-            <option key={sub} value={sub}>{sub}</option>
-          ))}
-        </select>
-      </div>
+{/* Sub-Category Selection */}
+<div>
+  <label className="block text-[10px] font-black text-gray-400 uppercase mb-2">Sub-Category</label>
+  <select
+    className={`w-full p-4 border-none rounded-2xl outline-none font-bold transition-all ${!formData.subCategory ? 'bg-orange-50 text-orange-400' : 'bg-gray-50 text-gray-900'}`}
+    value={formData.subCategory}
+    onChange={(e) => setFormData({...formData, subCategory: e.target.value})}
+  >
+    <option value="">-- Select Sub --</option>
+    {RETAIL_HIERARCHY[formData.category].map(sub => (
+      <option key={sub} value={sub}>{sub}</option>
+    ))}
+  </select>
+</div>
 
       {/* Barcode & Scan */}
       <div className="col-span-2">
-      <label className="block text-[10px] font-black text-gray-400 uppercase mb-2">Barcode (EAN)</label>
-      <div className="flex gap-3">
-        <div className="relative flex-1">
-          <Barcode className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={18}/>
-          <input
-            type="text" 
-            className="w-full pl-12 p-4 bg-gray-50 border-none rounded-2xl outline-none font-bold"
-            placeholder="Scan or type barcode..." 
-            value={formData.barcode}
-            onChange={(e) => setFormData({...formData, barcode: e.target.value})}
-          />
+        <label className="block text-[10px] font-black text-gray-400 uppercase mb-2">Barcode (EAN)</label>
+        <div className="flex gap-3">
+          <input type="text" className="flex-1 p-4 bg-gray-50 border-none rounded-2xl font-bold" value={formData.barcode} />
+          <button onClick={() => setIsScanning(!isScanning)} className="...">
+            <Camera size={20} /> {isScanning ? "Stop" : "Scan"}
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={() => setIsScanning(!isScanning)}
-          className={`flex items-center gap-2 px-6 rounded-2xl font-bold transition-all ${
-            isScanning ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
-          }`}
-        >
-          <Camera size={20} /> {isScanning ? "Stop" : "Scan"}
-        </button>
-      </div>
-      
-      {/* 2. The Live Video Feed */}
-      {isScanning && (
-        <div className="mt-4 w-full h-64 bg-black rounded-[2rem] border-4 border-emerald-500 overflow-hidden relative shadow-2xl">
-          <video 
-            ref={ref} 
-            className="w-full h-full object-cover" 
-          />
-          
-          {/* Alpha UI Overlay */}
-          <div className="absolute inset-0 border-[40px] border-black/40 pointer-events-none">
-             <div className="w-full h-full border-2 border-emerald-400/50 rounded-lg relative">
-                <div className="absolute top-0 w-full h-1 bg-emerald-500 animate-scan-line shadow-[0_0_15px_#10b981]"></div>
-             </div>
+        {isScanning && (
+          <div className="mt-4 w-full h-64 bg-black rounded-[2rem] border-4 border-emerald-500 overflow-hidden relative shadow-2xl">
+            <video ref={ref} className="w-full h-full object-cover" />
+            <div className="absolute inset-0 border-[40px] border-black/40 pointer-events-none">
+               <div className="w-full h-full border-2 border-emerald-400/50 rounded-lg relative">
+                  <div className="absolute top-0 w-full h-1 bg-emerald-500 animate-scan-line shadow-[0_0_15px_#10b981]"></div>
+               </div>
+            </div>
           </div>
-        </div>
-      )}
-    </div>
-  );
-}
+        )}
+      </div>
 
-      {/* SKU & UoM */}
+      {/* SKU & UoM (These are now correctly inside the grid) */}
       <div>
         <label className="block text-[10px] font-black text-gray-400 uppercase mb-2">UoM</label>
-        <input type="text" className="w-full p-4 bg-gray-50 border-none rounded-2xl outline-none font-bold" placeholder="Pcs" value={formData.uom} onChange={(e) => setFormData({...formData, uom: e.target.value})} />
+        <input type="text" className="w-full p-4 bg-gray-50 border-none rounded-2xl font-bold" value={formData.uom} onChange={(e) => setFormData({...formData, uom: e.target.value})} />
       </div>
       <div>
         <label className="block text-[10px] font-black text-gray-400 uppercase mb-2">SKU Code</label>
         <div className="flex gap-2">
-          <input type="text" className="flex-1 p-4 bg-gray-50 border-none rounded-2xl outline-none font-bold" placeholder="AUTO-001" value={formData.sku} onChange={(e) => setFormData({...formData, sku: e.target.value})} />
-          <button onClick={generateSKU} className="p-4 bg-indigo-50 text-indigo-600 rounded-2xl hover:bg-indigo-100 transition-all"><Hash size={20}/></button>
+          <input type="text" className="flex-1 p-4 bg-gray-50 border-none rounded-2xl font-bold" value={formData.sku} onChange={(e) => setFormData({...formData, sku: e.target.value})} />
+          <button onClick={generateSKU} className="p-4 bg-indigo-50 rounded-2xl"><Hash size={20}/></button>
         </div>
       </div>
-    </div>
-  </div>
+    </div> {/* This closes the grid */}
+  </div> /* This closes the basics tab content */
 )}
+
           {activeTab === "financials" && (
             <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
               <div className="bg-indigo-600 p-6 rounded-[2rem] text-white flex justify-between items-center mb-8">

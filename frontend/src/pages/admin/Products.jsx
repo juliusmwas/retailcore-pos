@@ -1,4 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
+import { useZxing } from "react-zxing";
+
 import {
   Package, Plus, Store, Edit, Layers, AlertTriangle, Search, Filter,Camera,
   MoreVertical, Barcode, Hash, Trash2, ArrowRightLeft, Eye,
@@ -262,6 +264,19 @@ function ProductRegistrationModal({ onClose, onSave }) {
   // Inside ProductRegistrationModal
 const [isScanning, setIsScanning] = useState(false); // For the webcam toggle
 
+// 1. The Real Scanner Hook
+  const { ref } = useZxing({
+    onDecodeResult(result) {
+      // This grabs the numbers from the barcode image you showed me
+      setFormData(prev => ({ ...prev, barcode: result.getText() }));
+      setIsScanning(false); // Close scanner on success
+      
+      // Haptic feedback for mobile devices
+      if (window.navigator.vibrate) window.navigator.vibrate(100);
+    },
+    paused: !isScanning,
+  });
+
 const [formData, setFormData] = useState({
   name: "", 
   category: "Grains & Cereals", // Default
@@ -310,6 +325,24 @@ const canProgress = activeTab === "basics" ? isBasicsComplete :
     const random = Math.floor(100 + Math.random() * 900);
     setFormData({ ...formData, sku: `${prefix}-${random}` });
   };
+
+const playSuccessSound = () => {
+  const context = new (window.AudioContext || window.webkitAudioContext)();
+  const oscillator = context.createOscillator();
+  const gain = context.createGain();
+
+  oscillator.type = "sine";
+  oscillator.frequency.setValueAtTime(880, context.currentTime); // High pitch A5
+  oscillator.connect(gain);
+  gain.connect(context.destination);
+
+  gain.gain.setValueAtTime(0, context.currentTime);
+  gain.gain.linearRampToValueAtTime(0.2, context.currentTime + 0.05);
+  gain.gain.linearRampToValueAtTime(0, context.currentTime + 0.2);
+
+  oscillator.start();
+  oscillator.stop(context.currentTime + 0.2);
+};
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-in fade-in duration-200">
@@ -385,32 +418,48 @@ const canProgress = activeTab === "basics" ? isBasicsComplete :
 
       {/* Barcode & Scan */}
       <div className="col-span-2">
-        <label className="block text-[10px] font-black text-gray-400 uppercase mb-2">Barcode (EAN)</label>
-        <div className="flex gap-3">
-          <div className="relative flex-1">
-            <Barcode className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={18}/>
-            <input
-              type="text" className="w-full pl-12 p-4 bg-gray-50 border-none rounded-2xl outline-none font-bold"
-              placeholder="600XXXXX" value={formData.barcode}
-              onChange={(e) => setFormData({...formData, barcode: e.target.value})}
-            />
-          </div>
-          <button
-            type="button"
-            onClick={() => setIsScanning(!isScanning)}
-            className={`flex items-center gap-2 px-6 rounded-2xl font-bold transition-all ${isScanning ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'}`}
-          >
-            <Camera size={20} /> {isScanning ? "Stop" : "Scan"}
-          </button>
+      <label className="block text-[10px] font-black text-gray-400 uppercase mb-2">Barcode (EAN)</label>
+      <div className="flex gap-3">
+        <div className="relative flex-1">
+          <Barcode className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={18}/>
+          <input
+            type="text" 
+            className="w-full pl-12 p-4 bg-gray-50 border-none rounded-2xl outline-none font-bold"
+            placeholder="Scan or type barcode..." 
+            value={formData.barcode}
+            onChange={(e) => setFormData({...formData, barcode: e.target.value})}
+          />
         </div>
-        
-        {isScanning && (
-          <div className="mt-4 w-full h-44 bg-gray-900 rounded-[2rem] border-4 border-emerald-500 overflow-hidden relative flex flex-col items-center justify-center">
-            <div className="absolute top-0 w-full h-1 bg-emerald-500 animate-scan-line shadow-[0_0_15px_#10b981]"></div>
-            <p className="text-white text-[10px] font-black uppercase tracking-[0.2em] animate-pulse">Scanning for Barcode...</p>
-          </div>
-        )}
+        <button
+          type="button"
+          onClick={() => setIsScanning(!isScanning)}
+          className={`flex items-center gap-2 px-6 rounded-2xl font-bold transition-all ${
+            isScanning ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
+          }`}
+        >
+          <Camera size={20} /> {isScanning ? "Stop" : "Scan"}
+        </button>
       </div>
+      
+      {/* 2. The Live Video Feed */}
+      {isScanning && (
+        <div className="mt-4 w-full h-64 bg-black rounded-[2rem] border-4 border-emerald-500 overflow-hidden relative shadow-2xl">
+          <video 
+            ref={ref} 
+            className="w-full h-full object-cover" 
+          />
+          
+          {/* Alpha UI Overlay */}
+          <div className="absolute inset-0 border-[40px] border-black/40 pointer-events-none">
+             <div className="w-full h-full border-2 border-emerald-400/50 rounded-lg relative">
+                <div className="absolute top-0 w-full h-1 bg-emerald-500 animate-scan-line shadow-[0_0_15px_#10b981]"></div>
+             </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
       {/* SKU & UoM */}
       <div>

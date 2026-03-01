@@ -1,9 +1,21 @@
 import { useState, useMemo, useEffect } from "react";
 import {
-  Package, Plus, Store, Edit, Layers, AlertTriangle, Search, Filter,
+  Package, Plus, Store, Edit, Layers, AlertTriangle, Search, Filter,Camera,
   MoreVertical, Barcode, Hash, Trash2, ArrowRightLeft, Eye,
   Download, CheckSquare, Square, TrendingUp, DollarSign, X, Percent, ChevronRight
 } from "lucide-react";
+
+const RETAIL_HIERARCHY = {
+  "Grains & Cereals": ["Rice", "Maize Flour", "Wheat Flour", "Lentils/Beans", "Oats"],
+  "Pantry & Groceries": ["Sugar", "Salt", "Cooking Oil", "Spices/Seasoning", "Pasta"],
+  "Beverages": ["Soft Drinks", "Juices", "Water", "Tea & Coffee", "Energy Drinks"],
+  "Dairy & Eggs": ["Fresh Milk", "Yoghurt", "Cheese", "Butter/Margarine", "Eggs"],
+  "Personal Care": ["Soap/Body Wash", "Lotion", "Oral Care", "Hair Care", "Deodorant"],
+  "Cleaning & Laundry": ["Detergents", "Bleach", "Surface Cleaners", "Dish Soap", "Fabric Softener"],
+  "Bakery": ["Bread", "Buns/Rolls", "Cakes", "Cookies/Biscuits"],
+  "Electronics": ["Batteries", "Cables/Chargers", "Small Appliances", "Bulbs/Lighting"]
+};
+
 
 export default function AdminProducts() {
   // --- STATE MANAGEMENT ---
@@ -247,14 +259,38 @@ export default function AdminProducts() {
 // --- MODAL COMPONENT ---
 function ProductRegistrationModal({ onClose, onSave }) {
   const [activeTab, setActiveTab] = useState("basics");
-  const [formData, setFormData] = useState({
-    name: "", category: "Grains", sku: "", barcode: "", brand: "", uom: "Pcs",
-    costPrice: 0, sellingPrice: 0, taxClass: "Standard 16%", markup: 25,
-    inventory: [
-      { branch: "Nairobi CBD", stock: 0, min: 5 },
-      { branch: "Chuka Branch", stock: 0, min: 5 }
-    ]
-  });
+  // Inside ProductRegistrationModal
+const [isScanning, setIsScanning] = useState(false); // For the webcam toggle
+
+const [formData, setFormData] = useState({
+  name: "", 
+  category: "Grains & Cereals", // Default
+  subCategory: "",            // New Field
+  sku: "", 
+  barcode: "", 
+  brand: "", 
+  uom: "Pcs",
+  costPrice: 0, 
+  sellingPrice: 0, 
+  taxClass: "Standard 16%", 
+  markup: 25,
+  inventory: [
+    { branch: "Nairobi CBD", stock: 0, min: 5 },
+    { branch: "Chuka Branch", stock: 0, min: 5 }
+  ]
+});
+
+// VALIDATION: Button is active ONLY if these are filled
+const isBasicsComplete = 
+  formData.name.trim() !== "" && 
+  formData.sku.trim() !== "" && 
+  formData.barcode.trim() !== "" &&
+  formData.subCategory !== ""; // Must select a sub-category
+
+const isFinancialsComplete = formData.costPrice > 0 && formData.sellingPrice > 0;
+
+const canProgress = activeTab === "basics" ? isBasicsComplete : 
+                    activeTab === "financials" ? isFinancialsComplete : true;
 
   // Auto-calculation logic
   const handlePriceChange = (field, value) => {
@@ -308,50 +344,89 @@ function ProductRegistrationModal({ onClose, onSave }) {
         {/* Scrollable Content */}
         <div className="p-8 overflow-y-auto flex-1">
           {activeTab === "basics" && (
-            <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
-              <div className="grid grid-cols-2 gap-6">
-                <div className="col-span-2">
-                  <label className="block text-[10px] font-black text-gray-400 uppercase mb-2">Full Product Name</label>
-                  <input 
-                    type="text" className="w-full p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500/20 outline-none font-bold" 
-                    placeholder="e.g. Premium Basmati Rice 5kg"
-                    value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-black text-gray-400 uppercase mb-2">Category</label>
-                  <select 
-                    className="w-full p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500/20 outline-none font-bold"
-                    value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})}
-                  >
-                    <option>Grains</option>
-                    <option>Pantry</option>
-                    <option>Beverages</option>
-                    <option>Cleaning</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[10px] font-black text-gray-400 uppercase mb-2">Unit of Measure (UoM)</label>
-                  <input type="text" className="w-full p-4 bg-gray-50 border-none rounded-2xl outline-none font-bold" placeholder="Pcs, Kg, Ltr" value={formData.uom} onChange={(e) => setFormData({...formData, uom: e.target.value})} />
-                </div>
-                <div className="relative">
-                  <label className="block text-[10px] font-black text-gray-400 uppercase mb-2">SKU Code</label>
-                  <div className="flex gap-2">
-                    <input type="text" className="flex-1 p-4 bg-gray-50 border-none rounded-2xl outline-none font-bold" placeholder="AUTO-001" value={formData.sku} onChange={(e) => setFormData({...formData, sku: e.target.value})} />
-                    <button onClick={generateSKU} className="p-4 bg-indigo-50 text-indigo-600 rounded-2xl hover:bg-indigo-100 transition-all"><Hash size={20}/></button>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-[10px] font-black text-gray-400 uppercase mb-2">Barcode (EAN)</label>
-                  <div className="relative">
-                    <Barcode className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={18}/>
-                    <input type="text" className="w-full pl-12 p-4 bg-gray-50 border-none rounded-2xl outline-none font-bold" placeholder="600XXXXX" value={formData.barcode} onChange={(e) => setFormData({...formData, barcode: e.target.value})} />
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+  <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
+    <div className="grid grid-cols-2 gap-6">
+      {/* Full Name */}
+      <div className="col-span-2">
+        <label className="block text-[10px] font-black text-gray-400 uppercase mb-2">Full Product Name</label>
+        <input
+          type="text" className="w-full p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500/20 outline-none font-bold"
+          placeholder="e.g. Premium Basmati Rice 5kg"
+          value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})}
+        />
+      </div>
 
+      {/* Category Selection */}
+      <div>
+        <label className="block text-[10px] font-black text-gray-400 uppercase mb-2">Category</label>
+        <select
+          className="w-full p-4 bg-gray-50 border-none rounded-2xl outline-none font-bold"
+          value={formData.category}
+          onChange={(e) => setFormData({...formData, category: e.target.value, subCategory: ""})}
+        >
+          {Object.keys(RETAIL_HIERARCHY).map(cat => <option key={cat} value={cat}>{cat}</option>)}
+        </select>
+      </div>
+
+      {/* Sub-Category Selection */}
+      <div>
+        <label className="block text-[10px] font-black text-gray-400 uppercase mb-2">Sub-Category</label>
+        <select
+          className={`w-full p-4 border-none rounded-2xl outline-none font-bold transition-all ${!formData.subCategory ? 'bg-orange-50 text-orange-400' : 'bg-gray-50 text-gray-900'}`}
+          value={formData.subCategory}
+          onChange={(e) => setFormData({...formData, subCategory: e.target.value})}
+        >
+          <option value="">-- Select Sub --</option>
+          {RETAIL_HIERARCHY[formData.category].map(sub => (
+            <option key={sub} value={sub}>{sub}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Barcode & Scan */}
+      <div className="col-span-2">
+        <label className="block text-[10px] font-black text-gray-400 uppercase mb-2">Barcode (EAN)</label>
+        <div className="flex gap-3">
+          <div className="relative flex-1">
+            <Barcode className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={18}/>
+            <input
+              type="text" className="w-full pl-12 p-4 bg-gray-50 border-none rounded-2xl outline-none font-bold"
+              placeholder="600XXXXX" value={formData.barcode}
+              onChange={(e) => setFormData({...formData, barcode: e.target.value})}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsScanning(!isScanning)}
+            className={`flex items-center gap-2 px-6 rounded-2xl font-bold transition-all ${isScanning ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'}`}
+          >
+            <Camera size={20} /> {isScanning ? "Stop" : "Scan"}
+          </button>
+        </div>
+        
+        {isScanning && (
+          <div className="mt-4 w-full h-44 bg-gray-900 rounded-[2rem] border-4 border-emerald-500 overflow-hidden relative flex flex-col items-center justify-center">
+            <div className="absolute top-0 w-full h-1 bg-emerald-500 animate-scan-line shadow-[0_0_15px_#10b981]"></div>
+            <p className="text-white text-[10px] font-black uppercase tracking-[0.2em] animate-pulse">Scanning for Barcode...</p>
+          </div>
+        )}
+      </div>
+
+      {/* SKU & UoM */}
+      <div>
+        <label className="block text-[10px] font-black text-gray-400 uppercase mb-2">UoM</label>
+        <input type="text" className="w-full p-4 bg-gray-50 border-none rounded-2xl outline-none font-bold" placeholder="Pcs" value={formData.uom} onChange={(e) => setFormData({...formData, uom: e.target.value})} />
+      </div>
+      <div>
+        <label className="block text-[10px] font-black text-gray-400 uppercase mb-2">SKU Code</label>
+        <div className="flex gap-2">
+          <input type="text" className="flex-1 p-4 bg-gray-50 border-none rounded-2xl outline-none font-bold" placeholder="AUTO-001" value={formData.sku} onChange={(e) => setFormData({...formData, sku: e.target.value})} />
+          <button onClick={generateSKU} className="p-4 bg-indigo-50 text-indigo-600 rounded-2xl hover:bg-indigo-100 transition-all"><Hash size={20}/></button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
           {activeTab === "financials" && (
             <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
               <div className="bg-indigo-600 p-6 rounded-[2rem] text-white flex justify-between items-center mb-8">
@@ -432,11 +507,16 @@ function ProductRegistrationModal({ onClose, onSave }) {
           <div className="flex gap-3">
             {activeTab !== "inventory" ? (
               <button 
-                onClick={() => setActiveTab(activeTab === "basics" ? "financials" : "inventory")}
-                className="flex items-center gap-2 bg-gray-900 text-white px-8 py-4 rounded-2xl font-black text-sm hover:bg-gray-800 transition-all shadow-xl shadow-gray-200"
-              >
-                Next Step <ChevronRight size={18}/>
-              </button>
+  disabled={!canProgress}
+  onClick={() => setActiveTab(activeTab === "basics" ? "financials" : "inventory")}
+  className={`flex items-center gap-2 px-8 py-4 rounded-2xl font-black text-sm transition-all ${
+    canProgress 
+    ? "bg-gray-900 text-white hover:bg-gray-800 shadow-xl" 
+    : "bg-gray-100 text-gray-300 cursor-not-allowed shadow-none opacity-60"
+  }`}
+>
+  Next Step <ChevronRight size={18}/>
+</button>
             ) : (
               <button 
                 onClick={() => onSave(formData)}

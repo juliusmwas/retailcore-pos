@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect } from "react";
-import { useZxing } from "react-zxing";
+import { useState, useMemo, useEffect } from "react";;
+import { Scanner } from '@yudiel/react-qr-scanner';
 
 import {
   Package, Plus, Store, Edit, Layers, AlertTriangle, Search, Filter,Camera,
@@ -261,8 +261,10 @@ export default function AdminProducts() {
 // --- MODAL COMPONENT ---
 function ProductRegistrationModal({ onClose, onSave }) {
   const [activeTab, setActiveTab] = useState("basics");
-  // Inside ProductRegistrationModal
-const [isScanning, setIsScanning] = useState(false); // For the webcam toggle
+
+const [selectedDeviceId, setSelectedDeviceId] = useState('');
+const [isScanning, setIsScanning] = useState(false);
+
 
 
 const [formData, setFormData] = useState({
@@ -299,23 +301,6 @@ const [formData, setFormData] = useState({
     oscillator.start();
     oscillator.stop(context.currentTime + 0.2);
   };
-
-  // 3. HOOK THIRD (Now it can see formData and playSuccessSound)
-  const { ref } = useZxing({
-    onDecodeResult(result) {
-      setFormData(prev => ({ ...prev, barcode: result.getText() }));
-      playSuccessSound(); // Triggers the beep
-      setIsScanning(false);
-    },
-    paused: !isScanning,
-    
-    videoConstraints: {
-    width: { ideal: 1280 },
-    height: { ideal: 720 },
-    facingMode: "environment", // Prefers the back camera on mobile
-    focusMode: "continuous"    // Tells the camera to keep focusing
-  },
-  });
 
 // VALIDATION: Button is active ONLY if these are filled
 const isBasicsComplete = 
@@ -420,26 +405,89 @@ const canProgress = activeTab === "basics" ? isBasicsComplete :
   </select>
 </div>
 
-      {/* Barcode & Scan */}
-      <div className="col-span-2">
-        <label className="block text-[10px] font-black text-gray-400 uppercase mb-2">Barcode (EAN)</label>
-        <div className="flex gap-3">
-          <input type="text" className="flex-1 p-4 bg-gray-50 border-none rounded-2xl font-bold" value={formData.barcode} />
-          <button onClick={() => setIsScanning(!isScanning)} className="...">
-            <Camera size={20} /> {isScanning ? "Stop" : "Scan"}
-          </button>
-        </div>
-        {isScanning && (
-          <div className="mt-4 w-full h-64 bg-black rounded-[2rem] border-4 border-emerald-500 overflow-hidden relative shadow-2xl">
-            <video ref={ref} className="w-full h-full object-cover" />
-            <div className="absolute inset-0 border-[40px] border-black/40 pointer-events-none">
-               <div className="w-full h-full border-2 border-emerald-400/50 rounded-lg relative">
-                  <div className="absolute top-0 w-full h-1 bg-emerald-500 animate-scan-line shadow-[0_0_15px_#10b981]"></div>
-               </div>
-            </div>
-          </div>
-        )}
+    {/* Barcode & Scan */}
+<div className="col-span-2">
+  <label className="block text-[10px] font-black text-gray-400 uppercase mb-2">
+    Barcode (EAN/UPC)
+  </label>
+  <div className="flex gap-3 mb-4">
+    <input 
+      type="text" 
+      className="flex-1 p-4 bg-gray-50 border-none rounded-2xl font-bold outline-none" 
+      value={formData.barcode} 
+      onChange={(e) => setFormData({...formData, barcode: e.target.value})}
+      placeholder="Scan or type barcode..."
+    />
+    <button 
+      type="button"
+      onClick={() => setIsScanning(!isScanning)} 
+      className={`p-4 rounded-2xl transition-all ${isScanning ? 'bg-red-500 text-white' : 'bg-indigo-600 text-white'}`}
+    >
+      {isScanning ? <X size={20} /> : <Camera size={20} />}
+    </button>
+  </div>
+
+{/* Replace the current isScanning block with this simplified version */}
+{isScanning && (
+  <div className="space-y-4 animate-in fade-in zoom-in-95 duration-200">
+    {/* High-Performance Scanner Viewport */}
+    <div className="relative w-full h-80 bg-black rounded-[2.5rem] overflow-hidden border-4 border-gray-900 shadow-2xl">
+      <Scanner
+  // 1. Alignment: Use the repo's recommended error handling
+  onError={(error) => console.error("Scanner Error:", error?.message)}
+  
+  // 2. Alignment: Enhanced Detection logic
+  onScan={(detectedCodes) => {
+    if (detectedCodes?.length > 0) {
+      const code = detectedCodes[0].rawValue;
+      if (code) {
+        setFormData(prev => ({ ...prev, barcode: code }));
+        playSuccessSound();
+        setIsScanning(false);
+      }
+    }
+  }}
+
+  // 3. Performance: Limit formats to standard retail barcodes
+  // This makes the 'brain' of the scanner work 3x faster
+  formats={['ean_13', 'upc_a', 'code_128', 'qr_code']}
+
+  // 4. Alignment: Precision Constraints
+  constraints={{
+    facingMode: 'environment',
+    width: { ideal: 1920 }, // As per Repo "Advanced" example
+    height: { ideal: 1080 },
+    aspectRatio: 1
+  }}
+
+  // 5. Components: Torch is great for low-light warehouses
+  components={{
+    audio: false, 
+    torch: true,
+    finder: true,
+  }}
+
+  styles={{
+    container: { width: '100%', height: '100%' },
+    finder: {
+      width: '70%', // Slightly narrower for better barcode alignment
+      height: '30%', // Barcodes are short and wide
+      border: '2px solid #6366f1',
+      borderRadius: '1rem',
+      boxShadow: '0 0 0 1000px rgba(0, 0, 0, 0.6)', 
+    }
+  }}
+/>
+      
+      {/* Laser Line */}
+      <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+        <div className="w-[230px] h-[3px] bg-emerald-400 shadow-[0_0_15px_#10b981] animate-laser z-10"></div>
       </div>
+
+    </div>
+  </div>
+)}
+</div>
 
       {/* SKU & UoM (These are now correctly inside the grid) */}
       <div>

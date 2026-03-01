@@ -71,14 +71,13 @@ export default function AdminProducts() {
             <div className="p-2 bg-indigo-600 rounded-2xl shadow-xl shadow-indigo-100">
               <Package className="text-white" size={28} />
             </div>
-            Master Inventory
+           Products Management
           </h1>
           <div className="flex items-center gap-2 mt-2">
             <span className="flex items-center gap-1 text-xs font-bold text-gray-500 bg-white px-2 py-1 rounded-lg border border-gray-100">
               <TrendingUp size={12} className="text-emerald-500" />
               Avg Margin: 18.4%
             </span>
-            <span className="text-gray-400 text-xs font-medium">Global oversight for SwiftLine Supermarket</span>
           </div>
         </div>
 

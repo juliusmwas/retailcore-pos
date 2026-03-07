@@ -4,6 +4,7 @@ import authRoutes from "./routes/auth.routes.js";
 import branchRoutes from "./routes/branch.routes.js";
 import dashboardRoutes from "./routes/dashboard.routes.js";
 import staffRoutes from "./routes/staff.routes.js";
+import productRoutes from './routes/productRoutes.js';
 
 const app = express();
 
@@ -24,6 +25,7 @@ app.use("/api/branches", branchRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/staff", staffRoutes);
+app.use('/api/products', productRoutes);
 
 // Optional health check
 app.get("/", (req, res) => {

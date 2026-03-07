@@ -100,6 +100,7 @@ model UserBranch {
 
   @@unique([userId, branchId])
 }
+
 // --- PRODUCT & INVENTORY MODELS ---
 
 model Category {
@@ -111,11 +112,12 @@ model Category {
 
 model Product {
   id           String   @id @default(uuid())
-  name         String
+  name         String   
   sku          String   @unique
   barcode      String   @unique
   brand        String?
   uom          String   @default("Pcs") // Unit of Measure
+  subCategory  String?
   
   // Financials
   costPrice    Float

@@ -163,6 +163,7 @@ export default function AdminProducts() {
         <ProductRegistrationModal 
           onClose={() => setIsModalOpen(false)} 
           onSave={handleSaveProduct} 
+          availableBranches={availableBranches}
         />
       )}
 
@@ -441,7 +442,7 @@ export default function AdminProducts() {
 }
 
 // --- MODAL COMPONENT ---
-function ProductRegistrationModal({ onClose, onSave }) {
+function ProductRegistrationModal({ onClose, onSave, availableBranches }) {
   const [activeTab, setActiveTab] = useState("basics");
   const [selectedDeviceId, setSelectedDeviceId] = useState('');
   const [isScanning, setIsScanning] = useState(false);

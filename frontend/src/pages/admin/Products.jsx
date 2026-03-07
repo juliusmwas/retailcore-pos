@@ -1,8 +1,7 @@
-import { useState, useMemo, useEffect } from "react";;
+import { useState, useMemo, useEffect } from "react";
 import { Scanner } from '@yudiel/react-qr-scanner';
-
 import {
-  Package, Plus, Store, Edit, Layers, AlertTriangle, Search, Filter,Camera,
+  Package, Plus, Store, Edit, Layers, AlertTriangle, Search, Filter, Camera,
   MoreVertical, Barcode, Hash, Trash2, ArrowRightLeft, Eye,
   Download, CheckSquare, Square, TrendingUp, DollarSign, X, Percent, ChevronRight
 } from "lucide-react";
@@ -18,60 +17,139 @@ const RETAIL_HIERARCHY = {
   "Electronics": ["Batteries", "Cables/Chargers", "Small Appliances", "Bulbs/Lighting"]
 };
 
-
 export default function AdminProducts() {
-  // --- STATE MANAGEMENT ---
-  const [products, setProducts] = useState([
-    { 
-      id: "prod_1", 
-      name: "Rice 5kg", 
-      sku: "RICE-501", 
-      barcode: "600101", 
-      costPrice: 600, 
-      sellingPrice: 750, 
-      category: "Grains & Cereals",
-      inventory: [
-        { branch: "Nairobi CBD", stock: 100, min: 20 },
-        { branch: "Chuka Branch", stock: 20, min: 10 }
-      ]
-    },
-    { 
-      id: "prod_2", 
-      name: "Sugar 2kg", 
-      sku: "SUG-202", 
-      barcode: "600102", 
-      costPrice: 280, 
-      sellingPrice: 320, 
-      category: "Pantry",
-      inventory: [{ branch: "Main Branch", stock: 8, min: 15 }]
-    }
-  ]);
-
+  const [products, setProducts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [selectedItems, setSelectedItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterBranch, setFilterBranch] = useState("All Branches");
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // --- BUSINESS LOGIC ---
-  const calculateMargin = (cost, sell) => {
-    if (!cost || !sell) return 0;
-    const margin = ((sell - cost) / sell) * 100;
-    return margin.toFixed(1);
+  // 1. Derive unique branches - FIXED: Remains stable regardless of search
+  const availableBranches = useMemo(() => {
+    const branches = products.flatMap(p => p.inventory?.map(inv => inv.branch) || []);
+    return [...new Set(branches)];
+  }, [products]);
+
+  // 2. Data Fetching
+  const fetchProducts = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch("/api/products");
+      if (!response.ok) throw new Error("Failed to load products");
+      const data = await response.json();
+      setProducts(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  // 3. Optimized Filtering Logic - FIXED: Added defensive null checks
+  const filteredProducts = useMemo(() => {
+    return products.filter(p => {
+      const matchesSearch =
+        (p.name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+        (p.sku?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+        (p.barcode || "").includes(searchTerm);
+
+      const matchesBranch =
+        filterBranch === "All Branches" ||
+        p.inventory?.some(inv => inv.branch === filterBranch);
+
+      return matchesSearch && matchesBranch;
+    });
+  }, [products, searchTerm, filterBranch]);
+
+  // 4. Selection Handlers - FIXED: Syncs with filtered view
   const toggleSelectAll = () => {
-    if (selectedItems.length === products.length) setSelectedItems([]);
-    else setSelectedItems(products.map(p => p.id));
+    const allVisibleIds = filteredProducts.map(p => p.id);
+    const areAllVisibleSelected = allVisibleIds.every(id => selectedItems.includes(id)) && allVisibleIds.length > 0;
+
+    if (areAllVisibleSelected) {
+      // Deselect only the currently visible items
+      setSelectedItems(prev => prev.filter(id => !allVisibleIds.includes(id)));
+    } else {
+      // Add visible items to selection (preserving existing selections if any)
+      setSelectedItems(prev => [...new Set([...prev, ...allVisibleIds])]);
+    }
   };
 
   const toggleSelectOne = (id) => {
-    if (selectedItems.includes(id)) setSelectedItems(selectedItems.filter(i => i !== id));
-    else setSelectedItems([...selectedItems, id]);
+    setSelectedItems(prev =>
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
   };
 
-  const getGlobalStockStatus = (inventory) => {
-    const total = inventory.reduce((acc, curr) => acc + curr.stock, 0);
-    const totalMin = inventory.reduce((acc, curr) => acc + curr.min, 0);
+  // 5. Product Persistence
+  const handleSaveProduct = async (formData) => {
+    try {
+      const response = await fetch("/api/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        await fetchProducts();
+        setIsModalOpen(false);
+      } else {
+        const errorData = await response.json();
+        alert(`Error: ${errorData.message || "Could not save product"}`);
+      }
+    } catch (err) {
+      console.error("Save failed:", err);
+    }
+  };
+
+  const handleBulkDelete = async (idsToDelete) => {
+    try {
+      setIsLoading(true);
+      
+      // 1. API Call (Replace with your actual endpoint)
+      const response = await fetch("/api/products/bulk-delete", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: idsToDelete }),
+      });
+
+      if (response.ok) {
+        // 2. Optimistic UI Update: Filter out deleted items from local state
+        setProducts(prev => prev.filter(p => !idsToDelete.includes(p.id)));
+        
+        // 3. Reset the selection state
+        setSelectedItems([]);
+        
+        // Optional: Success notification
+        console.log(`${idsToDelete.length} products deleted successfully.`);
+      } else {
+        const errorData = await response.json();
+        alert(`Error: ${errorData.message || "Failed to delete selected items"}`);
+      }
+    } catch (err) {
+      console.error("Bulk delete failed:", err);
+      alert("A network error occurred during deletion.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+
+
+  // 6. UI Helpers
+  const calculateMargin = (cost, sell) => 
+    (sell && cost ? (((sell - cost) / sell) * 100).toFixed(1) : "0.0");
+
+  const getGlobalStockStatus = (inventory = []) => {
+    const total = inventory.reduce((acc, curr) => acc + (curr.stock || 0), 0);
+    const totalMin = inventory.reduce((acc, curr) => acc + (curr.min || 0), 0);
+    
     if (total === 0) return { label: "OOS", color: "text-red-600 bg-red-50 border-red-100" };
     if (total <= totalMin) return { label: "LOW", color: "text-orange-600 bg-orange-50 border-orange-100" };
     return { label: "HEALTHY", color: "text-emerald-600 bg-emerald-50 border-emerald-100" };
@@ -84,10 +162,7 @@ export default function AdminProducts() {
       {isModalOpen && (
         <ProductRegistrationModal 
           onClose={() => setIsModalOpen(false)} 
-          onSave={(newProd) => {
-            setProducts([...products, { ...newProd, id: `prod_${Date.now()}` }]);
-            setIsModalOpen(false);
-          }}
+          onSave={handleSaveProduct} 
         />
       )}
 
@@ -101,20 +176,23 @@ export default function AdminProducts() {
             Products Management
           </h1>
           <div className="flex items-center gap-2 mt-2">
-            <span className="flex items-center gap-1 text-xs font-bold text-gray-500 bg-white px-2 py-1 rounded-lg border border-gray-100">
+            <span className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-gray-400 bg-white px-3 py-1.5 rounded-xl border border-gray-100 shadow-sm">
               <TrendingUp size={12} className="text-emerald-500" />
-              Avg Margin: 18.4%
+              Real-time Inventory Analytics
             </span>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 bg-white text-gray-700 px-5 py-3 rounded-2xl border border-gray-200 hover:bg-gray-50 transition-all font-bold text-sm shadow-sm">
-            <Download size={18} /> Export
+          <button 
+            disabled={isLoading || products.length === 0}
+            className="flex items-center gap-2 bg-white text-gray-700 px-5 py-3.5 rounded-2xl border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-bold text-sm shadow-sm"
+          >
+            <Download size={18} /> Export CSV
           </button>
           <button 
             onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-3.5 rounded-2xl hover:bg-indigo-700 transition-all font-bold shadow-xl shadow-indigo-100 hover:scale-[1.02]"
+            className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-3.5 rounded-2xl hover:bg-indigo-700 font-bold shadow-xl shadow-indigo-200 transition-all hover:-translate-y-0.5 active:translate-y-0"
           >
             <Plus size={20} strokeWidth={3} />
             Onboard Product
@@ -124,134 +202,238 @@ export default function AdminProducts() {
 
       {/* --- KPI SECTION --- */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPI color="indigo" label="Inventory Value" value="KES 4.2M" sub="Cost Basis" icon={<DollarSign size={18}/>} />
-        <KPI color="emerald" label="Estimated Profit" value="KES 840K" sub="Projected" icon={<TrendingUp size={18}/>} />
-        <KPI color="orange" label="Reorder Alerts" value="14" sub="Below Threshold" icon={<AlertTriangle size={18}/>} pulse />
-        <KPI color="slate" label="Active Branches" value="08" sub="Global Network" icon={<Store size={18}/>} />
+        <KPI 
+          color="indigo" 
+          label="Inventory Value" 
+          value={`KES ${(products.reduce((acc, p) => acc + (Number(p.costPrice) * (p.inventory?.reduce((sum, inv) => sum + inv.stock, 0) || 0)), 0) / 1000000).toFixed(2)}M`} 
+          sub="Total Cost Basis" 
+          icon={<DollarSign size={18}/>} 
+        />
+        <KPI 
+          color="emerald" 
+          label="Potential Revenue" 
+          value={`KES ${(products.reduce((acc, p) => acc + (Number(p.sellingPrice) * (p.inventory?.reduce((sum, inv) => sum + inv.stock, 0) || 0)), 0) / 1000000).toFixed(2)}M`} 
+          sub="Projected Sales" 
+          icon={<TrendingUp size={18}/>} 
+        />
+        <KPI 
+          color="orange" 
+          label="Stock Alerts" 
+          value={products.filter(p => p.inventory?.some(inv => inv.stock <= inv.min)).length.toString().padStart(2, '0')} 
+          sub="Items Low/OOS" 
+          icon={<AlertTriangle size={18}/>} 
+          pulse={products.some(p => p.inventory?.some(inv => inv.stock <= inv.min))}
+        />
+        <KPI 
+          color="slate" 
+          label="Global Reach" 
+          value={availableBranches.length.toString().padStart(2, '0')} 
+          sub="Active Branches" 
+          icon={<Store size={18}/>} 
+        />
       </div>
 
-      {/* --- MASTER TABLE CARD --- */}
-      <div className="bg-white rounded-[2.5rem] border border-gray-200 shadow-sm overflow-hidden relative">
-        <div className="p-6 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="relative flex-1 max-w-xl">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-            <input 
-              type="text" 
-              placeholder="Search master SKU, name, or barcodes..." 
-              className="w-full pl-12 pr-4 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500/20 transition-all outline-none text-sm font-semibold"
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <div className="flex items-center gap-3">
-            <select className="px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-600 outline-none">
-              <option>All Branches</option>
-              <option>Nairobi CBD</option>
-              <option>Chuka Branch</option>
+{/* --- MASTER TABLE CARD --- */}
+    <div className="bg-white rounded-[2.5rem] border border-gray-200 shadow-sm overflow-hidden relative">
+      {/* Header with Dynamic Search & Branch Filter */}
+      <div className="p-6 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="relative flex-1 max-w-xl">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+          <input 
+            type="text" 
+            placeholder="Search master SKU, name, or barcodes..." 
+            className="w-full pl-12 pr-4 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500/20 transition-all outline-none text-sm font-semibold text-gray-900"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex flex-col">
+            <span className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-1">Branch Filter</span>
+            <select 
+              className="px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-600 outline-none cursor-pointer hover:border-indigo-300 transition-colors"
+              value={filterBranch}
+              onChange={(e) => setFilterBranch(e.target.value)}
+            >
+              <option value="All Branches">All Branches</option>
+              {availableBranches.map(branch => (
+                <option key={branch} value={branch}>{branch}</option>
+              ))}
             </select>
           </div>
         </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-gray-50/50 text-[11px] font-black text-gray-400 uppercase tracking-[0.1em]">
-                <th className="px-8 py-5 text-left w-10">
-                  <button onClick={toggleSelectAll}>
-                    {selectedItems.length === products.length ? <CheckSquare className="text-indigo-600" size={18} /> : <Square size={18} />}
-                  </button>
-                </th>
-                <th className="px-4 py-5 text-left">Product / SKU</th>
-                <th className="px-8 py-5 text-left">Branch Distribution</th>
-                <th className="px-8 py-5 text-left">Financials (KES)</th>
-                <th className="px-8 py-5 text-left">Performance</th>
-                <th className="px-8 py-5 text-right">Admin</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {products.map((p) => {
-                const globalStatus = getGlobalStockStatus(p.inventory);
-                const isSelected = selectedItems.includes(p.id);
-                return (
-                  <tr key={p.id} className={`group hover:bg-indigo-50/30 transition-all ${isSelected ? 'bg-indigo-50/50' : ''}`}>
-                    <td className="px-8 py-6">
-                      <button onClick={() => toggleSelectOne(p.id)}>
-                        {isSelected ? <CheckSquare className="text-indigo-600" size={18} /> : <Square className="text-gray-300" size={18} />}
-                      </button>
-                    </td>
-                    <td className="px-4 py-6">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-white border border-gray-200 flex items-center justify-center font-black text-gray-400 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
-                          {p.name.charAt(0)}
-                        </div>
-                        <div>
-                          <p className="font-bold text-gray-900 text-base">{p.name}</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-[10px] font-bold text-gray-400 flex items-center gap-1"><Hash size={10}/> {p.sku}</span>
-                            <span className="text-[10px] font-bold text-gray-400 flex items-center gap-1"><Barcode size={10}/> {p.barcode}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-8 py-6">
-                      <div className="flex flex-wrap gap-2 mb-2">
-                        {p.inventory.map((inv, idx) => (
-                          <div key={idx} className="flex flex-col">
-                            <span className="text-[10px] font-black text-gray-400 uppercase">{inv.branch}</span>
-                            <span className={`text-xs font-bold ${inv.stock <= inv.min ? 'text-orange-600' : 'text-gray-700'}`}>
-                              {inv.stock} <span className="text-[10px] text-gray-300 font-medium">available</span>
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="px-8 py-6">
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-between w-32 text-xs font-bold">
-                          <span className="text-gray-400 uppercase text-[9px]">Cost:</span>
-                          <span className="text-gray-600">{p.costPrice.toLocaleString()}</span>
-                        </div>
-                        <div className="flex items-center justify-between w-32 text-sm font-black">
-                          <span className="text-gray-400 uppercase text-[9px]">Sell:</span>
-                          <span className="text-gray-900">{p.sellingPrice.toLocaleString()}</span>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-8 py-6">
-                      <div className="flex flex-col items-start gap-1">
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-black border ${globalStatus.color}`}>
-                          {globalStatus.label}
-                        </span>
-                        <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md mt-1">
-                          +{calculateMargin(p.costPrice, p.sellingPrice)}% Margin
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-8 py-6 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button className="p-2.5 bg-white border border-gray-200 rounded-xl text-gray-500 hover:text-indigo-600 transition-all shadow-sm"><Edit size={16} /></button>
-                        <button className="p-2.5 text-gray-400"><MoreVertical size={18} /></button>
-                      </div>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
       </div>
 
-      {/* --- FLOATING ACTION BAR --- */}
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr className="bg-gray-50/50 text-[11px] font-black text-gray-400 uppercase tracking-[0.1em]">
+              <th className="px-8 py-5 text-left w-10">
+                <button 
+                  onClick={toggleSelectAll} 
+                  className="hover:text-indigo-600 transition-colors focus:outline-none"
+                  title="Select Visible"
+                >
+                  {filteredProducts.length > 0 && filteredProducts.every(p => selectedItems.includes(p.id))
+                    ? <CheckSquare className="text-indigo-600" size={18} /> 
+                    : <Square size={18} />
+                  }
+                </button>
+              </th>
+              <th className="px-4 py-5 text-left">Product / SKU</th>
+              <th className="px-8 py-5 text-left">Branch Distribution</th>
+              <th className="px-8 py-5 text-left">Financials (KES)</th>
+              <th className="px-8 py-5 text-left">Performance</th>
+              <th className="px-8 py-5 text-right">Admin</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {filteredProducts.map((p) => {
+              const globalStatus = getGlobalStockStatus(p.inventory || []);
+              const isSelected = selectedItems.includes(p.id);
+              
+              return (
+                <tr key={p.id} className={`group hover:bg-indigo-50/30 transition-all ${isSelected ? 'bg-indigo-50/50' : ''}`}>
+                  <td className="px-8 py-6">
+                    <button onClick={() => toggleSelectOne(p.id)} className="focus:outline-none">
+                      {isSelected ? <CheckSquare className="text-indigo-600" size={18} /> : <Square className="text-gray-300 group-hover:text-gray-400" size={18} />}
+                    </button>
+                  </td>
+                  <td className="px-4 py-6">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-white border border-gray-200 flex items-center justify-center font-black text-gray-400 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
+                        {p.name?.charAt(0).toUpperCase() || 'P'}
+                      </div>
+                      <div>
+                        <p className="font-bold text-gray-900 text-base leading-tight">{p.name || "Unnamed Product"}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-[10px] font-bold text-gray-400 flex items-center gap-1"><Hash size={10}/> {p.sku || "N/A"}</span>
+                          {p.barcode && <span className="text-[10px] font-bold text-gray-400 flex items-center gap-1"><Barcode size={10}/> {p.barcode}</span>}
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-8 py-6">
+                    <div className="flex flex-wrap gap-2 max-w-[300px]">
+                      {p.inventory?.length > 0 ? (
+                        p.inventory.map((inv, idx) => (
+                          <div key={idx} className={`flex flex-col p-2 rounded-xl border ${inv.stock <= inv.min ? 'bg-orange-50 border-orange-100' : 'bg-gray-50 border-transparent'}`}>
+                            <span className="text-[9px] font-black text-gray-400 uppercase leading-tight">{inv.branch}</span>
+                            <span className={`text-xs font-bold ${inv.stock <= inv.min ? 'text-orange-600' : 'text-gray-700'}`}>
+                              {inv.stock} <span className="text-[9px] text-gray-400 font-medium italic">pcs</span>
+                            </span>
+                          </div>
+                        ))
+                      ) : (
+                        <span className="text-xs text-gray-300 italic">No inventory assigned</span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-8 py-6">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between w-36 text-xs font-bold bg-gray-50/50 p-1.5 rounded-lg border border-gray-100">
+                        <span className="text-gray-400 uppercase text-[8px]">Cost:</span>
+                        <span className="text-gray-600">{Number(p.costPrice || 0).toLocaleString()}</span>
+                      </div>
+                      <div className="flex items-center justify-between w-36 text-sm font-black p-1.5">
+                        <span className="text-gray-400 uppercase text-[8px]">Sell:</span>
+                        <span className="text-gray-900">{Number(p.sellingPrice || 0).toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-8 py-6">
+                    <div className="flex flex-col items-start gap-1">
+                      <span className={`text-[10px] px-2.5 py-1 rounded-full font-black border uppercase tracking-wider ${globalStatus.color}`}>
+                        {globalStatus.label}
+                      </span>
+                      <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg mt-1 border border-emerald-100">
+                        +{calculateMargin(p.costPrice, p.sellingPrice)}% Margin
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-8 py-6 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <button className="p-2.5 bg-white border border-gray-200 rounded-xl text-gray-500 hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-sm hover:shadow-indigo-50">
+                        <Edit size={16} />
+                      </button>
+                      <button className="p-2.5 text-gray-400 hover:text-gray-600 transition-colors rounded-xl hover:bg-gray-50">
+                        <MoreVertical size={18} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+
+        {filteredProducts.length === 0 && !isLoading && (
+          <div className="p-24 text-center">
+            <div className="inline-flex p-4 bg-gray-50 rounded-full mb-4">
+              <Package className="text-gray-300" size={40} />
+            </div>
+            <p className="text-gray-500 font-bold text-lg">No products match your search</p>
+            <p className="text-gray-400 text-sm">Try adjusting your filters or search terms.</p>
+          </div>
+        )}
+      </div>
+    </div>
+
+     {/* --- FLOATING ACTION BAR --- */}
       {selectedItems.length > 0 && (
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-8 py-4 rounded-3xl shadow-2xl flex items-center gap-8 z-50 animate-in slide-in-from-bottom-10">
-          <div className="flex flex-col">
-            <span className="text-xs font-black text-indigo-400 uppercase">{selectedItems.length} Selected</span>
+        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-gray-900/95 backdrop-blur-xl text-white px-6 py-4 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center gap-6 z-[100] animate-in fade-in slide-in-from-bottom-8 duration-300 border border-white/10">
+          {/* Selection Count Section */}
+          <div className="flex items-center gap-3 pr-6 border-r border-white/10">
+            <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-[10px] font-black shadow-lg shadow-indigo-500/20">
+              {selectedItems.length}
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Items</span>
+              <span className="text-[11px] font-bold text-gray-400 leading-none">Selected</span>
+            </div>
           </div>
+
+          {/* Action Buttons */}
           <div className="flex items-center gap-4">
-            <button className="flex items-center gap-2 text-sm font-bold text-red-400"><Trash2 size={16} /> Delete</button>
+            <button 
+              className="flex items-center gap-2 text-xs font-bold text-white hover:text-indigo-300 transition-colors px-3 py-2 rounded-xl hover:bg-white/5"
+              onClick={() => {
+                // Example: Trigger CSV export for only selected IDs
+                console.log("Exporting selected:", selectedItems);
+              }}
+            >
+              <Download size={16} /> Export Selected
+            </button>
+
+            <button 
+              disabled={isLoading}
+              onClick={() => {
+                if(window.confirm(`Permanently delete ${selectedItems.length} products?`)) {
+                  handleBulkDelete(selectedItems);
+                }
+              }}
+              className="flex items-center gap-2 text-xs font-bold text-red-400 hover:text-red-300 transition-all px-4 py-2 rounded-xl hover:bg-red-400/10 active:scale-95 disabled:opacity-50"
+            >
+              {isLoading ? (
+                <span className="animate-pulse">Deleting...</span>
+              ) : (
+                <>
+                  <Trash2 size={16} /> Bulk Delete
+                </>
+              )}
+            </button>
           </div>
-          <button onClick={() => setSelectedItems([])} className="ml-4 p-1 hover:bg-white/10 rounded-full">
-            <X size={20} />
-          </button>
+
+          {/* Clear/Close Selection */}
+          <div className="pl-4 border-l border-white/10">
+            <button 
+              onClick={() => setSelectedItems([])} 
+              className="p-2 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-all group"
+              title="Clear Selection"
+            >
+              <X size={20} className="group-hover:rotate-90 transition-transform duration-200" />
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -261,76 +443,112 @@ export default function AdminProducts() {
 // --- MODAL COMPONENT ---
 function ProductRegistrationModal({ onClose, onSave }) {
   const [activeTab, setActiveTab] = useState("basics");
+  const [selectedDeviceId, setSelectedDeviceId] = useState('');
+  const [isScanning, setIsScanning] = useState(false);
 
-const [selectedDeviceId, setSelectedDeviceId] = useState('');
-const [isScanning, setIsScanning] = useState(false);
+// Inside ProductRegistrationModal
+  const [formData, setFormData] = useState({
+    name: "",
+    category: "Grains & Cereals",
+    subCategory: "",
+    sku: "",
+    barcode: "",
+    brand: "",
+    uom: "Pcs",
+    costPrice: 0,
+    sellingPrice: 0,
+    taxClass: "Standard 16%",
+    markup: 25,
+    // DYNAMIC: Map your real branches into the initial inventory state
+    inventory: availableBranches.map(branchName => ({
+      branch: branchName,
+      stock: 0,
+      min: 5
+    }))
+  });
 
-
-
-const [formData, setFormData] = useState({
-  name: "", 
-  category: "Grains & Cereals", // Default
-  subCategory: "",            // New Field
-  sku: "", 
-  barcode: "", 
-  brand: "", 
-  uom: "Pcs",
-  costPrice: 0, 
-  sellingPrice: 0, 
-  taxClass: "Standard 16%", 
-  markup: 25,
-  inventory: [
-    { branch: "Nairobi CBD", stock: 0, min: 5 },
-    { branch: "Chuka Branch", stock: 0, min: 5 }
-  ]
-});
-
-
-  // 2. SOUND FUNCTION SECOND
+  // 1. IMPROVED SOUND FUNCTION (Safe for modern browsers)
   const playSuccessSound = () => {
-    const context = new (window.AudioContext || window.webkitAudioContext)();
-    const oscillator = context.createOscillator();
-    const gain = context.createGain();
-    oscillator.type = "sine";
-    oscillator.frequency.setValueAtTime(880, context.currentTime);
-    oscillator.connect(gain);
-    gain.connect(context.destination);
-    gain.gain.setValueAtTime(0, context.currentTime);
-    gain.gain.linearRampToValueAtTime(0.2, context.currentTime + 0.05);
-    gain.gain.linearRampToValueAtTime(0, context.currentTime + 0.2);
-    oscillator.start();
-    oscillator.stop(context.currentTime + 0.2);
-  };
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+      
+      const context = new AudioContext();
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
 
-// VALIDATION: Button is active ONLY if these are filled
-const isBasicsComplete = 
-  formData.name.trim() !== "" && 
-  formData.sku.trim() !== "" && 
-  formData.barcode.trim() !== "" &&
-  formData.subCategory !== ""; // Must select a sub-category
+      oscillator.type = "sine";
+      oscillator.frequency.setValueAtTime(880, context.currentTime); // A5 note
+      
+      gain.connect(context.destination);
+      oscillator.connect(gain);
 
-const isFinancialsComplete = formData.costPrice > 0 && formData.sellingPrice > 0;
+      gain.gain.setValueAtTime(0, context.currentTime);
+      gain.gain.linearRampToValueAtTime(0.2, context.currentTime + 0.05);
+      gain.gain.linearRampToValueAtTime(0, context.currentTime + 0.2);
 
-const canProgress = activeTab === "basics" ? isBasicsComplete : 
-                    activeTab === "financials" ? isFinancialsComplete : true;
-
-  // Auto-calculation logic
-  const handlePriceChange = (field, value) => {
-    let val = parseFloat(value) || 0;
-    let update = { ...formData, [field]: val };
-
-    if (field === "costPrice" || field === "markup") {
-      update.sellingPrice = Math.round(update.costPrice * (1 + (update.markup / 100)));
-    } else if (field === "sellingPrice") {
-      update.markup = update.costPrice > 0 ? ((val - update.costPrice) / update.costPrice * 100).toFixed(1) : 0;
+      oscillator.start();
+      oscillator.stop(context.currentTime + 0.2);
+    } catch (e) {
+      console.warn("Audio playback blocked or unsupported", e);
     }
-    setFormData(update);
   };
 
+  // 2. VALIDATION LOGIC
+  const isBasicsComplete = 
+    formData.name.trim() !== "" && 
+    formData.sku.trim() !== "" && 
+    formData.barcode.trim() !== "" &&
+    formData.subCategory.trim() !== "";
+
+  const isFinancialsComplete = 
+    Number(formData.costPrice) > 0 && 
+    Number(formData.sellingPrice) > 0;
+
+  const canProgress = 
+    activeTab === "basics" ? isBasicsComplete : 
+    activeTab === "financials" ? isFinancialsComplete : true;
+
+  // 3. ENHANCED AUTO-CALCULATION
+  const handlePriceChange = (field, value) => {
+    const val = parseFloat(value) || 0;
+    setFormData(prev => {
+      let update = { ...prev, [field]: val };
+
+      if (field === "costPrice" || field === "markup") {
+        // Calculate Sell from Cost + Markup
+        update.sellingPrice = Math.round(update.costPrice * (1 + (update.markup / 100)));
+      } else if (field === "sellingPrice") {
+        // Reverse calculate Markup from Sell Price
+        if (update.costPrice > 0) {
+          update.markup = parseFloat(((val - update.costPrice) / update.costPrice * 100).toFixed(1));
+        }
+      }
+      return update;
+    });
+  };
+
+  // 4. SMART SKU GENERATION
   const generateSKU = () => {
-    const prefix = formData.category.substring(0, 3).toUpperCase();
-    const random = Math.floor(100 + Math.random() * 900);
-    setFormData({ ...formData, sku: `${prefix}-${random}` });
+    const catPrefix = formData.category.substring(0, 2).toUpperCase();
+    const subPrefix = formData.subCategory 
+      ? formData.subCategory.substring(0, 2).toUpperCase() 
+      : "XX";
+    const random = Math.floor(1000 + Math.random() * 9000);
+    
+    setFormData(prev => ({ 
+      ...prev, 
+      sku: `${catPrefix}${subPrefix}-${random}` 
+    }));
+  };
+
+  const handleSubmit = () => {
+    if (isBasicsComplete && isFinancialsComplete) {
+      playSuccessSound();
+      onSave(formData);
+    } else {
+      alert("Please complete all required fields.");
+    }
   };
 
   return (
@@ -613,24 +831,63 @@ const canProgress = activeTab === "basics" ? isBasicsComplete :
 // --- KPI HELPER ---
 function KPI({ label, value, sub, color, icon, pulse }) {
   const themes = {
-    indigo: "bg-indigo-600 text-white shadow-indigo-100",
-    emerald: "bg-white text-emerald-600 border-gray-200",
-    orange: "bg-white text-orange-600 border-gray-200",
-    slate: "bg-white text-slate-600 border-gray-200"
+    indigo: {
+      card: "bg-indigo-600 border-indigo-500 shadow-indigo-100",
+      iconBox: "bg-white/20 text-white",
+      label: "text-indigo-100",
+      value: "text-white",
+      sub: "text-indigo-200"
+    },
+    emerald: {
+      card: "bg-white border-gray-100 text-emerald-600",
+      iconBox: "bg-emerald-50 text-emerald-600",
+      label: "text-gray-400",
+      value: "text-gray-900",
+      sub: "text-emerald-500"
+    },
+    orange: {
+      card: "bg-white border-gray-100 text-orange-600",
+      iconBox: "bg-orange-50 text-orange-600",
+      label: "text-gray-400",
+      value: "text-gray-900",
+      sub: "text-orange-500"
+    },
+    slate: {
+      card: "bg-white border-gray-100 text-slate-600",
+      iconBox: "bg-slate-50 text-slate-600",
+      label: "text-gray-400",
+      value: "text-gray-900",
+      sub: "text-gray-400"
+    }
   };
 
+  const active = themes[color] || themes.slate;
+
   return (
-    <div className={`p-6 rounded-[2rem] border shadow-sm transition-all hover:shadow-xl group ${themes[color]}`}>
-      <div className="flex items-center justify-between mb-4">
-        <div className={`p-2.5 rounded-xl ${color === 'indigo' ? 'bg-white/20' : 'bg-gray-50 border border-gray-100'}`}>
+    <div className={`p-6 rounded-[2.5rem] border shadow-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-1 group relative overflow-hidden ${active.card}`}>
+      {/* Background Decor */}
+      <div className="absolute -right-2 -top-2 opacity-5 group-hover:scale-110 transition-transform duration-500">
+        {icon}
+      </div>
+
+      <div className="flex items-center justify-between mb-4 relative z-10">
+        <div className={`p-3 rounded-2xl transition-colors ${active.iconBox}`}>
           {icon}
         </div>
-        {pulse && <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />}
+        {pulse && (
+          <div className="flex items-center gap-1.5 bg-red-50 px-2 py-1 rounded-full border border-red-100">
+            <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+            <span className="text-[8px] font-black text-red-600 uppercase">Action Req.</span>
+          </div>
+        )}
       </div>
-      <div>
-        <p className={`text-[10px] font-black uppercase tracking-widest ${color === 'indigo' ? 'text-indigo-100' : 'text-gray-400'}`}>{label}</p>
-        <p className={`text-2xl font-black mt-1 ${color === 'indigo' ? 'text-white' : 'text-gray-900'}`}>{value}</p>
-        <p className={`text-[10px] font-bold mt-0.5 ${color === 'indigo' ? 'text-indigo-200' : 'text-gray-400'}`}>{sub}</p>
+
+      <div className="relative z-10">
+        <p className={`text-[10px] font-black uppercase tracking-[0.15em] ${active.label}`}>{label}</p>
+        <p className={`text-2xl font-black mt-1 tracking-tight ${active.value}`}>{value}</p>
+        <p className={`text-[10px] font-bold mt-1 flex items-center gap-1 ${active.sub}`}>
+          {sub}
+        </p>
       </div>
     </div>
   );

@@ -36,7 +36,6 @@ export default function Staff() {
   setLoading(true);
   try {
     const res = await getStaff(activeBranch?.id);
-    // Change this line:
     // res.data is the object from axios, res.data.data is the array from the controller
     setStaff(res.data.data || []); 
   } catch (err) {

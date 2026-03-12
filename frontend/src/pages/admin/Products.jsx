@@ -25,18 +25,44 @@ export default function AdminProducts() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterBranch, setFilterBranch] = useState("All Branches");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [branches, setBranches] = useState([]);
 
-  // 1. Derive unique branches - FIXED: Remains stable regardless of search
-  const availableBranches = useMemo(() => {
-    const branches = products.flatMap(p => p.inventory?.map(inv => inv.branch) || []);
-    return [...new Set(branches)];
-  }, [products]);
 
-  // 2. Data Fetching
+const fetchBranches = async () => {
+  try {
+    // 1. Get the token from wherever you store it (usually localStorage)
+    const token = localStorage.getItem("token"); 
+
+    const response = await fetch("http://localhost:5000/api/branches", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}` // Send the token so req.user isn't empty
+      }
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) throw new Error("Please log in again.");
+      throw new Error("Failed to load branches");
+    }
+
+    const result = await response.json();
+    
+    // 2. Remember your backend sends { data: [...] }, so we use result.data
+    setBranches(Array.isArray(result.data) ? result.data : []); 
+    
+  } catch (err) {
+    console.error("Error fetching branches:", err);
+  }
+};
+
+
+// Updated Fetch Products
   const fetchProducts = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch("/api/products");
+      // Added the full backend address
+      const response = await fetch("http://localhost:5000/api/products");
       if (!response.ok) throw new Error("Failed to load products");
       const data = await response.json();
       setProducts(Array.isArray(data) ? data : []);
@@ -47,9 +73,10 @@ export default function AdminProducts() {
     }
   };
 
-  useEffect(() => {
-    fetchProducts();
-  }, []);
+ useEffect(() => {
+  fetchProducts();
+  fetchBranches(); // Fetch branches on load
+}, []);
 
   // 3. Optimized Filtering Logic - FIXED: Added defensive null checks
   const filteredProducts = useMemo(() => {
@@ -87,26 +114,31 @@ export default function AdminProducts() {
     );
   };
 
-  // 5. Product Persistence
+// Updated Product Persistence
   const handleSaveProduct = async (formData) => {
-    try {
-      const response = await fetch("/api/products", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
+  try {
+    const token = localStorage.getItem("token");
 
-      if (response.ok) {
-        await fetchProducts();
-        setIsModalOpen(false);
-      } else {
-        const errorData = await response.json();
-        alert(`Error: ${errorData.message || "Could not save product"}`);
-      }
-    } catch (err) {
-      console.error("Save failed:", err);
+    const response = await fetch("http://localhost:5000/api/products", {
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}` // Added this
+      },
+      body: JSON.stringify(formData),
+    });
+
+    if (response.ok) {
+      await fetchProducts(); 
+      setIsModalOpen(false);
+    } else {
+      const errorData = await response.json();
+      alert(`Error: ${errorData.message}`);
     }
-  };
+  } catch (err) {
+    console.error("Save failed:", err);
+  }
+};
 
   const handleBulkDelete = async (idsToDelete) => {
     try {
@@ -126,6 +158,7 @@ export default function AdminProducts() {
         // 3. Reset the selection state
         setSelectedItems([]);
         
+
         // Optional: Success notification
         console.log(`${idsToDelete.length} products deleted successfully.`);
       } else {
@@ -163,7 +196,8 @@ export default function AdminProducts() {
         <ProductRegistrationModal 
           onClose={() => setIsModalOpen(false)} 
           onSave={handleSaveProduct} 
-          availableBranches={availableBranches}
+          
+          dbBranches={branches}
         />
       )}
 
@@ -228,7 +262,7 @@ export default function AdminProducts() {
         <KPI 
           color="slate" 
           label="Global Reach" 
-          value={availableBranches.length.toString().padStart(2, '0')} 
+          //value={availableBranches.length.toString().padStart(2, '0')} 
           sub="Active Branches" 
           icon={<Store size={18}/>} 
         />
@@ -257,9 +291,9 @@ export default function AdminProducts() {
               onChange={(e) => setFilterBranch(e.target.value)}
             >
               <option value="All Branches">All Branches</option>
-              {availableBranches.map(branch => (
+              {/* {availableBranches.map(branch => (
                 <option key={branch} value={branch}>{branch}</option>
-              ))}
+              ))} */}
             </select>
           </div>
         </div>
@@ -442,7 +476,7 @@ export default function AdminProducts() {
 }
 
 // --- MODAL COMPONENT ---
-function ProductRegistrationModal({ onClose, onSave, availableBranches }) {
+function ProductRegistrationModal({ onClose, onSave, dbBranches }) {
   const [activeTab, setActiveTab] = useState("basics");
   const [selectedDeviceId, setSelectedDeviceId] = useState('');
   const [isScanning, setIsScanning] = useState(false);
@@ -460,13 +494,21 @@ function ProductRegistrationModal({ onClose, onSave, availableBranches }) {
     sellingPrice: 0,
     taxClass: "Standard 16%",
     markup: 25,
-    // DYNAMIC: Map your real branches into the initial inventory state
-    inventory: availableBranches.map(branchName => ({
-      branch: branchName,
-      stock: 0,
-      min: 5
-    }))
+    inventory: []
   });
+  useEffect(() => {
+    if (dbBranches.length > 0 && formData.inventory.length === 0) {
+      setFormData(prev => ({
+        ...prev,
+        inventory: dbBranches.map(b => ({
+          branchId: b.id,
+          branch: b.name,
+          stock: 0,
+          min: 5
+        }))
+      }));
+    }
+  }, [dbBranches]);
 
   // 1. IMPROVED SOUND FUNCTION (Safe for modern browsers)
   const playSuccessSound = () => {
@@ -760,42 +802,35 @@ function ProductRegistrationModal({ onClose, onSave, availableBranches }) {
           )}
 
           {activeTab === "inventory" && (
-            <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
-              <p className="text-sm font-bold text-gray-500 px-2">Set opening stock and reorder points per branch.</p>
-              <div className="space-y-3">
-                {formData.inventory.map((inv, idx) => (
-                  <div key={idx} className="p-6 bg-gray-50 rounded-3xl border border-gray-100 flex items-center justify-between gap-6">
-                    <div className="flex items-center gap-4 min-w-[150px]">
-                      <div className="p-3 bg-white rounded-2xl shadow-sm text-indigo-600"><Store size={20}/></div>
-                      <span className="font-black text-gray-900 text-sm uppercase">{inv.branch}</span>
-                    </div>
-                    <div className="flex gap-4 flex-1">
-                      <div className="flex-1">
-                        <label className="block text-[9px] font-black text-gray-400 uppercase mb-1">Opening Stock</label>
-                        <input type="number" className="w-full p-3 bg-white border border-gray-200 rounded-xl outline-none font-bold text-sm" value={inv.stock} 
-                          onChange={(e) => {
-                            const newInv = [...formData.inventory];
-                            newInv[idx].stock = parseInt(e.target.value) || 0;
-                            setFormData({...formData, inventory: newInv});
-                          }} 
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <label className="block text-[9px] font-black text-gray-400 uppercase mb-1">Min (Safety)</label>
-                        <input type="number" className="w-full p-3 bg-white border border-gray-200 rounded-xl outline-none font-bold text-sm" value={inv.min}
-                          onChange={(e) => {
-                            const newInv = [...formData.inventory];
-                            newInv[idx].min = parseInt(e.target.value) || 0;
-                            setFormData({...formData, inventory: newInv});
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+  <div className="space-y-4 animate-in slide-in-from-right-4">
+    <p className="text-sm font-bold text-gray-500 mb-4">Set opening stock and reorder points per branch.</p>
+    
+    {formData.inventory.length > 0 ? (
+      formData.inventory.map((inv, idx) => (
+        <div key={idx} className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl">
+          <span className="flex-1 font-bold text-gray-700 uppercase text-xs">{inv.branch}</span>
+          <input 
+            type="number" 
+            placeholder="Stock"
+            className="w-24 p-2 bg-white rounded-lg border-none outline-none font-bold"
+            value={inv.stock}
+            onChange={(e) => {
+              const newInv = [...formData.inventory];
+              newInv[idx].stock = parseInt(e.target.value) || 0;
+              setFormData({...formData, inventory: newInv});
+            }}
+          />
+        </div>
+      ))
+    ) : (
+      <div className="p-8 text-center bg-orange-50 rounded-2xl border border-orange-100">
+        <AlertTriangle className="mx-auto text-orange-400 mb-2" />
+        <p className="text-orange-600 font-bold text-sm">No branches found!</p>
+        <p className="text-orange-400 text-xs">Please register your business and branches first.</p>
+      </div>
+    )}
+  </div>
+)}
         </div>
 
         {/* Footer Actions */}

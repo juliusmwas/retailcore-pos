@@ -6,6 +6,8 @@ import {
   Download, CheckSquare, Square, TrendingUp, DollarSign, X, Percent, ChevronRight
 } from "lucide-react";
 
+import { useAuth } from "../../auth/AuthContext";
+
 const RETAIL_HIERARCHY = {
   "Grains & Cereals": ["Rice", "Maize Flour", "Wheat Flour", "Lentils/Beans", "Oats"],
   "Pantry & Groceries": ["Sugar", "Salt", "Cooking Oil", "Spices/Seasoning", "Pasta"],
@@ -18,6 +20,7 @@ const RETAIL_HIERARCHY = {
 };
 
 export default function AdminProducts() {
+  const { token } = useAuth(); // ✅ Get the token from context globally
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -29,26 +32,20 @@ export default function AdminProducts() {
 
 
 const fetchBranches = async () => {
-  try {
-    // 1. Get the token from wherever you store it (usually localStorage)
-    const token = localStorage.getItem("token"); 
+  if (!token) return; // Wait until token is available
 
+  try {
     const response = await fetch("http://localhost:5000/api/branches", {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}` // Send the token so req.user isn't empty
+        "Authorization": `Bearer ${token}` // ✅ Uses token from useAuth()
       }
     });
 
-    if (!response.ok) {
-      if (response.status === 401) throw new Error("Please log in again.");
-      throw new Error("Failed to load branches");
-    }
+    if (!response.ok) throw new Error("Failed to load branches");
 
     const result = await response.json();
-    
-    // 2. Remember your backend sends { data: [...] }, so we use result.data
     setBranches(Array.isArray(result.data) ? result.data : []); 
     
   } catch (err) {
@@ -58,20 +55,27 @@ const fetchBranches = async () => {
 
 
 // Updated Fetch Products
-  const fetchProducts = async () => {
-    try {
-      setIsLoading(true);
-      // Added the full backend address
-      const response = await fetch("http://localhost:5000/api/products");
-      if (!response.ok) throw new Error("Failed to load products");
-      const data = await response.json();
-      setProducts(Array.isArray(data) ? data : []);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+ const fetchProducts = async () => {
+  try {
+    setIsLoading(true);
+    const storedAuth = localStorage.getItem("auth");
+    const { token } = storedAuth ? JSON.parse(storedAuth) : {};
+
+    const response = await fetch("http://localhost:5000/api/products", {
+      headers: {
+        "Authorization": `Bearer ${token}` // ✅ Added protection
+      }
+    });
+    
+    if (!response.ok) throw new Error("Failed to load products");
+    const data = await response.json();
+    setProducts(Array.isArray(data) ? data : []);
+  } catch (err) {
+    setError(err.message);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
  useEffect(() => {
   fetchProducts();
@@ -115,15 +119,15 @@ const fetchBranches = async () => {
   };
 
 // Updated Product Persistence
-  const handleSaveProduct = async (formData) => {
-  try {
-    const token = localStorage.getItem("token");
+const handleSaveProduct = async (formData) => {
+  if (!token) return alert("Session error. Please login again.");
 
+  try {
     const response = await fetch("http://localhost:5000/api/products", {
       method: "POST",
       headers: { 
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}` // Added this
+        "Authorization": `Bearer ${token}` 
       },
       body: JSON.stringify(formData),
     });

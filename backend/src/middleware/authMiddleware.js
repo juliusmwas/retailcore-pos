@@ -10,23 +10,19 @@ export const verifyToken = (req, res, next) => {
     return res.status(401).json({ message: "No token, authorization denied" });
   }
 
-  try {
-    // 3. Verify the token using your Secret Key
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+ // backend/src/middleware/authMiddleware.js
+try {
+  const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // 4. Attach the decoded user data to the request object
-    // This allows your controllers to use req.user.businessId
-    req.user = {
-      id: decoded.id,
-      businessId: decoded.businessId,
-      role: decoded.role,
-    };
+  req.user = {
+    id: decoded.userId, // ✅ Changed 'decoded.id' to 'decoded.userId'
+    businessId: decoded.businessId,
+    role: decoded.role,
+  };
 
-    // 5. Move to the next function (the controller)
-    next();
-  } catch (err) {
-    // 6. If the token is fake or expired, return an error
-    console.error("Token verification failed:", err.message);
-    res.status(401).json({ message: "Token is not valid" });
-  }
+  next();
+} catch (err) {
+  console.error("Token verification failed:", err.message);
+  res.status(401).json({ message: "Token is not valid" });
+}
 };

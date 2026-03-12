@@ -20,7 +20,7 @@ const RETAIL_HIERARCHY = {
 };
 
 export default function AdminProducts() {
-  const { token } = useAuth(); // ✅ Get the token from context globally
+  const { token, business } = useAuth(); // ✅ Get the token from context globally
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -119,30 +119,55 @@ const fetchBranches = async () => {
   };
 
 // Updated Product Persistence
+
 const handleSaveProduct = async (formData) => {
-  if (!token) return alert("Session error. Please login again.");
-
-  try {
-    const response = await fetch("http://localhost:5000/api/products", {
-      method: "POST",
-      headers: { 
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}` 
-      },
-      body: JSON.stringify(formData),
-    });
-
-    if (response.ok) {
-      await fetchProducts(); 
-      setIsModalOpen(false);
-    } else {
-      const errorData = await response.json();
-      alert(`Error: ${errorData.message}`);
+    // Check if token exists before proceeding
+    if (!token) {
+      alert("Session expired. Please login again.");
+      return;
     }
-  } catch (err) {
-    console.error("Save failed:", err);
-  }
-};
+    
+    // Check if business data is loaded
+    if (!business?._id && !business?.id) {
+      alert("Critical Error: No Business ID found. Please refresh or re-login.");
+      return;
+    }
+
+    try {
+      // 2. Prepare the payload
+      // We explicitly map the business ID so the backend can link the product
+      const payload = {
+        ...formData,
+        businessId: business._id || business.id 
+      };
+
+      // 3. Perform the request
+      const response = await fetch("http://localhost:5000/api/products", {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}` 
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        // Success! Refresh the list and close the modal
+        await fetchProducts(); 
+        setIsModalOpen(false);
+        // Optional: show a success toast here
+      } else {
+        // The server received the request but rejected it (e.g., 401, 400)
+        alert(`Error: ${result.message || "Failed to save product"}`);
+      }
+    } catch (err) {
+      // Network errors or crashes
+      console.error("Save failed:", err);
+      alert("Network error: Could not connect to the server.");
+    }
+  };
 
   const handleBulkDelete = async (idsToDelete) => {
     try {

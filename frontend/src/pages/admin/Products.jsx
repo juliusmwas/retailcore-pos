@@ -121,14 +121,15 @@ const fetchBranches = async () => {
 // Updated Product Persistence
 
 const handleSaveProduct = async (formData) => {
+   console.log(business);
     // Check if token exists before proceeding
     if (!token) {
       alert("Session expired. Please login again.");
       return;
     }
-    
+   
     // Check if business data is loaded
-    if (!business?._id && !business?.id) {
+    if (!business?.id) {
       alert("Critical Error: No Business ID found. Please refresh or re-login.");
       return;
     }
@@ -138,7 +139,7 @@ const handleSaveProduct = async (formData) => {
       // We explicitly map the business ID so the backend can link the product
       const payload = {
         ...formData,
-        businessId: business._id || business.id 
+        businessId: business.id 
       };
 
       // 3. Perform the request

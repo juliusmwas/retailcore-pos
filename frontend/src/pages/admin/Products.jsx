@@ -20,7 +20,7 @@ const RETAIL_HIERARCHY = {
 };
 
 export default function AdminProducts() {
-  const { token, user, loading } = useAuth();
+  const { token, user, business, loading } = useAuth();
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -118,27 +118,23 @@ const fetchBranches = async () => {
     );
   };
 
-// Updated Product Persistence
-
+// 2. The updated function
 const handleSaveProduct = async (formData) => {
-  // 1. Directly extract the ID from the user object in your AuthContext
-  const currentBusinessId = user?.businessId || (branches && branches[0]?.businessId);
+  // Now 'business' is defined, so this line won't crash
+  const currentBusinessId = business?.id || user?.businessId || branches?.[0]?.businessId;
 
-  // 2. Perform safety checks
   if (!token) {
     alert("Session expired. Please login again.");
     return;
   }
 
-  // 3. This is the check that was failing in your screenshots
   if (!currentBusinessId) {
-    console.log("Current User Data:", user); // Check console to see why this is missing
-    alert("Critical Error: No Business ID found. Please refresh or re-login.");
+    console.error("Auth State Missing ID:", { user, business, branches });
+    alert("Critical Error: No Business ID found. Please log out and back in.");
     return;
   }
 
   try {
-    // 4. Create the payload ensuring businessId is at the top level
     const payload = {
       ...formData,
       businessId: currentBusinessId 
@@ -156,11 +152,10 @@ const handleSaveProduct = async (formData) => {
     const result = await response.json();
 
     if (response.ok) {
-      await fetchProducts(); 
+      if (typeof fetchProducts === 'function') await fetchProducts(); 
       setIsModalOpen(false);
       alert("Product saved successfully!");
     } else {
-      // This catches the "Unauthorized: Business ID missing" from your backend
       alert(`Error: ${result.message || "Failed to save product"}`);
     }
   } catch (err) {
@@ -168,6 +163,7 @@ const handleSaveProduct = async (formData) => {
     alert("Network error: Could not connect to the server.");
   }
 };
+
 
   const handleBulkDelete = async (idsToDelete) => {
     try {

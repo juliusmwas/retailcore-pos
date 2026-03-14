@@ -124,3 +124,71 @@ export const bulkDeleteProducts = async (req, res) => {
     res.status(500).json({ message: "Failed to delete products", error: error.message });
   }
 };
+
+export const updateProduct = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const data = req.body;
+    const businessId = req.user?.businessId;
+
+    const updatedProduct = await prisma.$transaction(async (tx) => {
+      // 1. Update the main Product details
+      const product = await tx.product.update({
+        where: { id: id, businessId: businessId },
+        data: {
+          name: data.name,
+          sku: data.sku,
+          barcode: data.barcode,
+          brand: data.brand,
+          uom: data.uom,
+          costPrice: parseFloat(data.costPrice) || 0,
+          sellingPrice: parseFloat(data.sellingPrice) || 0,
+          markup: parseFloat(data.markup) || 0,
+          category: {
+            connectOrCreate: {
+              where: { name: data.category },
+              create: { name: data.category }
+            }
+          }
+        },
+        // Include inventory in the return so the frontend gets the full object
+        include: { inventory: true } 
+      });
+
+      // 2. Update Inventory
+      // The model name in Prisma Client is 'productInventory' (lowercase p)
+      if (data.inventory && Array.isArray(data.inventory)) {
+        for (const item of data.inventory) {
+          await tx.productInventory.upsert({
+            where: {
+              productId_branchId: {
+                productId: id,
+                branchId: item.branchId
+              }
+            },
+            update: {
+              stock: parseInt(item.stock) || 0,
+              minStock: parseInt(item.minStock) || 0
+            },
+            create: {
+              productId: id,
+              branchId: item.branchId,
+              stock: parseInt(item.stock) || 0,
+              minStock: parseInt(item.minStock) || 0
+            }
+          });
+        }
+      }
+
+      return product;
+    });
+
+    res.status(200).json(updatedProduct);
+  } catch (error) {
+    console.error("Update Product Error:", error);
+    res.status(500).json({ 
+      message: "Failed to update product", 
+      error: error.message 
+    });
+  }
+};

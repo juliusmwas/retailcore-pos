@@ -399,7 +399,7 @@ if (!token) {
                       {p.inventory?.length > 0 ? (
                         p.inventory.map((inv, idx) => (
                           <div key={idx} className={`flex flex-col p-2 rounded-xl border ${inv.stock <= inv.min ? 'bg-orange-50 border-orange-100' : 'bg-gray-50 border-transparent'}`}>
-                            <span className="text-[9px] font-black text-gray-400 uppercase leading-tight">{inv.branch}</span>
+                            <span className="text-[9px] font-black text-gray-400 uppercase leading-tight">{typeof inv.branch === 'object' ? inv.branch.name : inv.branch}</span>
                             <span className={`text-xs font-bold ${inv.stock <= inv.min ? 'text-orange-600' : 'text-gray-700'}`}>
                               {inv.stock} <span className="text-[9px] text-gray-400 font-medium italic">pcs</span>
                             </span>

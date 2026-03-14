@@ -70,7 +70,7 @@ export const createProduct = async (req, res) => {
   }
 };
 
-// ADD THIS BACK - This was the missing export causing the crash!
+
 export const getAllProducts = async (req, res) => {
   try {
     const businessId = req.user?.businessId;
@@ -88,5 +88,39 @@ export const getAllProducts = async (req, res) => {
   } catch (error) {
     console.error("Get Products Error:", error);
     res.status(500).json({ message: "Failed to fetch products" });
+  }
+};
+
+export const bulkDeleteProducts = async (req, res) => {
+  try {
+    const { ids } = req.body;
+    const businessId = req.user?.businessId;
+
+    if (!ids || !Array.isArray(ids)) {
+      return res.status(400).json({ message: "No IDs provided" });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Delete associated inventory records
+      // CHANGED: used 'productInventory' (matching your schema)
+      await tx.productInventory.deleteMany({
+        where: {
+          productId: { in: ids }
+        }
+      });
+
+      // 2. Delete the products themselves
+      await tx.product.deleteMany({
+        where: {
+          id: { in: ids },
+          businessId: businessId
+        }
+      });
+    });
+
+    res.status(200).json({ message: "Products deleted successfully" });
+  } catch (error) {
+    console.error("Bulk Delete Error:", error);
+    res.status(500).json({ message: "Failed to delete products", error: error.message });
   }
 };

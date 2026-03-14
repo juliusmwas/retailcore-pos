@@ -1,15 +1,13 @@
 import express from "express";
 import { getBranches, createBranch } from "../controllers/branch.controller.js";
-import { verifyToken } from "../middleware/authMiddleware.js"; // 1. Import the guard
+import { authenticateToken } from "../middleware/authMiddleware.js"; // 1. Updated name
 
 const router = express.Router();
 
-// 2. Apply verifyToken to the GET route
-// This ensures 'req.user' exists when getBranches runs
-router.get("/", verifyToken, getBranches);
+// 2. Apply authenticateToken to the GET route
+router.get("/", authenticateToken, getBranches);
 
-// 3. Apply verifyToken to the POST route
-// This ensures 'req.user' exists when createBranch tries to read 'businessId'
-router.post("/", verifyToken, createBranch);
+// 3. Apply authenticateToken to the POST route
+router.post("/", authenticateToken, createBranch);
 
 export default router;

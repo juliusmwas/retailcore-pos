@@ -82,21 +82,25 @@ const fetchBranches = async () => {
   fetchBranches(); // Fetch branches on load
 }, []);
 
-  // 3. Optimized Filtering Logic - FIXED: Added defensive null checks
-  const filteredProducts = useMemo(() => {
-    return products.filter(p => {
-      const matchesSearch =
-        (p.name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
-        (p.sku?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
-        (p.barcode || "").includes(searchTerm);
+const filteredProducts = products.filter(p => {
+  // 1. Search filter (keep your existing search logic)
+  const matchesSearch = p.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                        p.sku?.toLowerCase().includes(searchTerm.toLowerCase());
 
-      const matchesBranch =
-        filterBranch === "All Branches" ||
-        p.inventory?.some(inv => inv.branch === filterBranch);
+  // 2. Branch Filter (The likely culprit)
+  const matchesBranch = filterBranch === "All Branches" || 
+    p.inventory?.some(inv => {
+      // Extract the name whether 'branch' is an object or a string
+      const inventoryBranchName = typeof inv.branch === 'object' 
+        ? inv.branch.name 
+        : inv.branch;
 
-      return matchesSearch && matchesBranch;
+      // Use .trim() to ignore accidental spaces and compare
+      return inventoryBranchName?.trim() === filterBranch.trim();
     });
-  }, [products, searchTerm, filterBranch]);
+
+  return matchesSearch && matchesBranch;
+});
 
   // 4. Selection Handlers - FIXED: Syncs with filtered view
   const toggleSelectAll = () => {
@@ -165,34 +169,65 @@ const handleSaveProduct = async (formData) => {
 };
 
 
-  const handleBulkDelete = async (idsToDelete) => {
+ const handleBulkDelete = async (idsToDelete) => {
+  if (!window.confirm(`Are you sure you want to delete ${idsToDelete.length} items?`)) return;
+
+  try {
+    setIsLoading(true);
+    
+    // Use the full URL and include the Authorization token
+    const response = await fetch("http://localhost:5000/api/products/bulk-delete", {
+      method: "DELETE",
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}` // Critical for your 401 protection
+      },
+      body: JSON.stringify({ ids: idsToDelete }),
+    });
+
+    if (response.ok) {
+      // Refresh list from server to ensure sync
+      if (typeof fetchProducts === 'function') await fetchProducts();
+      
+      setSelectedItems([]);
+      alert(`${idsToDelete.length} products deleted successfully.`);
+    } else {
+      const errorData = await response.json();
+      alert(`Error: ${errorData.message || "Failed to delete selected items"}`);
+    }
+  } catch (err) {
+    console.error("Bulk delete failed:", err);
+    alert("A network error occurred during deletion.");
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+
+  const handleDeleteOne = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this product?")) return;
+
     try {
       setIsLoading(true);
-      
-      // 1. API Call (Replace with your actual endpoint)
-      const response = await fetch("/api/products/bulk-delete", {
+      const response = await fetch("http://localhost:5000/api/products/bulk-delete", {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids: idsToDelete }),
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}` 
+        },
+        body: JSON.stringify({ ids: [id] }), // Wrap the single ID in an array
       });
 
       if (response.ok) {
-        // 2. Optimistic UI Update: Filter out deleted items from local state
-        setProducts(prev => prev.filter(p => !idsToDelete.includes(p.id)));
-        
-        // 3. Reset the selection state
-        setSelectedItems([]);
-        
-
-        // Optional: Success notification
-        console.log(`${idsToDelete.length} products deleted successfully.`);
+        if (typeof fetchProducts === 'function') await fetchProducts();
+        alert("Product deleted successfully.");
       } else {
         const errorData = await response.json();
-        alert(`Error: ${errorData.message || "Failed to delete selected items"}`);
+        alert(`Error: ${errorData.message || "Failed to delete product"}`);
       }
     } catch (err) {
-      console.error("Bulk delete failed:", err);
-      alert("A network error occurred during deletion.");
+      console.error("Delete failed:", err);
+      alert("Network error occurred.");
     } finally {
       setIsLoading(false);
     }
@@ -437,11 +472,17 @@ if (!token) {
                   </td>
                   <td className="px-8 py-6 text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <button className="p-2.5 bg-white border border-gray-200 rounded-xl text-gray-500 hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-sm hover:shadow-indigo-50">
+                      <button className="p-2.5 bg-white border border-gray-200 rounded-xl text-gray-500 hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-sm">
                         <Edit size={16} />
                       </button>
-                      <button className="p-2.5 text-gray-400 hover:text-gray-600 transition-colors rounded-xl hover:bg-gray-50">
-                        <MoreVertical size={18} />
+                      
+                      {/* Update this button for Delete */}
+                      <button 
+                        onClick={() => handleDeleteOne(p.id)}
+                        className="p-2.5 text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors rounded-xl"
+                        title="Delete Product"
+                      >
+                        <Trash2 size={18} /> {/* Changed icon to Trash2 for clarity */}
                       </button>
                     </div>
                   </td>

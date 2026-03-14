@@ -3,7 +3,7 @@ import { prisma } from '../lib/prisma.js';
 export const createProduct = async (req, res) => {
   try {
     const data = req.body;
-    const businessId = req.user?.businessId; 
+    const businessId = req.user?.businessId || data.businessId;
 
     if (!businessId) {
       return res.status(401).json({ message: "Unauthorized: Business ID missing" });
@@ -14,8 +14,7 @@ export const createProduct = async (req, res) => {
       where: { name: data.category },
       update: {},
       create: { 
-        name: data.category,
-        businessId: businessId 
+        name: data.category
       }
     });
 

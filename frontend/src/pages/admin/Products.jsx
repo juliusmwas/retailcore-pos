@@ -30,6 +30,28 @@ export default function AdminProducts() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [branches, setBranches] = useState([]);
   const businessId = user?.businessId || branches?.[0]?.businessId;
+  const [prices, setPrices] = useState({ cost: 0, selling: 0, markup: 0 });
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+const [editingProduct, setEditingProduct] = useState(null);
+
+
+useEffect(() => {
+  if (editingProduct) {
+    setPrices({
+      cost: editingProduct.costPrice || 0,
+      selling: editingProduct.sellingPrice || 0,
+      markup: editingProduct.markup || 0
+    });
+  }
+}, [editingProduct]);
+
+
+// This function runs when the Edit button is clicked
+const handleEditClick = (product) => {
+  setEditingProduct(product);
+  setIsEditModalOpen(true);
+};
+
 
 const fetchBranches = async () => {
   if (!token) return; // Wait until token is available
@@ -266,8 +288,91 @@ if (!token) {
   );
 }
 
-// 3. No more "Business profile" error—the page will now render your products table.
 
+
+const handleUpdateProduct = async (formData) => {
+  if (!editingProduct) return;
+
+  try {
+    // 1. Smart Token Retrieval 
+    // This checks 3 different places to ensure we find your session
+    const authContextToken = token; // From your useAuth() hook
+    const localToken = localStorage.getItem("token");
+    const localAuth = localStorage.getItem("auth");
+
+    let activeToken = authContextToken || localToken;
+
+    // If still not found, check if it's nested inside a JSON string in 'auth'
+    if (!activeToken && localAuth) {
+      try {
+        const parsed = JSON.parse(localAuth);
+        activeToken = parsed.token || parsed;
+      } catch (e) {
+        activeToken = localAuth;
+      }
+    }
+
+    // Validation Guard
+    if (!activeToken || activeToken === "null" || activeToken === "undefined") {
+      console.error("Token Debug:", { authContextToken, localToken, localAuth });
+      alert("Session expired. Please log in again.");
+      return;
+    }
+
+    // Clean quotes from token
+    const cleanToken = String(activeToken).replace(/^"(.*)"$/, '$1');
+
+    // 2. Data Formatting
+    const costPrice = parseFloat(formData.costPrice) || 0;
+    const sellingPrice = parseFloat(formData.sellingPrice) || 0;
+    const calculatedMarkup = costPrice > 0 ? ((sellingPrice - costPrice) / costPrice) * 100 : 0;
+
+    // 3. Prepare the Payload
+    const payload = {
+      name: formData.name,
+      sku: formData.sku,
+      barcode: formData.barcode,
+      brand: formData.brand,
+      uom: formData.uom,
+      category: formData.category,
+      costPrice: costPrice,
+      sellingPrice: sellingPrice,
+      markup: parseFloat(calculatedMarkup.toFixed(2)),
+      // Ensure inventory exists to prevent backend transaction errors
+      inventory: editingProduct.inventory || [] 
+    };
+
+    // 4. The API Call
+    const response = await fetch(`http://localhost:5000/api/products/${editingProduct.id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${cleanToken}` 
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.message || "Failed to update product");
+    }
+
+    // 5. Update the local UI state
+    setProducts((prevProducts) =>
+      prevProducts.map((p) => (p.id === editingProduct.id ? result : p))
+    );
+
+    // 6. Cleanup
+    setIsEditModalOpen(false);
+    setEditingProduct(null);
+    alert("Product updated successfully!");
+
+  } catch (error) {
+    console.error("Update failed:", error);
+    alert(`Error: ${error.message}`);
+  }
+};
 
   return (
     <div className="p-6 space-y-8 bg-gray-50/50 min-h-screen font-sans pb-24 relative">
@@ -383,6 +488,168 @@ if (!token) {
       </div>
       </div>
 
+      {isEditModalOpen && editingProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl w-full max-w-3xl shadow-2xl max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="sticky top-0 bg-white px-8 py-6 border-b border-gray-100 flex justify-between items-center z-10">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Edit Product</h2>
+                <p className="text-sm text-gray-500">Update details for {editingProduct.name}</p>
+              </div>
+              <button 
+                onClick={() => setIsEditModalOpen(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X size={20} className="text-gray-400" />
+              </button>
+            </div>
+
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const data = Object.fromEntries(formData.entries());
+                handleUpdateProduct(data); // Pass the data object here
+              }}
+              className="p-8"
+            >
+ 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Basic Information */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-semibold text-indigo-600 uppercase tracking-wider">General Info</h3>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
+                    <input
+                      name="name"
+                      defaultValue={editingProduct.name}
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                      required
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">SKU</label>
+                      <input
+                        name="sku"
+                        defaultValue={editingProduct.sku}
+                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Barcode</label>
+                      <input
+                        name="barcode"
+                        defaultValue={editingProduct.barcode}
+                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                    <input
+                      name="category"
+                      defaultValue={editingProduct.category?.name}
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                    />
+                  </div>
+                </div>
+
+                {/* Pricing & Logistics */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-semibold text-indigo-600 uppercase tracking-wider">Pricing & Stock</h3>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Cost Price</label>
+                      <input
+                        name="costPrice"
+                        type="number"
+                        value={prices.cost}
+                        onChange={(e) => {
+                          const newCost = parseFloat(e.target.value) || 0;
+                          // Calculate new selling price based on current markup
+                          const newSelling = newCost + (newCost * (prices.markup / 100));
+                          setPrices({ ...prices, cost: newCost, selling: newSelling.toFixed(2) });
+                        }}
+                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Selling Price</label>
+                      <input
+                        name="sellingPrice"
+                        type="number"
+                        value={prices.selling}
+                        onChange={(e) => {
+                          const newSelling = parseFloat(e.target.value) || 0;
+                          // Calculate new markup based on fixed cost
+                          const newMarkup = prices.cost > 0 ? ((newSelling - prices.cost) / prices.cost) * 100 : 0;
+                          setPrices({ ...prices, selling: newSelling, markup: newMarkup.toFixed(2) });
+                        }}
+                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Unit (UOM)</label>
+                      <select
+                        name="uom"
+                        defaultValue={editingProduct.uom}
+                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                      >
+                        <option value="Pcs">Pieces (Pcs)</option>
+                        <option value="Kgs">Kilograms (Kgs)</option>
+                        <option value="Ltrs">Litres (Ltrs)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Brand</label>
+                      <input
+                        name="brand"
+                        defaultValue={editingProduct.brand}
+                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-100">
+                    <p className="text-xs text-indigo-600 font-medium mb-2 italic">
+                      * Note: Inventory levels are managed per branch in the Stock module.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer Actions */}
+              <div className="mt-10 flex items-center justify-end gap-3 border-t border-gray-100 pt-6">
+                <button
+                  type="button"
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="px-6 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-8 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-lg shadow-indigo-200 transition-all transform active:scale-95"
+                >
+                  Update Product
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
@@ -472,7 +739,7 @@ if (!token) {
                   </td>
                   <td className="px-8 py-6 text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <button className="p-2.5 bg-white border border-gray-200 rounded-xl text-gray-500 hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-sm">
+                      <button onClick={() => handleEditClick(p)} className="p-2.5 bg-white border border-gray-200 rounded-xl text-gray-500 hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-sm group">
                         <Edit size={16} />
                       </button>
                       

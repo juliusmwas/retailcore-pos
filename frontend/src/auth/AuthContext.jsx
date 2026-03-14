@@ -10,10 +10,13 @@ export function AuthProvider({ children }) {
   const [activeBranch, setActiveBranch] = useState(null);
   const [role, setRole] = useState(null);
   const [token, setToken] = useState(null);
-  const [authLoading, setAuthLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Renamed for consistency
 
   // 🔄 Function to refresh branches from DB
   const updateBranches = async () => {
+    // Only attempt if we have a token
+    if (!token) return; 
+
     try {
       const response = await getBranches();
       const branchList = response.data.data || [];
@@ -31,33 +34,48 @@ export function AuthProvider({ children }) {
 
   // 🔁 Restore session on app load
   useEffect(() => {
-    const storedAuth = localStorage.getItem("auth");
-    const storedActiveBranch = localStorage.getItem("activeBranch");
+    const initializeAuth = async () => {
+      const storedAuth = localStorage.getItem("auth");
+      const storedActiveBranch = localStorage.getItem("activeBranch");
 
-    if (storedAuth) {
-      try {
-        const parsed = JSON.parse(storedAuth);
-        setUser(parsed.user);
-        setBusiness(parsed.business || null);
-        setBranches(parsed.branches || []);
-        setToken(parsed.token || null);
+      if (storedAuth) {
+        try {
+          const parsed = JSON.parse(storedAuth);
+          
+          // 1. Set basic states immediately from storage
+          setUser(parsed.user);
+          setBusiness(parsed.business || null);
+          setBranches(parsed.branches || []);
+          setToken(parsed.token || null);
 
-        // Restore the active branch selection if it exists
-        if (storedActiveBranch) {
-          setActiveBranch(JSON.parse(storedActiveBranch));
+          // 2. Restore active branch
+          if (storedActiveBranch) {
+            setActiveBranch(JSON.parse(storedActiveBranch));
+          }
+
+          // 3. Set Role
+          const rawRole = parsed.user?.role || parsed.branches?.[0]?.role || (parsed.user ? "OWNER" : null);
+          if (rawRole) setRole(rawRole.toUpperCase());
+          
+        } catch (error) {
+          console.error("Auth hydration failed:", error);
+          localStorage.removeItem("auth"); 
         }
-
-        const rawRole = parsed.user?.role || parsed.branches?.[0]?.role || (parsed.user ? "OWNER" : null);
-        if (rawRole) setRole(rawRole.toUpperCase());
-        
-        // Sync branches with server on load to ensure list is fresh
-        updateBranches();
-      } catch (error) {
-        localStorage.removeItem("auth"); 
       }
-    }
-    setAuthLoading(false);
+      
+      // Finalize loading state
+      setLoading(false);
+    };
+
+    initializeAuth();
   }, []);
+
+  // Separate useEffect to sync branches once token is established
+  useEffect(() => {
+    if (token) {
+      updateBranches();
+    }
+  }, [token]);
 
   const login = ({ user, business, branches, token }) => {
     setUser(user);
@@ -69,7 +87,9 @@ export function AuthProvider({ children }) {
 
     localStorage.setItem("auth", JSON.stringify({ 
       user: { ...user, role: assignedRole }, 
-      business, branches, token 
+      business, 
+      branches, 
+      token 
     }));
   };
 
@@ -102,10 +122,10 @@ export function AuthProvider({ children }) {
         activeBranch,
         role,
         token,
-        authLoading,
+        loading, // Exposed as 'loading'
         login,
         selectBranch,
-        updateBranches, // New: allow pages to refresh the dropdown
+        updateBranches,
         logout,
       }}
     >

@@ -20,7 +20,7 @@ const RETAIL_HIERARCHY = {
 };
 
 export default function AdminProducts() {
-  const { token, business } = useAuth(); // ✅ Get the token from context globally
+  const { token, user, loading } = useAuth();
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -29,7 +29,7 @@ export default function AdminProducts() {
   const [filterBranch, setFilterBranch] = useState("All Branches");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [branches, setBranches] = useState([]);
-
+  const businessId = user?.businessId || branches?.[0]?.businessId;
 
 const fetchBranches = async () => {
   if (!token) return; // Wait until token is available
@@ -121,54 +121,53 @@ const fetchBranches = async () => {
 // Updated Product Persistence
 
 const handleSaveProduct = async (formData) => {
-   console.log(business);
-    // Check if token exists before proceeding
-    if (!token) {
-      alert("Session expired. Please login again.");
-      return;
+  // 1. Directly extract the ID from the user object in your AuthContext
+  const currentBusinessId = user?.businessId || (branches && branches[0]?.businessId);
+
+  // 2. Perform safety checks
+  if (!token) {
+    alert("Session expired. Please login again.");
+    return;
+  }
+
+  // 3. This is the check that was failing in your screenshots
+  if (!currentBusinessId) {
+    console.log("Current User Data:", user); // Check console to see why this is missing
+    alert("Critical Error: No Business ID found. Please refresh or re-login.");
+    return;
+  }
+
+  try {
+    // 4. Create the payload ensuring businessId is at the top level
+    const payload = {
+      ...formData,
+      businessId: currentBusinessId 
+    };
+
+    const response = await fetch("http://localhost:5000/api/products", {
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}` 
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      await fetchProducts(); 
+      setIsModalOpen(false);
+      alert("Product saved successfully!");
+    } else {
+      // This catches the "Unauthorized: Business ID missing" from your backend
+      alert(`Error: ${result.message || "Failed to save product"}`);
     }
-   
-    // Check if business data is loaded
-    if (!business?.id) {
-      alert("Critical Error: No Business ID found. Please refresh or re-login.");
-      return;
-    }
-
-    try {
-      // 2. Prepare the payload
-      // We explicitly map the business ID so the backend can link the product
-      const payload = {
-        ...formData,
-        businessId: business.id 
-      };
-
-      // 3. Perform the request
-      const response = await fetch("http://localhost:5000/api/products", {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}` 
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const result = await response.json();
-
-      if (response.ok) {
-        // Success! Refresh the list and close the modal
-        await fetchProducts(); 
-        setIsModalOpen(false);
-        // Optional: show a success toast here
-      } else {
-        // The server received the request but rejected it (e.g., 401, 400)
-        alert(`Error: ${result.message || "Failed to save product"}`);
-      }
-    } catch (err) {
-      // Network errors or crashes
-      console.error("Save failed:", err);
-      alert("Network error: Could not connect to the server.");
-    }
-  };
+  } catch (err) {
+    console.error("Save failed:", err);
+    alert("Network error: Could not connect to the server.");
+  }
+};
 
   const handleBulkDelete = async (idsToDelete) => {
     try {
@@ -217,6 +216,27 @@ const handleSaveProduct = async (formData) => {
     if (total <= totalMin) return { label: "LOW", color: "text-orange-600 bg-orange-50 border-orange-100" };
     return { label: "HEALTHY", color: "text-emerald-600 bg-emerald-50 border-emerald-100" };
   };
+
+// 1. Wait for the Auth system to finish reading localStorage
+if (loading) {
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+    </div>
+  );
+}
+
+// 2. If there's no token, they aren't logged in
+if (!token) {
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <p className="text-gray-500">Please log in to access this page.</p>
+    </div>
+  );
+}
+
+// 3. No more "Business profile" error—the page will now render your products table.
+
 
   return (
     <div className="p-6 space-y-8 bg-gray-50/50 min-h-screen font-sans pb-24 relative">

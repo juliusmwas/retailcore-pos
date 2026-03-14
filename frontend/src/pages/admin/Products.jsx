@@ -329,20 +329,23 @@ if (!token) {
           />
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex flex-col">
-            <span className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-1">Branch Filter</span>
-            <select 
-              className="px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-600 outline-none cursor-pointer hover:border-indigo-300 transition-colors"
-              value={filterBranch}
-              onChange={(e) => setFilterBranch(e.target.value)}
-            >
-              <option value="All Branches">All Branches</option>
-              {/* {availableBranches.map(branch => (
-                <option key={branch} value={branch}>{branch}</option>
-              ))} */}
-            </select>
-          </div>
+        <div className="flex flex-col">
+          <span className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-1">Branch Filter</span>
+          <select 
+            className="px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-600 outline-none cursor-pointer hover:border-indigo-300 transition-colors"
+            value={filterBranch}
+            onChange={(e) => setFilterBranch(e.target.value)}
+          >
+            <option value="All Branches">All Branches</option>
+            {/* Map through the branches from your AuthContext */}
+            {branches && branches.map((branch) => (
+              <option key={branch.id} value={branch.name}>
+                {branch.name}
+              </option>
+            ))}
+          </select>
         </div>
+      </div>
       </div>
 
       <div className="overflow-x-auto">

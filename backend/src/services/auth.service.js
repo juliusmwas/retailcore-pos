@@ -112,6 +112,7 @@ export const loginService = async ({ identifier, password }) => {
       businessName: user.business?.name || "My Business", 
       role: userRole
     },
+    business: user.business,
     // Added safety for branches map
     branches: user.branches?.map(ub => ub.branch) || []
   };

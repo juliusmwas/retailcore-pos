@@ -8,11 +8,41 @@ import {
 } from "lucide-react";
 
 export default function Staff() {
-  const { activeBranch, branches } = useAuth();
+  const { activeBranch, branches, token } = useAuth();
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // 1. State for the Edit Modal
+const [showEditModal, setShowEditModal] = useState(false);
+const [editingStaff, setEditingStaff] = useState(null);
+const [editFormData, setEditFormData] = useState({
+  fullName: "",
+  email: "",
+  role: "",
+  status: ""
+});
+
+// Opens modal and populates fields with current staff data
+const handleEditClick = (member) => {
+  setEditingStaff(member);
+  setEditFormData({
+    fullName: member.fullName,
+    email: member.email,
+    role: member.role,
+    status: member.status
+  });
+  setShowEditModal(true);
+};
+
+// Handles the actual update
+const handleEditSubmit = async (e) => {
+  e.preventDefault();
+  // Reuse your handleUpdateStaff logic
+  await handleUpdateStaff(editingStaff.id, editFormData);
+  setShowEditModal(false);
+};
 
   // Form State
   const [formData, setFormData] = useState({
@@ -73,6 +103,54 @@ export default function Staff() {
     s.email?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const handleUpdateStaff = async (userId, updatedData) => {
+    try {
+      // 1. Token Safety Check
+      // We look in context first, then fallback to localStorage
+      let activeToken = token || localStorage.getItem("token");
+
+      if (!activeToken || activeToken === "null" || activeToken === "undefined") {
+        alert("Session expired. Please log in again.");
+        return;
+      }
+
+      // 2. Clean the token (removes accidental double quotes)
+      const cleanToken = String(activeToken).replace(/^"(.*)"$/, '$1');
+
+      // 3. The API Call
+      const response = await fetch(`http://localhost:5000/api/users/${userId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${cleanToken}` 
+        },
+        body: JSON.stringify(updatedData),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || "Failed to update staff member");
+      }
+
+      // 4. Update the UI state
+      // Note: 'result' should be the updated user object from your backend
+      setStaff(prev => prev.map(s => s.id === userId ? result : s));
+      
+      // Optional: If you updated the user's status, show a specific message
+      if (updatedData.status) {
+        alert(`Staff status changed to ${updatedData.status}`);
+      } else {
+        alert("Staff updated successfully");
+      }
+
+    } catch (err) {
+      console.error("Staff update error:", err);
+      alert(`Error: ${err.message}`);
+    }
+  };
+
+
   return (
     <div className="p-6 space-y-8 bg-gray-50 min-h-screen">
       {/* 🚀 HEADER */}
@@ -119,7 +197,7 @@ export default function Staff() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredStaff.map((member) => (
-            <StaffCard key={member.id} member={member} />
+            <StaffCard key={member.id} member={member} onUpdate={handleUpdateStaff} onEdit={handleEditClick} />
           ))}
         </div>
       )}
@@ -224,6 +302,90 @@ export default function Staff() {
           </div>
         </div>
       )}
+
+      {/* 📝 EDIT STAFF MODAL */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-blue-50/50">
+              <div>
+                <h2 className="text-xl font-bold text-gray-800">Edit Staff Profile</h2>
+                <p className="text-xs text-gray-500 font-medium">Updating info for #{editingStaff?.staffNumber}</p>
+              </div>
+              <button onClick={() => setShowEditModal(false)} className="text-gray-400 hover:text-gray-600">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleEditSubmit} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Full Name</label>
+                <input 
+                  required 
+                  type="text" 
+                  className="w-full p-3 bg-gray-50 rounded-xl border-none focus:ring-2 focus:ring-blue-500" 
+                  value={editFormData.fullName} 
+                  onChange={e => setEditFormData({...editFormData, fullName: e.target.value})} 
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Email Address</label>
+                <input 
+                  required 
+                  type="email" 
+                  className="w-full p-3 bg-gray-50 rounded-xl border-none focus:ring-2 focus:ring-blue-500" 
+                  value={editFormData.email} 
+                  onChange={e => setEditFormData({...editFormData, email: e.target.value})} 
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Role</label>
+                  <select 
+                    className="w-full p-3 bg-gray-50 rounded-xl border-none focus:ring-2 focus:ring-blue-500 font-bold text-sm"
+                    value={editFormData.role} 
+                    onChange={e => setEditFormData({...editFormData, role: e.target.value})}
+                  >
+                    <option value="CASHIER">Cashier</option>
+                    <option value="MANAGER">Manager</option>
+                    <option value="ADMIN">Admin</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Account Status</label>
+                  <select 
+                    className="w-full p-3 bg-gray-50 rounded-xl border-none focus:ring-2 focus:ring-blue-500 font-bold text-sm"
+                    value={editFormData.status} 
+                    onChange={e => setEditFormData({...editFormData, status: e.target.value})}
+                  >
+                    <option value="ACTIVE">Active</option>
+                    <option value="SUSPENDED">Suspended</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button 
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  className="flex-1 bg-gray-100 text-gray-600 font-bold py-4 rounded-2xl hover:bg-gray-200 transition-all"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="flex-[2] bg-blue-600 text-white font-bold py-4 rounded-2xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-100"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
@@ -242,7 +404,8 @@ function StatCard({ icon, label, value, bg }) {
   );
 }
 
-function StaffCard({ member }) {
+function StaffCard({ member, onUpdate, onEdit }) {
+
   return (
     <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 hover:shadow-xl transition-all group relative overflow-hidden">
       <div className="flex items-start gap-4">
@@ -268,10 +431,10 @@ function StaffCard({ member }) {
           <Mail className="w-4 h-4 text-gray-400" />
           <span className="truncate">{member.email}</span>
         </div>
-       <div className="flex items-center gap-3 text-gray-600">
+        <div className="flex items-center gap-3 text-gray-600">
           <MapPin className="w-4 h-4 text-gray-400" />
           <span className="font-medium text-blue-600">
-            {member.branchName}
+            {member.branchName || "No Branch"}
           </span>
         </div>
         <div className="flex items-center gap-3">
@@ -281,17 +444,34 @@ function StaffCard({ member }) {
             </span>
           ) : (
             <span className="flex items-center gap-1 text-red-600 font-bold text-xs bg-red-50 px-2 py-1 rounded-lg">
-              <XCircle className="w-3 h-3" /> Inactive
+              <XCircle className="w-3 h-3" /> {member.status}
             </span>
           )}
         </div>
       </div>
 
       <div className="mt-6 flex gap-2">
-        <button className="flex-1 py-2 bg-gray-50 hover:bg-blue-50 hover:text-blue-600 text-gray-600 rounded-xl text-xs font-bold transition-all border border-transparent hover:border-blue-100">
+        <button 
+          onClick={() => onEdit(member)}
+          className="flex-1 py-2 bg-gray-50 hover:bg-blue-50 hover:text-blue-600 text-gray-600 rounded-xl text-xs font-bold transition-all border border-transparent hover:border-blue-100"
+        >
           Edit Profile
         </button>
-        <button className="px-3 py-2 bg-gray-50 hover:bg-blue-50 text-gray-400 hover:text-blue-600 rounded-xl transition-all">
+
+        <button 
+          onClick={() => {
+            const newStatus = member.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
+            if(window.confirm(`Are you sure you want to ${newStatus.toLowerCase()} this user?`)) {
+              onUpdate(member.id, { status: newStatus });
+            }
+          }}
+          title={member.status === 'ACTIVE' ? "Suspend Access" : "Restore Access"}
+          className={`px-3 py-2 rounded-xl transition-all ${
+            member.status === 'ACTIVE' 
+              ? "bg-gray-50 hover:bg-red-50 text-gray-400 hover:text-red-600" 
+              : "bg-red-100 text-red-600 hover:bg-emerald-50 hover:text-emerald-600"
+          }`}
+        >
           <Smartphone className="w-4 h-4" />
         </button>
       </div>

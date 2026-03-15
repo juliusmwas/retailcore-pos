@@ -118,7 +118,7 @@ const handleEditSubmit = async (e) => {
       const cleanToken = String(activeToken).replace(/^"(.*)"$/, '$1');
 
       // 3. The API Call
-      const response = await fetch(`http://localhost:5000/api/users/${userId}`, {
+      const response = await fetch(`http://localhost:5000/api/staff/${userId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -405,7 +405,6 @@ function StatCard({ icon, label, value, bg }) {
 }
 
 function StaffCard({ member, onUpdate, onEdit }) {
-
   return (
     <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 hover:shadow-xl transition-all group relative overflow-hidden">
       <div className="flex items-start gap-4">
@@ -415,7 +414,14 @@ function StaffCard({ member, onUpdate, onEdit }) {
         <div className="flex-1">
           <div className="flex justify-between items-start">
             <h3 className="font-bold text-gray-900 text-lg leading-tight mb-1">{member.fullName}</h3>
-            <span className="text-xs font-mono bg-gray-100 px-2 py-0.5 rounded text-gray-500 font-bold">#{member.staffNumber}</span>
+            {/* Logic: Premium badge for Admins, standard for others */}
+            <span className={`text-xs font-mono px-2 py-0.5 rounded font-bold ${
+              member.role === 'ADMIN' 
+                ? 'bg-purple-600 text-white shadow-sm' 
+                : 'bg-gray-100 text-gray-500'
+            }`}>
+              #{member.staffNumber}
+            </span>
           </div>
           <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wider ${
             member.role === 'ADMIN' ? 'bg-purple-100 text-purple-700' : 
@@ -431,12 +437,17 @@ function StaffCard({ member, onUpdate, onEdit }) {
           <Mail className="w-4 h-4 text-gray-400" />
           <span className="truncate">{member.email}</span>
         </div>
+
         <div className="flex items-center gap-3 text-gray-600">
           <MapPin className="w-4 h-4 text-gray-400" />
-          <span className="font-medium text-blue-600">
-            {member.branchName || "No Branch"}
+          {/* Logic: Display "Global Access" for Admins without a specific branch */}
+          <span className={`font-medium ${member.role === 'ADMIN' ? 'text-purple-600' : 'text-blue-600'}`}>
+            {member.role === 'ADMIN' && (member.branchName === "Unassigned" || !member.branchName)
+              ? "Global Access (All Branches)" 
+              : member.branchName || "No Branch"}
           </span>
         </div>
+
         <div className="flex items-center gap-3">
           {member.status === "ACTIVE" ? (
             <span className="flex items-center gap-1 text-green-600 font-bold text-xs bg-green-50 px-2 py-1 rounded-lg">

@@ -374,6 +374,41 @@ const handleUpdateProduct = async (formData) => {
   }
 };
 
+  const handleExportCSV = () => {
+    if (products.length === 0) return;
+
+    // 1. Define the headers
+    const headers = ["Name", "SKU", "Barcode", "Category", "Cost Price", "Selling Price", "Total Stock"];
+
+    // 2. Map the products to rows
+    const rows = products.map(p => {
+      const totalStock = p.inventory?.reduce((sum, inv) => sum + (inv.stock || 0), 0) || 0;
+      return [
+        `"${p.name}"`, // Wrap names in quotes to handle commas in names
+        p.sku,
+        p.barcode,
+        `"${p.category?.name || 'Uncategorized'}"`,
+        p.costPrice,
+        p.sellingPrice,
+        totalStock
+      ];
+    });
+
+    // 3. Combine into a single string
+    const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
+
+    // 4. Create a download link and click it
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `inventory_export_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+
   return (
     <div className="p-6 space-y-8 bg-gray-50/50 min-h-screen font-sans pb-24 relative">
       
@@ -406,6 +441,7 @@ const handleUpdateProduct = async (formData) => {
 
         <div className="flex items-center gap-3">
           <button 
+            onClick={handleExportCSV} // 
             disabled={isLoading || products.length === 0}
             className="flex items-center gap-2 bg-white text-gray-700 px-5 py-3.5 rounded-2xl border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-bold text-sm shadow-sm"
           >

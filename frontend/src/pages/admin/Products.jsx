@@ -422,33 +422,48 @@ const handleUpdateProduct = async (formData) => {
       </div>
 
       {/* --- KPI SECTION --- */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        {/* Inventory Value */}
         <KPI 
           color="indigo" 
           label="Inventory Value" 
-          value={`KES ${(products.reduce((acc, p) => acc + (Number(p.costPrice) * (p.inventory?.reduce((sum, inv) => sum + inv.stock, 0) || 0)), 0) / 1000000).toFixed(2)}M`} 
+          value={`KES ${(products.reduce((acc, p) => 
+            acc + (Number(p.costPrice || 0) * (p.inventory?.reduce((sum, inv) => sum + (inv.stock || 0), 0) || 0)), 0)
+          ).toLocaleString()}`} 
           sub="Total Cost Basis" 
           icon={<DollarSign size={18}/>} 
         />
+
+        {/* Potential Revenue */}
         <KPI 
           color="emerald" 
           label="Potential Revenue" 
-          value={`KES ${(products.reduce((acc, p) => acc + (Number(p.sellingPrice) * (p.inventory?.reduce((sum, inv) => sum + inv.stock, 0) || 0)), 0) / 1000000).toFixed(2)}M`} 
+          value={`KES ${(products.reduce((acc, p) => 
+            acc + (Number(p.sellingPrice || 0) * (p.inventory?.reduce((sum, inv) => sum + (inv.stock || 0), 0) || 0)), 0)
+          ).toLocaleString()}`} 
           sub="Projected Sales" 
           icon={<TrendingUp size={18}/>} 
         />
+
+        {/* Stock Alerts - FIXED: Uses minStock from your Schema */}
         <KPI 
           color="orange" 
           label="Stock Alerts" 
-          value={products.filter(p => p.inventory?.some(inv => inv.stock <= inv.min)).length.toString().padStart(2, '0')} 
+          value={products.filter(p => 
+            p.inventory?.some(inv => (inv.stock || 0) <= (inv.minStock || 0))
+          ).length.toString().padStart(2, '0')} 
           sub="Items Low/OOS" 
           icon={<AlertTriangle size={18}/>} 
-          pulse={products.some(p => p.inventory?.some(inv => inv.stock <= inv.min))}
+          pulse={products.some(p => 
+            p.inventory?.some(inv => (inv.stock || 0) <= (inv.minStock || 0))
+          )}
         />
+
+        {/* Global Reach - FIXED: Connected to your branches state */}
         <KPI 
           color="slate" 
           label="Global Reach" 
-          //value={availableBranches.length.toString().padStart(2, '0')} 
+          value={branches.length.toString().padStart(2, '0')} 
           sub="Active Branches" 
           icon={<Store size={18}/>} 
         />

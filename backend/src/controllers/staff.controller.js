@@ -108,23 +108,53 @@ export const getStaff = async (req, res) => {
   }
 };
 
-export const updateUser = async (req, res) => {
+// Change 'updateUser' to 'updateStaff' to match your routes file!
+export const updateStaff = async (req, res) => {
   try {
     const { id } = req.params;
-    const { fullName, email, status } = req.body;
-    const businessId = req.user.businessId; // Security check
+    // 1. Destructure all fields being sent from your Edit Modal
+    const { fullName, email, role, status, branchId } = req.body;
+    const { businessId } = req.user; // Security check
 
-    const updatedUser = await prisma.user.update({
-      where: { id: id, businessId: businessId },
-      data: {
-        fullName,
-        email,
-        status // This allows toggling ACTIVE/SUSPENDED
+    // 2. Use a transaction to update both the User and their Role/Branch link
+    const updatedStaff = await prisma.$transaction(async (tx) => {
+      // Update core user info
+      const user = await tx.user.update({
+        where: { 
+          id: id, 
+          businessId: businessId // Ensures you can't edit users from other businesses
+        },
+        data: {
+          fullName,
+          email,
+          status
+        }
+      });
+
+      // Update the Role/Branch in the junction table if provided
+      if (role || branchId) {
+        await tx.userBranch.updateMany({
+          where: { userId: id },
+          data: {
+            ...(role && { role }),
+            ...(branchId && { branchId })
+          }
+        });
       }
+
+      return user;
     });
 
-    res.status(200).json(updatedUser);
+    // 3. Return the updated user (Frontend expects this to update the list)
+    res.status(200).json({
+      success: true,
+      data: updatedStaff
+    });
   } catch (error) {
-    res.status(500).json({ message: "Failed to update staff member", error: error.message });
+    console.error("Update Staff Error:", error);
+    res.status(500).json({ 
+      message: "Failed to update staff member", 
+      error: error.message 
+    });
   }
 };

@@ -107,3 +107,24 @@ export const getStaff = async (req, res) => {
     res.status(500).json({ message: "Error fetching staff directory." });
   }
 };
+
+export const updateUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { fullName, email, status } = req.body;
+    const businessId = req.user.businessId; // Security check
+
+    const updatedUser = await prisma.user.update({
+      where: { id: id, businessId: businessId },
+      data: {
+        fullName,
+        email,
+        status // This allows toggling ACTIVE/SUSPENDED
+      }
+    });
+
+    res.status(200).json(updatedUser);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to update staff member", error: error.message });
+  }
+};

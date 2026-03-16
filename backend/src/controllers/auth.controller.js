@@ -1,4 +1,5 @@
 import { registerOwnerService, loginService } from "../services/auth.service.js";
+import { prisma } from "../lib/prisma.js"; // Ensure this path matches your project
 
 export const registerOwner = async (req, res) => {
   try {
@@ -20,6 +21,15 @@ export const loginUser = async (req, res) => {
       identifier: email, 
       password 
     });
+
+    // ✨ 3. UPDATE LAST LOGIN
+    // result.user.id assumes your loginService returns { user: { id, ... }, token }
+    if (result.user && result.user.id) {
+      await prisma.user.update({
+        where: { id: result.user.id },
+        data: { lastLogin: new Date() }
+      });
+    }
 
     res.status(200).json(result);
   } catch (err) {

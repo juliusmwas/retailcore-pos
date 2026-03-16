@@ -1,5 +1,3 @@
-// Prisma schema for RetailCore POS
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,154 +6,128 @@ datasource db {
   provider = "postgresql"
 }
 
+model Business {
+  id        String    @id @default(uuid())
+  name      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  country   String?
+  industry  String?
+  phone     String?
+  branches  Branch[]
+  products  Product[]
+  users     User[]
+}
+
+model Branch {
+  id            String             @id @default(uuid())
+  name          String
+  location      String?
+  businessId    String
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  code          String             @unique
+  country       String?
+  managerName   String?
+  status        String             @default("ACTIVE")
+  address       String?
+  budget        Float              @default(0)
+  city          String?
+  currency      String?            @default("KES")
+  initialStaff  Int                @default(0)
+  managerEmail  String?
+  managerPhone  String?
+  maxStaff      Int                @default(20)
+  openingDate   DateTime           @default(now())
+  revenueTarget Float              @default(0)
+  taxRegion     String?
+  type          String?
+  business      Business           @relation(fields: [businessId], references: [id])
+  inventory     ProductInventory[]
+  users         UserBranch[]
+}
+
+model User {
+  id          String       @id @default(uuid())
+  fullName    String
+  email       String       @unique
+  password    String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  businessId  String
+  phone       String?
+  staffNumber String?      @unique
+  status      UserStatus   @default(ACTIVE)
+  lastLogin    DateTime? // New fiel
+  business    Business     @relation(fields: [businessId], references: [id])
+  branches    UserBranch[]
+}
+
+model UserBranch {
+  id        String   @id @default(uuid())
+  userId    String
+  branchId  String
+  role      Role     @default(CASHIER)
+  createdAt DateTime @default(now())
+  branch    Branch   @relation(fields: [branchId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, branchId])
+}
+
+model Category {
+  id        String    @id @default(uuid())
+  name      String    @unique
+  createdAt DateTime  @default(now())
+  products  Product[]
+}
+
+model Product {
+  id           String             @id @default(uuid())
+  name         String
+  sku          String             @unique
+  barcode      String             @unique
+  brand        String?
+  uom          String             @default("Pcs")
+  subCategory  String?
+  costPrice    Float
+  sellingPrice Float
+  markup       Float
+  taxClass     String             @default("Standard 16%")
+  categoryId   String
+  businessId   String
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  business     Business           @relation(fields: [businessId], references: [id])
+  category     Category           @relation(fields: [categoryId], references: [id])
+  inventory    ProductInventory[]
+
+  @@index([sku, barcode])
+}
+
+model ProductInventory {
+  id        String   @id @default(uuid())
+  stock     Int      @default(0)
+  minStock  Int      @default(5)
+  productId String
+  branchId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  branch    Branch   @relation(fields: [branchId], references: [id])
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, branchId])
+}
+
 enum Role {
   OWNER
   ADMIN
-  MANAGER
   CASHIER
+  MANAGER
 }
 
 enum UserStatus {
   ACTIVE
   INACTIVE
   SUSPENDED
-}
-
-model Business {
-  id        String   @id @default(uuid())
-  name      String
-  phone     String?
-  country   String?
-  industry  String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  branches Branch[]
-  users    User[]
-  products Product[]
-}
-
-model Branch {
-  id        String             @id @default(uuid())
-  name      String
-  code      String             @unique
-  type      String? // e.g., Retail, Warehouse
-  status    String             @default("ACTIVE")
-  inventory ProductInventory[]
-
-  // Location Details
-  country  String?
-  city     String?
-  address  String?
-  location String?
-
-  // Manager Details
-  managerName  String?
-  managerEmail String?
-  managerPhone String?
-
-  // Financials & Staffing
-  currency      String?  @default("KES")
-  taxRegion     String?
-  initialStaff  Int      @default(0)
-  maxStaff      Int      @default(20)
-  budget        Float    @default(0)
-  revenueTarget Float    @default(0)
-  openingDate   DateTime @default(now())
-
-  businessId String
-  business   Business @relation(fields: [businessId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  users UserBranch[]
-}
-
-model User {
-  id          String     @id @default(uuid())
-  staffNumber String?    @unique // 🔑 Now Optional (?) so Admin can register
-  fullName    String
-  email       String     @unique
-  password    String
-  phone       String?
-  status      UserStatus @default(ACTIVE)
-
-  businessId String
-  business   Business @relation(fields: [businessId], references: [id])
-
-  branches  UserBranch[]
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
-}
-
-model UserBranch {
-  id       String @id @default(uuid())
-  userId   String
-  branchId String
-  role     Role   @default(CASHIER)
-
-  user   User   @relation(fields: [userId], references: [id])
-  branch Branch @relation(fields: [branchId], references: [id])
-
-  createdAt DateTime @default(now())
-
-  @@unique([userId, branchId])
-}
-
-// --- PRODUCT & INVENTORY MODELS ---
-
-model Category {
-  id        String    @id @default(uuid())
-  name      String    @unique
-  products  Product[]
-  createdAt DateTime  @default(now())
-}
-
-model Product {
-  id          String  @id @default(uuid())
-  name        String
-  sku         String  @unique
-  barcode     String  @unique
-  brand       String?
-  uom         String  @default("Pcs") // Unit of Measure
-  subCategory String?
-
-  // Financials
-  costPrice    Float
-  sellingPrice Float
-  markup       Float // Percentage
-  taxClass     String @default("Standard 16%")
-
-  // Relations
-  categoryId String
-  category   Category @relation(fields: [categoryId], references: [id])
-
-  businessId String
-  business   Business @relation(fields: [businessId], references: [id])
-
-  inventory ProductInventory[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([sku, barcode])
-}
-
-model ProductInventory {
-  id       String @id @default(uuid())
-  stock    Int    @default(0)
-  minStock Int    @default(5) // Reorder point
-
-  // Relations
-  productId String
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  branchId String
-  branch   Branch @relation(fields: [branchId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([productId, branchId]) // One entry per product per branch
 }

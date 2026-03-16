@@ -4,7 +4,7 @@ import { getStaff, addStaff } from "../../services/staffService";
 import { 
   UserPlus, Users, ShieldCheck, MapPin, 
   Mail, MoreVertical, CheckCircle, XCircle, 
-  Search, Filter, Smartphone, X, Lock, Hash, User
+  Search, Filter, Smartphone, X, Lock, Hash, User, Clock
 } from "lucide-react";
 
 export default function Staff() {
@@ -414,7 +414,6 @@ function StaffCard({ member, onUpdate, onEdit }) {
         <div className="flex-1">
           <div className="flex justify-between items-start">
             <h3 className="font-bold text-gray-900 text-lg leading-tight mb-1">{member.fullName}</h3>
-            {/* Logic: Premium badge for Admins, standard for others */}
             <span className={`text-xs font-mono px-2 py-0.5 rounded font-bold ${
               member.role === 'ADMIN' 
                 ? 'bg-purple-600 text-white shadow-sm' 
@@ -440,11 +439,25 @@ function StaffCard({ member, onUpdate, onEdit }) {
 
         <div className="flex items-center gap-3 text-gray-600">
           <MapPin className="w-4 h-4 text-gray-400" />
-          {/* Logic: Display "Global Access" for Admins without a specific branch */}
           <span className={`font-medium ${member.role === 'ADMIN' ? 'text-purple-600' : 'text-blue-600'}`}>
             {member.role === 'ADMIN' && (member.branchName === "Unassigned" || !member.branchName)
               ? "Global Access (All Branches)" 
               : member.branchName || "No Branch"}
+          </span>
+        </div>
+
+        {/* --- NEW LAST LOGIN SECTION --- */}
+        <div className="flex items-center gap-3 text-gray-500 text-[11px] bg-gray-50/50 p-2 rounded-xl border border-gray-100/50">
+          <Clock className="w-3.5 h-3.5 text-gray-400" />
+          <span>
+            Last login: {member.lastLogin 
+              ? new Date(member.lastLogin).toLocaleString('en-GB', { 
+                  day: '2-digit',
+                  month: 'short', 
+                  hour: '2-digit', 
+                  minute: '2-digit' 
+                }) 
+              : 'Never logged in'}
           </span>
         </div>
 

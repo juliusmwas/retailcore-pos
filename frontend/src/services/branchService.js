@@ -11,3 +11,7 @@ export const createBranch = (data) => {
 export const toggleBranchStatus = (id) => {
   return api.patch(`/branches/${id}/toggle-status`);
 };
+
+export const getBranchById = async (id) => {
+  return await api.get(`/branches/${id}`);
+};

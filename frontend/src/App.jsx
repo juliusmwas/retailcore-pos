@@ -63,7 +63,7 @@ function App() {
             <Route path="sales" element={<Sales />} />
             <Route path="reports" element={<Reports />} />
             <Route path="settings" element={<Settings />} />
-            <Route path="/branches/:id" element={<BranchDetails />} />
+            <Route path="branches/:id" element={<BranchDetails />} />
           </Route>
 
           {/* Fallback */}

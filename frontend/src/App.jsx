@@ -17,6 +17,7 @@ import Products from "./pages/admin/Products";
 import Sales from "./pages/admin/Sales";
 import Reports from "./pages/admin/Reports";
 import Settings from "./pages/admin/Settings";
+import BranchDetails from "./pages/branches/BranchDetails";
 
 function App() {
   return (
@@ -62,6 +63,7 @@ function App() {
             <Route path="sales" element={<Sales />} />
             <Route path="reports" element={<Reports />} />
             <Route path="settings" element={<Settings />} />
+            <Route path="/branches/:id" element={<BranchDetails />} />
           </Route>
 
           {/* Fallback */}

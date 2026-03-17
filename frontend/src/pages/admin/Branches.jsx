@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { getBranches, createBranch, toggleBranchStatus } from "../../services/branchService";
 import {
   Plus,
@@ -16,6 +17,7 @@ export default function Branches() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const navigate = useNavigate();
 
   // --- FORM STATE ---
   const [branchForm, setBranchForm] = useState({
@@ -235,7 +237,7 @@ export default function Branches() {
                 </div>
 
                 <div className="flex gap-2 mt-4">
-                    <button className="flex-1 py-2.5 text-sm font-bold text-blue-600 bg-blue-50 rounded-xl hover:bg-blue-600 hover:text-white transition-all">Manage</button>
+                    <button onClick={() => navigate(`/branches/${branch.id}`)}className="flex-1 py-2.5 text-sm font-bold text-blue-600 bg-blue-50 rounded-xl hover:bg-blue-600 hover:text-white transition-all">Manage</button>
                     <button onClick={() => toggleStatus(branch.id)} className="p-2.5 rounded-xl border border-gray-100 text-gray-400 hover:text-red-600 hover:bg-red-50 transition-all"><Power size={18} /></button>
                 </div>
               </div>

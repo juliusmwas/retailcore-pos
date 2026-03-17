@@ -61,3 +61,25 @@ export const createBranch = async (req, res) => {
     res.status(500).json({ message: "Server error while creating branch.", error: error.message });
   }
 };
+
+export const getBranchById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const branch = await prisma.branch.findUnique({
+      where: { id },
+      include: {
+        _count: {
+          select: { users: true, products: true } // See how many staff & products are here
+        },
+        users: {
+          select: { id: true, fullName: true, role: true, status: true }
+        }
+      }
+    });
+
+    if (!branch) return res.status(404).json({ message: "Branch not found" });
+    res.json(branch);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

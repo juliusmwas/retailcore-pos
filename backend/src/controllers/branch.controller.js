@@ -65,21 +65,64 @@ export const createBranch = async (req, res) => {
 export const getBranchById = async (req, res) => {
   try {
     const { id } = req.params;
-    const branch = await prisma.branch.findUnique({
-      where: { id },
+    const { businessId } = req.user;
+
+    const branch = await prisma.branch.findFirst({
+      where: { 
+        id: id,
+        businessId: businessId 
+      },
       include: {
-        _count: {
-          select: { users: true, products: true } // See how many staff & products are here
-        },
+        // 1. Get the staff (UserBranch)
         users: {
-          select: { id: true, fullName: true, role: true, status: true }
+          select: {
+            id: true,
+            role: true, // Role exists here!
+            createdAt: true,
+            user: {
+              select: {
+                id: true,
+                fullName: true,
+                email: true,
+                phone: true,
+                status: true,
+                lastLogin: true
+              }
+            }
+          }
+        },
+        // 2. Dashboard counts
+        _count: {
+          select: {
+            users: true,
+            inventory: true, // Use 'inventory' because 'products' doesn't exist on Branch
+          }
         }
       }
     });
 
-    if (!branch) return res.status(404).json({ message: "Branch not found" });
-    res.json(branch);
+    if (!branch) {
+      return res.status(404).json({ 
+        status: "error",
+        message: "Branch not found or unauthorized." 
+      });
+    }
+
+    res.json({ 
+      status: "success", 
+      data: branch 
+    });
+
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Fetch branch error:", error);
+    
+    if (error.code === 'P2023') {
+      return res.status(400).json({ message: "Invalid Branch ID format." });
+    }
+
+    res.status(500).json({ 
+      status: "error",
+      message: "Internal server error while fetching branch." 
+    });
   }
 };

@@ -1,13 +1,28 @@
+// backend/src/routes/branch.routes.js
 import express from "express";
-import { getBranches, createBranch } from "../controllers/branch.controller.js";
-import { authenticateToken } from "../middleware/authMiddleware.js"; // 1. Updated name
+import { 
+  getBranches, 
+  createBranch, 
+  getBranchById 
+} from "../controllers/branch.controller.js";
+import { authenticateToken } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// 2. Apply authenticateToken to the GET route
+/**
+ * OPTION 1: Apply middleware to individual routes (Your current style)
+ */
 router.get("/", authenticateToken, getBranches);
-
-// 3. Apply authenticateToken to the POST route
 router.post("/", authenticateToken, createBranch);
+router.get("/:id", authenticateToken, getBranchById); // Added authenticateToken here
+
+/**
+ * OPTION 2: Apply to all routes in this file (Cleaner)
+ * If every route in this file requires a login, you can just do:
+ * * router.use(authenticateToken);
+ * router.get("/", getBranches);
+ * router.post("/", createBranch);
+ * router.get("/:id", getBranchById);
+ */
 
 export default router;

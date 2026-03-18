@@ -103,7 +103,7 @@ useEffect(() => {
     <div className="p-6 lg:p-10 space-y-8 bg-gray-50 min-h-screen">
       {/* --- BREADCRUMBS & NAVIGATION --- */}
       <button 
-        onClick={() => navigate("/branches")}
+        onClick={() => navigate(-1)}
         className="flex items-center gap-2 text-gray-500 hover:text-blue-600 font-bold transition-all group"
       >
         <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />

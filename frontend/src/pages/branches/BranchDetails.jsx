@@ -140,66 +140,143 @@ useEffect(() => {
         )}
 
         {activeTab === "staff list" && (
-  <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300">
-    <table className="w-full text-left">
-      <thead className="bg-gray-50 border-b border-gray-100">
-        <tr>
-          <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Employee</th>
-          <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Role</th>
-          <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Status</th>
-          <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider text-right">Action</th>
-        </tr>
-      </thead>
-      <tbody className="divide-y divide-gray-50">
-        {branch.users?.length > 0 ? (
-          branch.users.map((item) => (
-            <tr key={item.id} className="hover:bg-blue-50/30 transition-colors">
-              <td className="px-6 py-4">
-                <div className="flex flex-col">
-                  <span className="font-bold text-gray-900">
-                    {item.user?.fullName || "Unknown Staff"}
-                  </span>
-                  <span className="text-xs text-gray-500 font-medium">
-                    {item.user?.email || "No email provided"}
-                  </span>
-                </div>
-              </td>
-              <td className="px-6 py-4">
-                <span className="text-[10px] font-black px-2.5 py-1 bg-blue-50 text-blue-600 rounded-lg border border-blue-100 uppercase tracking-tighter">
-                  {item.role}
-                </span>
-              </td>
-              <td className="px-6 py-4">
-                <div className="flex items-center gap-2 text-sm font-bold">
-                  <div className={`w-2 h-2 rounded-full ${
-                    item.user?.status === 'ACTIVE' ? 'bg-green-500' : 'bg-red-400'
-                  }`} /> 
-                  <span className={item.user?.status === 'ACTIVE' ? 'text-green-600' : 'text-red-600'}>
-                    {item.user?.status || "INACTIVE"}
-                  </span>
-                </div>
-              </td>
-              <td className="px-6 py-4 text-right">
-                <button 
-                  onClick={() => navigate(`/users/${item.user?.id}`)}
-                  className="text-blue-600 font-bold text-sm hover:text-blue-800 transition-colors"
-                >
-                  View Profile
-                </button>
-              </td>
-            </tr>
-          ))
-        ) : (
-          <tr>
-            <td colSpan="4" className="px-6 py-10 text-center text-gray-400 font-medium">
-              No staff members assigned to this branch yet.
-            </td>
-          </tr>
+          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <table className="w-full text-left">
+              <thead className="bg-gray-50 border-b border-gray-100">
+                <tr>
+                  <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Employee</th>
+                  <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Role</th>
+                  <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {branch.users?.length > 0 ? (
+                  branch.users.map((item) => (
+                    <tr key={item.id} className="hover:bg-blue-50/30 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col">
+                          <span className="font-bold text-gray-900">
+                            {item.user?.fullName || "Unknown Staff"}
+                          </span>
+                          <span className="text-xs text-gray-500 font-medium">
+                            {item.user?.email || "No email provided"}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="text-[10px] font-black px-2.5 py-1 bg-blue-50 text-blue-600 rounded-lg border border-blue-100 uppercase tracking-tighter">
+                          {item.role}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2 text-sm font-bold">
+                          <div className={`w-2 h-2 rounded-full ${
+                            item.user?.status === 'ACTIVE' ? 'bg-green-500' : 'bg-red-400'
+                          }`} /> 
+                          <span className={item.user?.status === 'ACTIVE' ? 'text-green-600' : 'text-red-600'}>
+                            {item.user?.status || "INACTIVE"}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <button 
+                          onClick={() => navigate(`/users/${item.user?.id}`)}
+                          className="text-blue-600 font-bold text-sm hover:text-blue-800 transition-colors"
+                        >
+                          View Profile
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="4" className="px-6 py-10 text-center text-gray-400 font-medium">
+                      No staff members assigned to this branch yet.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         )}
-      </tbody>
-    </table>
-  </div>
-)}
+
+        {activeTab === "inventory" && (
+          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="p-6 border-b border-gray-50">
+              <h3 className="text-lg font-bold text-gray-900 tracking-tight">Current Stock Levels</h3>
+              <p className="text-xs text-gray-400 mt-1 font-medium italic">Showing products currently assigned to this branch.</p>
+            </div>
+            <table className="w-full text-left">
+              <thead className="bg-gray-50 border-b border-gray-100">
+                <tr>
+                  <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider text-center">Product</th>
+                  <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider text-center">SKU / Barcode</th>
+                  <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider text-center">Stock Level</th>
+                  <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider text-center">Price (KES)</th>
+                  <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider text-right">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {branch.inventory?.length > 0 ? (
+                  branch.inventory.map((item) => (
+                    <tr key={item.id} className="hover:bg-orange-50/30 transition-colors">
+                      <td className="px-6 py-4 text-center">
+                        <div className="font-bold text-gray-900">{item.product?.name}</div>
+                        <div className="text-[10px] text-gray-500 font-bold uppercase">{item.product?.brand || "Generic"}</div>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <div className="text-sm font-mono text-blue-600 font-bold">{item.product?.sku}</div>
+                        <div className="text-[10px] text-gray-400 font-mono">{item.product?.barcode}</div>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <div className="flex flex-col items-center">
+                          <div className="flex items-center gap-2">
+                            <span className={`text-lg font-black ${item.stock <= item.minStock ? 'text-red-600' : 'text-gray-900'}`}>
+                              {item.stock}
+                            </span>
+                            <span className="text-[10px] text-gray-400 font-bold uppercase">/ min {item.minStock}</span>
+                          </div>
+                          {/* Visual stock bar */}
+                          <div className="w-24 h-1.5 bg-gray-100 rounded-full mt-2 overflow-hidden">
+                            <div 
+                              className={`h-full rounded-full ${item.stock <= item.minStock ? 'bg-red-500' : 'bg-green-500'}`}
+                              style={{ width: `${Math.min((item.stock / (item.minStock * 3)) * 100, 100)}%` }}
+                            />
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <div className="text-sm font-black text-gray-900">
+                          {item.product?.sellingPrice.toLocaleString()}
+                        </div>
+                        <div className="text-[10px] text-gray-400 italic">Markup: {item.product?.markup}%</div>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        {item.stock <= item.minStock ? (
+                          <span className="px-3 py-1 bg-red-100 text-red-700 text-[10px] font-black rounded-full uppercase tracking-tighter border border-red-200">Reorder</span>
+                        ) : (
+                          <span className="px-3 py-1 bg-green-100 text-green-700 text-[10px] font-black rounded-full uppercase tracking-tighter border border-green-200">Good</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="5" className="px-6 py-16 text-center">
+                      <div className="flex flex-col items-center gap-2 opacity-40">
+                        <Package size={48} className="text-gray-400" />
+                        <p className="text-gray-500 font-bold">No inventory found for this branch.</p>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+
       </div>
     </div>
   );

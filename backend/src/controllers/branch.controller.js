@@ -126,3 +126,33 @@ export const getBranchById = async (req, res) => {
     });
   }
 };
+
+export const updateBranch = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { businessId } = req.user;
+    const updateData = req.body;
+
+    // Remove fields that should not be updated manually via this form
+    delete updateData.id;
+    delete updateData.businessId;
+    delete updateData.createdAt;
+
+    const updatedBranch = await prisma.branch.update({
+      where: { 
+        id: id,
+        businessId: businessId // Security: Ensure they own the branch
+      },
+      data: updateData
+    });
+
+    res.json({ 
+      status: "success", 
+      message: "Branch updated successfully",
+      data: updatedBranch 
+    });
+  } catch (error) {
+    console.error("Update branch error:", error);
+    res.status(500).json({ status: "error", message: "Failed to update branch" });
+  }
+};

@@ -277,6 +277,103 @@ useEffect(() => {
         )}
 
 
+        {activeTab === "reports" && (
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            {/* Financial Targets Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="p-3 bg-green-50 text-green-600 rounded-2xl">
+                    <TrendingUp size={24} />
+                  </div>
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Monthly Target</span>
+                </div>
+                <h4 className="text-sm font-bold text-gray-500">Revenue Goal</h4>
+                <p className="text-2xl font-black text-gray-900 mt-1">
+                  {branch.currency} {branch.revenueTarget?.toLocaleString() || "0.00"}
+                </p>
+                <div className="mt-4 h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="h-full bg-green-500 w-[10%]" /> {/* Static placeholder for now */}
+                </div>
+                <p className="text-[10px] text-gray-400 mt-2 font-bold">10% of monthly goal reached</p>
+              </div>
+
+              <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl">
+                    <Building2 size={24} />
+                  </div>
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Operating Budget</span>
+                </div>
+                <h4 className="text-sm font-bold text-gray-500">Current Budget</h4>
+                <p className="text-2xl font-black text-gray-900 mt-1">
+                  {branch.currency} {branch.budget?.toLocaleString() || "0.00"}
+                </p>
+                <p className="text-[10px] text-blue-600 mt-4 font-bold uppercase tracking-tight">Allocated for Q1 2026</p>
+              </div>
+
+              <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="p-3 bg-purple-50 text-purple-600 rounded-2xl">
+                    <Users size={24} />
+                  </div>
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Staffing Level</span>
+                </div>
+                <h4 className="text-sm font-bold text-gray-500">Personnel Gap</h4>
+                <p className="text-2xl font-black text-gray-900 mt-1">
+                  {branch._count?.users || 0} / {branch.maxStaff || 0}
+                </p>
+                <div className="mt-4 flex gap-1">
+                  {[...Array(10)].map((_, i) => (
+                    <div 
+                      key={i} 
+                      className={`h-1.5 flex-1 rounded-full ${i < (branch._count?.users / branch.maxStaff) * 10 ? 'bg-purple-500' : 'bg-gray-100'}`} 
+                    />
+                  ))}
+                </div>
+                <p className="text-[10px] text-gray-400 mt-2 font-bold uppercase">Staff Capacity</p>
+              </div>
+            </div>
+
+            {/* Detailed Metrics Table */}
+            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8">
+              <h3 className="text-xl font-bold text-gray-900 mb-6">Branch Health Summary</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center py-3 border-b border-gray-50">
+                    <span className="text-sm font-bold text-gray-500">Branch Age</span>
+                    <span className="text-sm font-black text-gray-900">
+                      {Math.floor((new Date() - new Date(branch.openingDate)) / (1000 * 60 * 60 * 24))} Days
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center py-3 border-b border-gray-50">
+                    <span className="text-sm font-bold text-gray-500">Inventory Value (Est.)</span>
+                    <span className="text-sm font-black text-gray-900 text-orange-600">Calculated on Sync</span>
+                  </div>
+                  <div className="flex justify-between items-center py-3 border-b border-gray-50">
+                    <span className="text-sm font-bold text-gray-500">Tax Compliance</span>
+                    <span className="text-[10px] font-black px-2 py-1 bg-green-100 text-green-700 rounded-lg uppercase">
+                      {branch.taxRegion || "Standard"}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="bg-blue-600 rounded-2xl p-6 text-white relative overflow-hidden">
+                  <div className="relative z-10">
+                    <h4 className="text-lg font-bold opacity-90">Quick Action</h4>
+                    <p className="text-sm mt-2 opacity-75">Need to adjust branch targets or manager details?</p>
+                    <button className="mt-6 px-6 py-2 bg-white text-blue-600 rounded-xl font-bold text-sm hover:shadow-lg transition-all">
+                      Generate Full PDF
+                    </button>
+                  </div>
+                  <TrendingUp size={120} className="absolute -bottom-4 -right-4 opacity-10 rotate-12" />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+
       </div>
     </div>
   );

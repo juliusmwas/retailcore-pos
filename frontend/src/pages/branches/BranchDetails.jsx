@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getBranchById } from "../../services/branchService";
+import { getBranchById, updateBranch} from "../../services/branchService";
 import { 
   ArrowLeft, Building2, Users, Package, 
   TrendingUp, MapPin, Phone, Mail, 
@@ -13,6 +13,57 @@ export default function BranchDetails() {
   const [branch, setBranch] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+const [editData, setEditData] = useState({});
+const [updating, setUpdating] = useState(false);
+
+const handleUpdate = async (e) => {
+  e.preventDefault();
+  setUpdating(true);
+  try {
+    // 1. Call the service we just updated in branchService.js
+    const res = await updateBranch(id, editData); 
+    
+    // 2. Check the response status
+    if (res.data.status === "success") {
+      
+      // 3. Merge the updated fields into the existing branch state
+      // We spread 'branch' first to keep counts/users, then spread the response data
+      const updatedData = res.data?.data || res.data;
+      
+      setBranch(prev => ({
+        ...prev,
+        ...updatedData
+      }));
+
+      setIsEditModalOpen(false);
+      // Optional: replace alert with a toast notification later
+      alert("Branch updated successfully!"); 
+    }
+  } catch (err) {
+    console.error("Update failed:", err);
+    const errorMsg = err.response?.data?.message || "Failed to update branch.";
+    alert(errorMsg);
+  } finally {
+    setUpdating(false);
+  }
+};
+
+// Function to open modal and pre-fill data
+const openEditModal = () => {
+  setEditData({
+    name: branch.name,
+    location: branch.location,
+    address: branch.address,
+    city: branch.city,
+    managerName: branch.managerName,
+    managerEmail: branch.managerEmail,
+    revenueTarget: branch.revenueTarget,
+    budget: branch.budget,
+    status: branch.status
+  });
+  setIsEditModalOpen(true);
+};
 
 useEffect(() => {
   const fetchDetails = async () => {
@@ -81,7 +132,10 @@ useEffect(() => {
         </div>
         
         <div className="flex gap-3">
-          <button className="flex items-center gap-2 px-6 py-3 bg-white border border-gray-200 rounded-xl font-bold text-gray-700 hover:shadow-md transition-all">
+          <button 
+            onClick={openEditModal}
+            className="flex items-center gap-2 px-6 py-3 bg-white border border-gray-200 rounded-xl font-bold text-gray-700 hover:shadow-md transition-all"
+          >
             <Settings size={18} /> Edit Branch
           </button>
         </div>
@@ -373,6 +427,14 @@ useEffect(() => {
           </div>
         )}
 
+        <EditBranchModal 
+        isOpen={isEditModalOpen} 
+        onClose={() => setIsEditModalOpen(false)}
+        data={editData}
+        setData={setEditData}
+        onSave={handleUpdate}
+        loading={updating}
+      />
 
       </div>
     </div>
@@ -411,6 +473,109 @@ function DetailItem({ label, value }) {
     <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{label}</p>
       <p className="text-sm font-bold text-gray-800">{value || "Not Set"}</p>
+    </div>
+  );
+}
+
+function EditBranchModal({ isOpen, onClose, data, setData, onSave, loading }) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="p-8 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+          <div>
+            <h2 className="text-2xl font-black text-gray-900">Edit Branch Details</h2>
+            <p className="text-sm text-gray-500 font-medium">Update operational info and targets.</p>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
+            <ArrowLeft className="rotate-90 w-6 h-6 text-gray-400" />
+          </button>
+        </div>
+
+        <form onSubmit={onSave} className="p-8 space-y-6 max-h-[70vh] overflow-y-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Basic Info */}
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase text-gray-400">Branch Name</label>
+              <input 
+                type="text" 
+                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-bold"
+                value={data.name || ""}
+                onChange={(e) => setData({...data, name: e.target.value})}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase text-gray-400">Status</label>
+              <select 
+                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-bold"
+                value={data.status || "ACTIVE"}
+                onChange={(e) => setData({...data, status: e.target.value})}
+              >
+                <option value="ACTIVE">ACTIVE</option>
+                <option value="INACTIVE">INACTIVE</option>
+              </select>
+            </div>
+
+            {/* Location Info */}
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase text-gray-400">City</label>
+              <input 
+                type="text" 
+                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-bold"
+                value={data.city || ""}
+                onChange={(e) => setData({...data, city: e.target.value})}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase text-gray-400">Address</label>
+              <input 
+                type="text" 
+                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-bold"
+                value={data.address || ""}
+                onChange={(e) => setData({...data, address: e.target.value})}
+              />
+            </div>
+
+            {/* Financials */}
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase text-gray-400">Revenue Target (KES)</label>
+              <input 
+                type="number" 
+                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-bold"
+                value={data.revenueTarget || 0}
+                onChange={(e) => setData({...data, revenueTarget: parseFloat(e.target.value)})}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase text-gray-400">Budget (KES)</label>
+              <input 
+                type="number" 
+                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-bold"
+                value={data.budget || 0}
+                onChange={(e) => setData({...data, budget: parseFloat(e.target.value)})}
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-4 pt-6 border-t border-gray-100">
+            <button 
+              type="button" 
+              onClick={onClose}
+              className="flex-1 py-4 bg-gray-100 text-gray-600 rounded-2xl font-bold hover:bg-gray-200 transition-all"
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit" 
+              disabled={loading}
+              className="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all disabled:opacity-50"
+            >
+              {loading ? "Saving Changes..." : "Save Updates"}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

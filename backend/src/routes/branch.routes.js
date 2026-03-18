@@ -6,6 +6,7 @@ import {
   getBranchById 
 } from "../controllers/branch.controller.js";
 import { authenticateToken } from "../middleware/authMiddleware.js";
+import { updateBranch } from "../controllers/branch.controller.js";
 
 const router = express.Router();
 
@@ -15,6 +16,7 @@ const router = express.Router();
 router.get("/", authenticateToken, getBranches);
 router.post("/", authenticateToken, createBranch);
 router.get("/:id", authenticateToken, getBranchById); // Added authenticateToken here
+router.patch("/:id", authenticateToken, updateBranch);
 
 /**
  * OPTION 2: Apply to all routes in this file (Cleaner)

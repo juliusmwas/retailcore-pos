@@ -140,39 +140,66 @@ useEffect(() => {
         )}
 
         {activeTab === "staff list" && (
-          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-            <table className="w-full text-left">
-              <thead className="bg-gray-50 border-b border-gray-100">
-                <tr>
-                  <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase">Employee</th>
-                  <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase">Role</th>
-                  <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase">Status</th>
-                  <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {branch.users?.map((user) => (
-                  <tr key={user.id} className="hover:bg-blue-50/30 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="font-bold text-gray-900">{user.fullName}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-xs font-bold px-2 py-1 bg-blue-50 text-blue-600 rounded-lg">{user.role}</span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2 text-sm font-medium text-green-600">
-                        <div className="w-2 h-2 rounded-full bg-green-500" /> {user.status}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <button className="text-blue-600 font-bold text-sm hover:underline">View Profile</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+  <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300">
+    <table className="w-full text-left">
+      <thead className="bg-gray-50 border-b border-gray-100">
+        <tr>
+          <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Employee</th>
+          <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Role</th>
+          <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Status</th>
+          <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider text-right">Action</th>
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-gray-50">
+        {branch.users?.length > 0 ? (
+          branch.users.map((item) => (
+            <tr key={item.id} className="hover:bg-blue-50/30 transition-colors">
+              <td className="px-6 py-4">
+                <div className="flex flex-col">
+                  <span className="font-bold text-gray-900">
+                    {item.user?.fullName || "Unknown Staff"}
+                  </span>
+                  <span className="text-xs text-gray-500 font-medium">
+                    {item.user?.email || "No email provided"}
+                  </span>
+                </div>
+              </td>
+              <td className="px-6 py-4">
+                <span className="text-[10px] font-black px-2.5 py-1 bg-blue-50 text-blue-600 rounded-lg border border-blue-100 uppercase tracking-tighter">
+                  {item.role}
+                </span>
+              </td>
+              <td className="px-6 py-4">
+                <div className="flex items-center gap-2 text-sm font-bold">
+                  <div className={`w-2 h-2 rounded-full ${
+                    item.user?.status === 'ACTIVE' ? 'bg-green-500' : 'bg-red-400'
+                  }`} /> 
+                  <span className={item.user?.status === 'ACTIVE' ? 'text-green-600' : 'text-red-600'}>
+                    {item.user?.status || "INACTIVE"}
+                  </span>
+                </div>
+              </td>
+              <td className="px-6 py-4 text-right">
+                <button 
+                  onClick={() => navigate(`/users/${item.user?.id}`)}
+                  className="text-blue-600 font-bold text-sm hover:text-blue-800 transition-colors"
+                >
+                  View Profile
+                </button>
+              </td>
+            </tr>
+          ))
+        ) : (
+          <tr>
+            <td colSpan="4" className="px-6 py-10 text-center text-gray-400 font-medium">
+              No staff members assigned to this branch yet.
+            </td>
+          </tr>
         )}
+      </tbody>
+    </table>
+  </div>
+)}
       </div>
     </div>
   );

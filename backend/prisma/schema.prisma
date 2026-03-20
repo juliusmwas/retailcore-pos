@@ -17,6 +17,7 @@ model Business {
   branches  Branch[]
   products  Product[]
   users     User[]
+  sales     Sale[]
 }
 
 model Branch {
@@ -45,6 +46,7 @@ model Branch {
   business      Business           @relation(fields: [businessId], references: [id])
   inventory     ProductInventory[]
   users         UserBranch[]
+  sales     Sale[]
 }
 
 model User {
@@ -61,6 +63,7 @@ model User {
   lastLogin    DateTime? // New fiel
   business    Business     @relation(fields: [businessId], references: [id])
   branches    UserBranch[]
+  sales     Sale[]
 }
 
 model UserBranch {
@@ -101,6 +104,7 @@ model Product {
   business     Business           @relation(fields: [businessId], references: [id])
   category     Category           @relation(fields: [categoryId], references: [id])
   inventory    ProductInventory[]
+  sales     SaleItem[]
 
   @@index([sku, barcode])
 }

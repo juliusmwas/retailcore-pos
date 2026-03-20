@@ -131,3 +131,61 @@ enum UserStatus {
   INACTIVE
   SUSPENDED
 }
+
+model Sale {
+  id              String       @id @default(uuid())
+  invoiceNo       String       @unique // e.g., INV-1001
+  
+  // Financials
+  subTotal        Float        @default(0)
+  taxAmount       Float        @default(0)
+  discount        Float        @default(0)
+  totalAmount     Float        @default(0)
+  
+  // Payment Info
+  paymentMethod   PaymentMethod @default(CASH)
+  status          SaleStatus    @default(COMPLETED)
+  
+  // Tracking
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  
+  // Relationships
+  businessId      String
+  branchId        String
+  userId          String        // The cashier who made the sale
+  customerId      String?       // Optional link to a customer
+  
+  business        Business      @relation(fields: [businessId], references: [id])
+  branch          Branch        @relation(fields: [branchId], references: [id])
+  user            User          @relation(fields: [userId], references: [id])
+  items           SaleItem[]    // The specific products sold
+
+  @@index([businessId, branchId, createdAt])
+}
+
+model SaleItem {
+  id          String   @id @default(uuid())
+  saleId      String
+  productId   String
+  quantity    Int
+  unitPrice   Float
+  totalPrice  Float    // (quantity * unitPrice)
+  
+  sale        Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product     Product  @relation(fields: [productId], references: [id])
+}
+
+enum PaymentMethod {
+  CASH
+  MPESA
+  CARD
+  CREDIT
+}
+
+enum SaleStatus {
+  COMPLETED
+  PENDING
+  CANCELLED
+  REFUNDED
+}

@@ -79,6 +79,32 @@ export const getDashboardStats = async (req, res) => {
       time: new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }));
 
+
+    // --- 5. INVENTORY RISK (LOW STOCK) ---
+const lowStockRaw = await prisma.productInventory.findMany({
+  where: {
+    // If a branch is selected, filter by that branch. 
+    // Otherwise, check all branches under this business.
+    ...(branchId && branchId !== "ALL" ? { branchId } : { branch: { businessId } }),
+    stock: { lte: 5 } // You can change this threshold later
+  },
+  take: 5, // Just show the top 5 most urgent risks
+  include: {
+    product: {
+      select: { name: true }
+    }
+  },
+  orderBy: {
+    stock: 'asc' // Show the lowest stock first
+  }
+});
+
+// Format the data to match your Frontend { name, stock }
+const formattedLowStock = lowStockRaw.map(item => ({
+  name: item.product.name,
+  stock: item.stock
+}));
+
     // --- 5. FINAL RESPONSE ---
     res.json({
       kpis: [
@@ -117,7 +143,7 @@ export const getDashboardStats = async (req, res) => {
       ],
       chartData: chartData,
       recentOrders: formattedOrders,
-      lowStock: [] // We'll populate this with real data when you're ready
+      lowStock: formattedLowStock
     });
 
   } catch (error) {

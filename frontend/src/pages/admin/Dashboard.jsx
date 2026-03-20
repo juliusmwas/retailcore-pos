@@ -11,12 +11,15 @@ import {
   FiAlertCircle, FiPlus, FiDownload, FiActivity,
   FiPieChart, FiShoppingBag, FiArrowUpRight, FiArrowDownRight
 } from "react-icons/fi";
+import { useNavigate } from "react-router-dom";
+
 
 export default function Dashboard() {
   const { activeBranch, business, user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(null);
   const [timeRange, setTimeRange] = useState("Last 7 Days");
+  const navigate = useNavigate();
 
   useEffect(() => {
     const getRealData = async () => {
@@ -183,10 +186,9 @@ export default function Dashboard() {
           <div className="bg-blue-600 p-8 rounded-[2.5rem] text-white shadow-2xl shadow-blue-200 relative overflow-hidden">
             <h2 className="text-xl font-black mb-4 relative z-10">Admin Shortcuts</h2>
             <div className="grid grid-cols-2 gap-3 relative z-10">
-              <button className="p-4 bg-white/10 hover:bg-white/20 rounded-2xl text-[10px] font-black uppercase tracking-widest backdrop-blur-md border border-white/10 transition-all">Add Staff</button>
-              <button className="p-4 bg-white/10 hover:bg-white/20 rounded-2xl text-[10px] font-black uppercase tracking-widest backdrop-blur-md border border-white/10 transition-all">Bulk Upload</button>
-              <button className="p-4 bg-white/10 hover:bg-white/20 rounded-2xl text-[10px] font-black uppercase tracking-widest backdrop-blur-md border border-white/10 transition-all">Branch Audit</button>
-              <button className="p-4 bg-white/10 hover:bg-white/20 rounded-2xl text-[10px] font-black uppercase tracking-widest backdrop-blur-md border border-white/10 transition-all">Settings</button>
+              <button onClick={() => navigate("/admin/staff")} className="p-4 bg-white/10 hover:bg-white/20 rounded-2xl text-[10px] font-black uppercase tracking-widest backdrop-blur-md border border-white/10 transition-all">Add Staff</button>
+              <button onClick={() => navigate("/admin/settings")} className="p-4 bg-white/10 hover:bg-white/20 rounded-2xl text-[10px] font-black uppercase tracking-widest backdrop-blur-md border border-white/10 transition-all">Settings</button>   
+              <button onClick={() => alert("🚧 Branch Audit module is currently underway. Stay tuned for advanced reconciliation features!")} className="p-4 bg-white/10 hover:bg-white/20 rounded-2xl text-[10px] font-black uppercase tracking-widest backdrop-blur-md border border-white/10 transition-all">Branch Audit</button>           
             </div>
             <FiPieChart size={150} className="absolute -bottom-10 -right-10 opacity-10 rotate-12" />
           </div>

@@ -197,53 +197,71 @@ export default function Dashboard() {
 
       {/* --- RECENT ACTIVITY --- */}
       <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-8 border-b border-gray-50 flex justify-between items-center">
-          <div>
-            <h2 className="text-xl font-black text-gray-900 tracking-tight">Recent Activity</h2>
-            <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Latest transactions across system</p>
-          </div>
-          <button className="text-blue-600 font-black text-xs uppercase tracking-widest hover:underline">View All Activity</button>
-        </div>
-        <div className="overflow-x-auto p-4">
-          <table className="w-full text-left border-separate border-spacing-y-2">
-            <thead>
-              <tr className="text-gray-400 text-[10px] font-black uppercase tracking-widest px-6">
-                <th className="px-6 py-4">Transaction ID</th>
-                <th className="px-6 py-4">Customer</th>
-                <th className="px-6 py-4 text-center">Amount</th>
-                <th className="px-6 py-4 text-center">Status</th>
-                <th className="px-6 py-4 text-right">Time</th>
-              </tr>
-            </thead>
-            <tbody>
-              {stats?.recentOrders.map((order, idx) => (
-                <tr key={idx} className="group hover:bg-blue-50/50 transition-all duration-300 shadow-sm">
-                  <td className="px-6 py-5 rounded-l-2xl bg-white group-hover:bg-blue-50/50">
-                    <span className="font-mono text-xs font-black text-blue-600 tracking-tighter uppercase">{order.id}</span>
-                  </td>
-                  <td className="px-6 py-5 bg-white group-hover:bg-blue-50/50">
-                    <p className="text-sm font-bold text-gray-900">{order.customer}</p>
-                    <p className="text-[10px] text-gray-400 font-bold uppercase italic">Retail Sale</p>
-                  </td>
-                  <td className="px-6 py-5 bg-white group-hover:bg-blue-50/50 text-center">
-                    <p className="text-sm font-black text-gray-900">KES {order.amount.toLocaleString()}</p>
-                  </td>
-                  <td className="px-6 py-5 bg-white group-hover:bg-blue-50/50 text-center">
-                    <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-tighter border ${
-                      order.status === 'Completed' ? 'bg-green-50 text-green-700 border-green-100' : 'bg-orange-50 text-orange-700 border-orange-100'
-                    }`}>
-                      {order.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-5 rounded-r-2xl bg-white group-hover:bg-blue-50/50 text-right">
-                    <p className="text-xs font-black text-gray-400 uppercase tracking-tighter">{order.time}</p>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+  <div className="p-8 border-b border-gray-50 flex justify-between items-center">
+    <div>
+      <h2 className="text-xl font-black text-gray-900 tracking-tight">Recent Activity</h2>
+      <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Latest transactions across system</p>
+    </div>
+    <button 
+      onClick={() => navigate('/admin/sales')}
+      className="text-blue-600 font-black text-xs uppercase tracking-widest hover:underline"
+    >
+      View All Activity
+    </button>
+  </div>
+  
+  <div className="overflow-x-auto p-4">
+    <table className="w-full text-left border-separate border-spacing-y-2">
+      <thead>
+        <tr className="text-gray-400 text-[10px] font-black uppercase tracking-widest px-6">
+          <th className="px-6 py-4">Transaction ID</th>
+          <th className="px-6 py-4">Customer</th>
+          <th className="px-6 py-4 text-center">Amount</th>
+          <th className="px-6 py-4 text-center">Status</th>
+          <th className="px-6 py-4 text-right">Time</th>
+        </tr>
+      </thead>
+      <tbody>
+        {stats?.recentOrders?.length > 0 ? (
+          stats.recentOrders.map((order, idx) => (
+            <tr key={idx} className="group hover:bg-blue-50/50 transition-all duration-300 shadow-sm">
+              <td className="px-6 py-5 rounded-l-2xl bg-white group-hover:bg-blue-50/50">
+                <span className="font-mono text-xs font-black text-blue-600 tracking-tighter uppercase">
+                  #{order.id}
+                </span>
+              </td>
+              <td className="px-6 py-5 bg-white group-hover:bg-blue-50/50">
+                <p className="text-sm font-bold text-gray-900">{order.customer}</p>
+                <p className="text-[10px] text-gray-400 font-bold uppercase italic">Retail Sale</p>
+              </td>
+              <td className="px-6 py-5 bg-white group-hover:bg-blue-50/50 text-center">
+                <p className="text-sm font-black text-gray-900">KES {order.amount.toLocaleString()}</p>
+              </td>
+              <td className="px-6 py-5 bg-white group-hover:bg-blue-50/50 text-center">
+                <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-tighter border ${
+                  order.status === 'COMPLETED' 
+                    ? 'bg-green-50 text-green-700 border-green-100' 
+                    : 'bg-orange-50 text-orange-700 border-orange-100'
+                }`}>
+                  {order.status.toLowerCase()}
+                </span>
+              </td>
+              <td className="px-6 py-5 rounded-r-2xl bg-white group-hover:bg-blue-50/50 text-right">
+                <p className="text-xs font-black text-gray-400 uppercase tracking-tighter">{order.time}</p>
+              </td>
+            </tr>
+          ))
+        ) : (
+          <tr>
+            <td colSpan="5" className="text-center py-10 text-gray-400 font-bold uppercase text-[10px] tracking-widest">
+              No transactions recorded yet
+            </td>
+          </tr>
+        )}
+      </tbody>
+    </table>
+  </div>
+</div>
     </div>
   );
 }

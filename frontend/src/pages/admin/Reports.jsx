@@ -13,33 +13,19 @@ export default function Reports() {
   const [activeTab, setActiveTab] = useState("Week");
   const [loading, setLoading] = useState(false);
 
-  // 2. Data Arrays (Static for now, will be fetched later)
-  const salesTrend = [
-    { day: "Mon", sales: 1200, lastWeek: 900 },
-    { day: "Tue", sales: 2100, lastWeek: 1800 },
-    { day: "Wed", sales: 1800, lastWeek: 2200 },
-    { day: "Thu", sales: 2500, lastWeek: 2100 },
-    { day: "Fri", sales: 3000, lastWeek: 2800 },
-    { day: "Sat", sales: 2200, lastWeek: 2400 },
-    { day: "Sun", sales: 2700, lastWeek: 2100 },
-  ];
-
-  const topProducts = [
-    { name: "Electronics", value: 400 },
-    { name: "Groceries", value: 300 },
-    { name: "Clothing", value: 300 },
-    { name: "Home Decor", value: 200 },
-  ];
-
-  const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6"];
-
+  // 2. REACTIVE DATA STATES (Replacing the static arrays)
+  const [salesTrend, setSalesTrend] = useState([]); 
+  const [topProducts, setTopProducts] = useState([]);
+  
   const [reportStats, setReportStats] = useState({
     revenue: 0,
     growth: 0,
     isPositive: true,
-    topCategory: "Loading...",
-    topBranch: "Loading..."
+    topCategory: "None",
+    topBranch: "None"
   });
+
+  const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6"];
 
   // 3. Handlers
   const handleExportData = () => {
@@ -62,42 +48,45 @@ export default function Reports() {
   };
 
   // 4. THE MAIN FETCH FUNCTION
-  // This runs automatically whenever activeTab changes
   useEffect(() => {
     const fetchRealReportData = async () => {
       setLoading(true);
       try {
-        // When your backend is live, uncomment the lines below:
-         const response = await fetch(`/api/reports/stats?range=${activeTab.toLowerCase()}`);
-         const data = await response.json();
-         setReportStats({
-           revenue: data.totalRevenue,
-           growth: data.percentageGrowth,
-           isPositive: data.percentageGrowth >= 0,
-           topCategory: data.bestCategory,
-           topBranch: data.bestBranch
-         });
+        const response = await fetch(`/api/reports/stats?range=${activeTab.toLowerCase()}`);
+        
+        // If the DB is empty or route doesn't exist yet, this will catch
+        if (!response.ok) throw new Error("No data found");
 
-        // MOCK LOGIC for testing UI immediately:
-        setTimeout(() => {
-          setReportStats({
-            revenue: activeTab === "Month" ? 650000 : 154000,
-            growth: 12.5,
-            isPositive: true,
-            topCategory: "Electronics",
-            topBranch: "Nairobi CBD"
-          });
-          setLoading(false);
-        }, 500);
+        const data = await response.json();
+
+        // Update Stats
+        setReportStats({
+          revenue: data.totalRevenue || 0,
+          growth: data.percentageGrowth || 0,
+          isPositive: (data.percentageGrowth || 0) >= 0,
+          topCategory: data.bestCategory || "No Sales",
+          topBranch: data.bestBranch || "N/A"
+        });
+
+        // Update Charts
+        setSalesTrend(data.trendData || []);
+        setTopProducts(data.categoryData || []);
 
       } catch (error) {
         console.error("Database fetch failed:", error);
+        // Ensure UI stays at 0/Empty if fetch fails
+        setReportStats({ revenue: 0, growth: 0, isPositive: true, topCategory: "None", topBranch: "None" });
+        setSalesTrend([]);
+        setTopProducts([]);
+      } finally {
         setLoading(false);
       }
     };
 
     fetchRealReportData();
   }, [activeTab]);
+
+  // Now the return function can follow...
 
   return (
     <div className="p-8 bg-[#f8fafc] min-h-screen space-y-8">
@@ -109,7 +98,7 @@ export default function Reports() {
             <div className="p-2 bg-indigo-600 rounded-xl text-white">
               <BarChart2 size={24} />
             </div>
-            <h1 className="text-3xl font-black text-gray-900 tracking-tight">Analytics Hub</h1>
+            <h1 className="text-3xl font-black text-gray-900 tracking-tight">Reports Hub</h1>
           </div>
           <p className="text-sm text-gray-500 font-medium">Detailed performance breakdown across the enterprise</p>
         </div>
@@ -134,12 +123,17 @@ export default function Reports() {
 
   {/* Export Button */}
   <button 
-    onClick={handleExportData}
-    title="Download Report"
-    className="p-3 bg-white border border-gray-200 rounded-2xl text-gray-600 hover:shadow-md hover:border-indigo-100 hover:text-indigo-600 transition-all active:scale-95"
-  >
-    <Download size={20} />
-  </button>
+  onClick={handleExportData}
+  disabled={salesTrend.length === 0 || loading}
+  className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all
+    ${salesTrend.length === 0 
+      ? "bg-gray-100 text-gray-400 cursor-not-allowed" 
+      : "bg-gray-900 text-white hover:bg-gray-800 active:scale-95 shadow-lg shadow-gray-200"
+    }`}
+>
+  <Download size={16} />
+  {salesTrend.length === 0 ? "No Data to Export" : "Export Report"}
+</button>
 </div>
       </div>
 
@@ -194,59 +188,129 @@ export default function Reports() {
   </div>
 </div>
 
-      {/* 3. CHART GRID */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Sales Trend (Area Chart) */}
-        <div className="bg-white p-8 rounded-[3rem] border border-gray-100 shadow-sm">
-          <div className="flex justify-between items-center mb-8">
-            <h3 className="font-black text-gray-900 uppercase text-xs tracking-widest">Revenue Velocity</h3>
-            <div className="flex items-center gap-4 text-[10px] font-bold">
-              <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-indigo-600"></span> Current</div>
-              <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-indigo-200"></span> Previous</div>
-            </div>
-          </div>
-          <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={salesTrend}>
-              <defs>
-                <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.1}/>
-                  <stop offset="95%" stopColor="#4f46e5" stopOpacity={0}/>
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-              <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 'bold', fill: '#94a3b8'}} dy={10} />
-              <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 'bold', fill: '#94a3b8'}} />
-              <Tooltip 
-                contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-              />
-              <Area type="monotone" dataKey="sales" stroke="#4f46e5" strokeWidth={4} fillOpacity={1} fill="url(#colorSales)" />
-              <Area type="monotone" dataKey="lastWeek" stroke="#e2e8f0" strokeWidth={2} fill="transparent" strokeDasharray="5 5" />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Category Distribution (Donut Chart) */}
-        <div className="bg-white p-8 rounded-[3rem] border border-gray-100 shadow-sm">
-          <h3 className="font-black text-gray-900 uppercase text-xs tracking-widest mb-8">Category Share</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={topProducts}
-                innerRadius={80}
-                outerRadius={110}
-                paddingAngle={8}
-                dataKey="value"
-              >
-                {topProducts.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} cornerRadius={10} />
-                ))}
-              </Pie>
-              <Tooltip />
-              <Legend verticalAlign="middle" align="right" layout="vertical" iconType="circle" wrapperStyle={{ paddingLeft: '20px', fontWeight: 'bold', fontSize: '12px' }} />
-            </PieChart>
-          </ResponsiveContainer>
+      {/* 3. CHART GRID - FULLY FUNCTIONAL */}
+<div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+  
+  {/* Sales Trend (Area Chart) */}
+  <div className="bg-white p-8 rounded-[3rem] border border-gray-100 shadow-sm relative overflow-hidden">
+    {/* Loading Overlay */}
+    {loading && (
+      <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] z-10 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-2">
+          <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600">Syncing Trends...</p>
         </div>
       </div>
+    )}
+
+    <div className="flex justify-between items-center mb-8">
+      <h3 className="font-black text-gray-900 uppercase text-xs tracking-widest">Revenue Velocity</h3>
+      <div className="flex items-center gap-4 text-[10px] font-bold">
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-indigo-600"></span> 
+          Current {activeTab}
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-gray-200"></span> 
+          Previous {activeTab}
+        </div>
+      </div>
+    </div>
+
+    <div className="h-[300px] w-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={salesTrend}>
+          <defs>
+            <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.1}/>
+              <stop offset="95%" stopColor="#4f46e5" stopOpacity={0}/>
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+          <XAxis 
+            dataKey="day" 
+            axisLine={false} 
+            tickLine={false} 
+            tick={{fontSize: 10, fontWeight: 'bold', fill: '#94a3b8'}} 
+            dy={10} 
+          />
+          <YAxis 
+            axisLine={false} 
+            tickLine={false} 
+            tick={{fontSize: 10, fontWeight: 'bold', fill: '#94a3b8'}} 
+          />
+          <Tooltip 
+            contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '12px' }}
+          />
+          <Area 
+            type="monotone" 
+            dataKey="sales" 
+            stroke="#4f46e5" 
+            strokeWidth={4} 
+            fillOpacity={1} 
+            fill="url(#colorSales)" 
+            animationDuration={1500}
+          />
+          <Area 
+            type="monotone" 
+            dataKey="lastWeek" 
+            stroke="#e2e8f0" 
+            strokeWidth={2} 
+            fill="transparent" 
+            strokeDasharray="5 5" 
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  </div>
+
+  {/* Category Distribution (Donut Chart) */}
+  <div className="bg-white p-8 rounded-[3rem] border border-gray-100 shadow-sm relative overflow-hidden">
+    {/* Loading Overlay */}
+    {loading && (
+      <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] z-10 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    )}
+
+    <h3 className="font-black text-gray-900 uppercase text-xs tracking-widest mb-8">Category Share</h3>
+    
+    <div className="h-[300px] w-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart>
+          <Pie
+            data={topProducts}
+            innerRadius={80}
+            outerRadius={110}
+            paddingAngle={8}
+            dataKey="value"
+            animationBegin={200}
+            animationDuration={1200}
+          >
+            {topProducts.map((entry, index) => (
+              <Cell 
+                key={`cell-${index}`} 
+                fill={COLORS[index % COLORS.length]} 
+                cornerRadius={10} 
+                stroke="none"
+              />
+            ))}
+          </Pie>
+          <Tooltip 
+            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+          />
+          <Legend 
+            verticalAlign="middle" 
+            align="right" 
+            layout="vertical" 
+            iconType="circle" 
+            wrapperStyle={{ paddingLeft: '20px', fontWeight: '900', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em' }} 
+          />
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
+  </div>
+</div>
     </div>
   );
 }

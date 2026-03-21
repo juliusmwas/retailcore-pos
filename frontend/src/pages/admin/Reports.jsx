@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, 
   PieChart, Pie, Cell, Legend, CartesianGrid 
@@ -11,9 +11,9 @@ import {
 export default function Reports() {
   // 1. Unified State
   const [activeTab, setActiveTab] = useState("Week");
-  const [loading, setLoading] = useState(false); // Recommended for later
+  const [loading, setLoading] = useState(false);
 
-  // 2. Data Arrays (Moved up so the function can see them)
+  // 2. Data Arrays (Static for now, will be fetched later)
   const salesTrend = [
     { day: "Mon", sales: 1200, lastWeek: 900 },
     { day: "Tue", sales: 2100, lastWeek: 1800 },
@@ -33,9 +33,17 @@ export default function Reports() {
 
   const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6"];
 
+  const [reportStats, setReportStats] = useState({
+    revenue: 0,
+    growth: 0,
+    isPositive: true,
+    topCategory: "Loading...",
+    topBranch: "Loading..."
+  });
+
   // 3. Handlers
   const handleExportData = () => {
-    if (!salesTrend || salesTrend.length === 0) return; // Guard clause
+    if (!salesTrend || salesTrend.length === 0) return;
 
     const headers = ["Period", "Current Sales", "Previous Period Sales"];
     const csvRows = salesTrend.map(item => `${item.day},${item.sales},${item.lastWeek}`);
@@ -47,13 +55,49 @@ export default function Reports() {
     const a = document.createElement("a");
     a.href = url;
     a.download = `RetailCore_Report_${activeTab}_${new Date().toISOString().split('T')[0]}.csv`;
-    document.body.appendChild(a); // Better browser compatibility
+    document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    window.URL.revokeObjectURL(url); // Clean up memory
+    window.URL.revokeObjectURL(url);
   };
 
-  // ... (return function follows)
+  // 4. THE MAIN FETCH FUNCTION
+  // This runs automatically whenever activeTab changes
+  useEffect(() => {
+    const fetchRealReportData = async () => {
+      setLoading(true);
+      try {
+        // When your backend is live, uncomment the lines below:
+         const response = await fetch(`/api/reports/stats?range=${activeTab.toLowerCase()}`);
+         const data = await response.json();
+         setReportStats({
+           revenue: data.totalRevenue,
+           growth: data.percentageGrowth,
+           isPositive: data.percentageGrowth >= 0,
+           topCategory: data.bestCategory,
+           topBranch: data.bestBranch
+         });
+
+        // MOCK LOGIC for testing UI immediately:
+        setTimeout(() => {
+          setReportStats({
+            revenue: activeTab === "Month" ? 650000 : 154000,
+            growth: 12.5,
+            isPositive: true,
+            topCategory: "Electronics",
+            topBranch: "Nairobi CBD"
+          });
+          setLoading(false);
+        }, 500);
+
+      } catch (error) {
+        console.error("Database fetch failed:", error);
+        setLoading(false);
+      }
+    };
+
+    fetchRealReportData();
+  }, [activeTab]);
 
   return (
     <div className="p-8 bg-[#f8fafc] min-h-screen space-y-8">
@@ -99,43 +143,56 @@ export default function Reports() {
 </div>
       </div>
 
-      {/* 2. INTELLIGENCE CARDS */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-4">
-          <div className="flex justify-between items-start">
-            <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl"><Calendar size={20} /></div>
-            <span className="flex items-center gap-1 text-green-500 text-xs font-black bg-green-50 px-2 py-1 rounded-lg">
-              <TrendingUp size={12} /> +12.5%
-            </span>
-          </div>
-          <div>
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Weekly Revenue</p>
-            <p className="text-3xl font-black text-gray-900">KES 154,000</p>
-          </div>
-        </div>
+      {/* 2. INTELLIGENCE CARDS - FUNCTIONAL */}
+<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+  {/* Revenue Card */}
+  <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-4">
+    <div className="flex justify-between items-start">
+      <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl"><Calendar size={20} /></div>
+      <span className={`flex items-center gap-1 text-xs font-black px-2 py-1 rounded-lg ${
+        reportStats.isPositive ? "text-green-500 bg-green-50" : "text-red-500 bg-red-50"
+      }`}>
+        {reportStats.isPositive ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+        {reportStats.isPositive ? "+" : ""}{reportStats.growth}%
+      </span>
+    </div>
+    <div>
+      <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
+        {activeTab}ly Revenue
+      </p>
+      <p className="text-3xl font-black text-gray-900">
+  {/* Only use KES and toLocaleString if revenue is actually a number */}
+  {typeof reportStats.revenue === 'number' 
+    ? `KES ${reportStats.revenue.toLocaleString()}` 
+    : reportStats.revenue}
+</p>
+    </div>
+  </div>
 
-        <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-4">
-          <div className="flex justify-between items-start">
-            <div className="p-3 bg-purple-50 text-purple-600 rounded-2xl"><Layers size={20} /></div>
-            <span className="text-gray-400 text-xs font-bold uppercase italic">Best Seller</span>
-          </div>
-          <div>
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Top Category</p>
-            <p className="text-3xl font-black text-gray-900">Electronics</p>
-          </div>
-        </div>
+  {/* Category Card */}
+  <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-4">
+    <div className="flex justify-between items-start">
+      <div className="p-3 bg-purple-50 text-purple-600 rounded-2xl"><Layers size={20} /></div>
+      <span className="text-gray-400 text-[10px] font-black uppercase tracking-widest italic">Best Seller</span>
+    </div>
+    <div>
+      <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Top Category</p>
+      <p className="text-3xl font-black text-gray-900">{reportStats.topCategory}</p>
+    </div>
+  </div>
 
-        <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-4">
-          <div className="flex justify-between items-start">
-            <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl"><MapPin size={20} /></div>
-            <span className="text-emerald-500 text-xs font-black uppercase">Active</span>
-          </div>
-          <div>
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Top Branch</p>
-            <p className="text-3xl font-black text-gray-900">Nairobi CBD</p>
-          </div>
-        </div>
-      </div>
+  {/* Branch Card */}
+  <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-4">
+    <div className="flex justify-between items-start">
+      <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl"><MapPin size={20} /></div>
+      <span className="text-emerald-500 text-[10px] font-black uppercase tracking-widest">Active</span>
+    </div>
+    <div>
+      <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Top Branch</p>
+      <p className="text-3xl font-black text-gray-900">{reportStats.topBranch}</p>
+    </div>
+  </div>
+</div>
 
       {/* 3. CHART GRID */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

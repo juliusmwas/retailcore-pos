@@ -45,6 +45,40 @@ export default function Dashboard() {
     </div>
   );
 
+  const handleExport = () => {
+  if (!stats) return alert("No data available to export.");
+
+  // 1. Prepare the Data Rows (Headers + Data)
+  const headers = ["Transaction ID", "Customer", "Amount (KES)", "Status", "Time"];
+  
+  const rows = stats.recentOrders.map(order => [
+    `#${order.id}`,
+    order.customer,
+    order.amount,
+    order.status,
+    order.time
+  ]);
+
+  // 2. Combine into CSV format
+  const csvContent = [
+    headers.join(","), 
+    ...rows.map(row => row.join(","))
+  ].join("\n");
+
+  // 3. Create a "Blob" and trigger download
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  
+  link.setAttribute("href", url);
+  link.setAttribute("download", `RetailCore_Report_${new Date().toISOString().split('T')[0]}.csv`);
+  link.style.visibility = 'hidden';
+  
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
   return (
     <div className="p-4 md:p-10 bg-[#f8fafc] min-h-screen space-y-10">
       
@@ -67,11 +101,8 @@ export default function Dashboard() {
         </div>
         
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-5 py-3 bg-white border border-gray-200 rounded-2xl font-bold text-gray-600 hover:shadow-xl hover:-translate-y-0.5 transition-all">
+          <button onClick={handleExport} className="flex items-center gap-2 px-5 py-3 bg-white border border-gray-200 rounded-2xl font-bold text-gray-600 hover:shadow-xl hover:-translate-y-0.5 transition-all">
             <FiDownload size={18} /> Export Reports
-          </button>
-          <button className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-2xl font-bold hover:shadow-blue-200 hover:shadow-2xl hover:-translate-y-0.5 transition-all">
-            <FiPlus size={18} /> New Transaction
           </button>
         </div>
       </div>

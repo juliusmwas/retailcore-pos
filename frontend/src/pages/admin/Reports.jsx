@@ -1,103 +1,159 @@
 import { useState } from "react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
-import { Calendar, BarChart2, PieChart as PieIcon } from "lucide-react";
+import { 
+  AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, 
+  PieChart, Pie, Cell, Legend, CartesianGrid 
+} from "recharts";
+import { 
+  Calendar, BarChart2, PieChart as PieIcon, Download, 
+  TrendingUp, TrendingDown, Layers, MapPin, Filter 
+} from "lucide-react";
 
 export default function Reports() {
-  const [branch] = useState("All Branches");
+  const [timeRange, setTimeRange] = useState("Last 7 Days");
 
-  // Mock data for charts
   const salesTrend = [
-    { day: "Mon", sales: 1200 },
-    { day: "Tue", sales: 2100 },
-    { day: "Wed", sales: 1800 },
-    { day: "Thu", sales: 2500 },
-    { day: "Fri", sales: 3000 },
-    { day: "Sat", sales: 2200 },
-    { day: "Sun", sales: 2700 },
+    { day: "Mon", sales: 1200, lastWeek: 900 },
+    { day: "Tue", sales: 2100, lastWeek: 1800 },
+    { day: "Wed", sales: 1800, lastWeek: 2200 },
+    { day: "Thu", sales: 2500, lastWeek: 2100 },
+    { day: "Fri", sales: 3000, lastWeek: 2800 },
+    { day: "Sat", sales: 2200, lastWeek: 2400 },
+    { day: "Sun", sales: 2700, lastWeek: 2100 },
   ];
 
   const topProducts = [
-    { name: "Product A", value: 400 },
-    { name: "Product B", value: 300 },
-    { name: "Product C", value: 300 },
-    { name: "Product D", value: 200 },
+    { name: "Electronics", value: 400 },
+    { name: "Groceries", value: 300 },
+    { name: "Clothing", value: 300 },
+    { name: "Home Decor", value: 200 },
   ];
 
-  const COLORS = ["#4f46e5", "#10b981", "#f59e0b", "#ef4444"];
+  const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6"];
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-2">
-        <BarChart2 className="w-6 h-6 text-blue-600" />
-        <h1 className="text-2xl font-bold text-gray-800">Reports</h1>
+    <div className="p-8 bg-[#f8fafc] min-h-screen space-y-8">
+      
+      {/* 1. HEADER & GLOBAL FILTERS */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-3 mb-1">
+            <div className="p-2 bg-indigo-600 rounded-xl text-white">
+              <BarChart2 size={24} />
+            </div>
+            <h1 className="text-3xl font-black text-gray-900 tracking-tight">Analytics Hub</h1>
+          </div>
+          <p className="text-sm text-gray-500 font-medium">Detailed performance breakdown across the enterprise</p>
+        </div>
+        
+        <div className="flex gap-3">
+          <div className="flex bg-white border border-gray-200 p-1 rounded-2xl shadow-sm">
+            {["Day", "Week", "Month"].map((tab) => (
+              <button 
+                key={tab}
+                className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${
+                  tab === "Week" ? "bg-indigo-600 text-white shadow-md" : "text-gray-400 hover:text-gray-600"
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+          <button className="p-3 bg-white border border-gray-200 rounded-2xl text-gray-600 hover:shadow-md transition-all">
+            <Download size={20} />
+          </button>
+        </div>
       </div>
-      <p className="text-sm text-gray-500">
-        Performance insights for {branch}
-      </p>
 
-      {/* Summary Cards */}
+      {/* 2. INTELLIGENCE CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-xl shadow flex items-center gap-4">
-          <Calendar className="w-10 h-10 text-blue-600" />
+        <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-4">
+          <div className="flex justify-between items-start">
+            <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl"><Calendar size={20} /></div>
+            <span className="flex items-center gap-1 text-green-500 text-xs font-black bg-green-50 px-2 py-1 rounded-lg">
+              <TrendingUp size={12} /> +12.5%
+            </span>
+          </div>
           <div>
-            <p className="text-sm text-gray-500">Total Sales This Week</p>
-            <p className="text-xl font-bold">KES 15,000</p>
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Weekly Revenue</p>
+            <p className="text-3xl font-black text-gray-900">KES 154,000</p>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow flex items-center gap-4">
-          <PieIcon className="w-10 h-10 text-green-600" />
+        <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-4">
+          <div className="flex justify-between items-start">
+            <div className="p-3 bg-purple-50 text-purple-600 rounded-2xl"><Layers size={20} /></div>
+            <span className="text-gray-400 text-xs font-bold uppercase italic">Best Seller</span>
+          </div>
           <div>
-            <p className="text-sm text-gray-500">Top Product Sold</p>
-            <p className="text-xl font-bold">Product A</p>
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Top Category</p>
+            <p className="text-3xl font-black text-gray-900">Electronics</p>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow flex items-center gap-4">
-          <BarChart className="w-10 h-10 text-purple-600" />
+        <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-4">
+          <div className="flex justify-between items-start">
+            <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl"><MapPin size={20} /></div>
+            <span className="text-emerald-500 text-xs font-black uppercase">Active</span>
+          </div>
           <div>
-            <p className="text-sm text-gray-500">Branches Active</p>
-            <p className="text-xl font-bold">3</p>
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Top Branch</p>
+            <p className="text-3xl font-black text-gray-900">Nairobi CBD</p>
           </div>
         </div>
       </div>
 
-      {/* Sales Trend Chart */}
-      <div className="bg-white p-6 rounded-xl shadow">
-        <h2 className="font-semibold text-gray-700 mb-4">Weekly Sales Trend</h2>
-        <ResponsiveContainer width="100%" height={250}>
-          <BarChart data={salesTrend}>
-            <XAxis dataKey="day" />
-            <YAxis />
-            <Tooltip />
-            <Bar dataKey="sales" fill="#4f46e5" />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
+      {/* 3. CHART GRID */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Sales Trend (Area Chart) */}
+        <div className="bg-white p-8 rounded-[3rem] border border-gray-100 shadow-sm">
+          <div className="flex justify-between items-center mb-8">
+            <h3 className="font-black text-gray-900 uppercase text-xs tracking-widest">Revenue Velocity</h3>
+            <div className="flex items-center gap-4 text-[10px] font-bold">
+              <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-indigo-600"></span> Current</div>
+              <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-indigo-200"></span> Previous</div>
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={300}>
+            <AreaChart data={salesTrend}>
+              <defs>
+                <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.1}/>
+                  <stop offset="95%" stopColor="#4f46e5" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+              <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 'bold', fill: '#94a3b8'}} dy={10} />
+              <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 'bold', fill: '#94a3b8'}} />
+              <Tooltip 
+                contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+              />
+              <Area type="monotone" dataKey="sales" stroke="#4f46e5" strokeWidth={4} fillOpacity={1} fill="url(#colorSales)" />
+              <Area type="monotone" dataKey="lastWeek" stroke="#e2e8f0" strokeWidth={2} fill="transparent" strokeDasharray="5 5" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
 
-      {/* Top Products Pie Chart */}
-      <div className="bg-white p-6 rounded-xl shadow">
-        <h2 className="font-semibold text-gray-700 mb-4">Top Products</h2>
-        <ResponsiveContainer width="100%" height={250}>
-          <PieChart>
-            <Pie
-              data={topProducts}
-              dataKey="value"
-              nameKey="name"
-              cx="50%"
-              cy="50%"
-              outerRadius={80}
-              label
-            >
-              {topProducts.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-              ))}
-            </Pie>
-            <Legend verticalAlign="bottom" />
-            <Tooltip />
-          </PieChart>
-        </ResponsiveContainer>
+        {/* Category Distribution (Donut Chart) */}
+        <div className="bg-white p-8 rounded-[3rem] border border-gray-100 shadow-sm">
+          <h3 className="font-black text-gray-900 uppercase text-xs tracking-widest mb-8">Category Share</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={topProducts}
+                innerRadius={80}
+                outerRadius={110}
+                paddingAngle={8}
+                dataKey="value"
+              >
+                {topProducts.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} cornerRadius={10} />
+                ))}
+              </Pie>
+              <Tooltip />
+              <Legend verticalAlign="middle" align="right" layout="vertical" iconType="circle" wrapperStyle={{ paddingLeft: '20px', fontWeight: 'bold', fontSize: '12px' }} />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
       </div>
     </div>
   );

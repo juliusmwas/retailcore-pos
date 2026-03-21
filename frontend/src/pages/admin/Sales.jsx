@@ -11,6 +11,19 @@ export default function Sales() {
     { id: "TXN-1003", date: "2026-01-26", branch: "Kasarani", cashier: "Peter Otieno", amount: 980, payment: "CARD", status: "REFUNDED" },
   ]);
 
+  const [salesStats, setSalesStats] = useState({ total: 0, mobileAndCash: 0, cards: 0 });
+
+// Inside your useEffect (or wherever you fetch your data)
+const fetchStats = async () => {
+  try {
+    const response = await axios.get(`/api/sales/stats?businessId=${businessId}&branchId=${selectedBranch}`);
+    setSalesStats(response.data);
+  } catch (error) {
+    console.error("Error fetching stats", error);
+  }
+};
+
+
   return (
     <div className="p-8 bg-[#f8fafc] min-h-screen space-y-8">
       
@@ -25,49 +38,50 @@ export default function Sales() {
           </div>
           <p className="text-sm text-gray-500 font-medium">Real-time transaction monitoring across all active branches</p>
         </div>
-        
-        <div className="flex gap-3">
-          <button className="flex items-center gap-2 px-5 py-3 bg-white border border-gray-200 rounded-2xl font-bold text-gray-600 hover:shadow-lg transition-all">
-            <Download size={18} /> Export CSV
-          </button>
-          <button className="flex items-center gap-2 px-5 py-3 bg-blue-600 rounded-2xl font-bold text-white shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all">
-            <Receipt size={18} /> Daily Report
-          </button>
-        </div>
+      
       </div>
 
-      {/* 2. STATS GRID - NEUMORPHIC STYLE */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex items-center justify-between">
-          <div className="space-y-1">
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Volume</p>
-            <p className="text-2xl font-black text-gray-900">KES 4,750</p>
-          </div>
-          <div className="p-4 bg-blue-50 text-blue-600 rounded-2xl">
-            <Receipt size={24} />
-          </div>
-        </div>
+      {/* 2. STATS GRID - FUNCTIONAL VERSION */}
+<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+  {/* Total Volume */}
+  <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex items-center justify-between">
+    <div className="space-y-1">
+      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Volume</p>
+      <p className="text-2xl font-black text-gray-900">
+        KES {salesStats.total.toLocaleString()}
+      </p>
+    </div>
+    <div className="p-4 bg-blue-50 text-blue-600 rounded-2xl">
+      <Receipt size={24} />
+    </div>
+  </div>
 
-        <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex items-center justify-between">
-          <div className="space-y-1">
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mobile & Cash</p>
-            <p className="text-2xl font-black text-green-600">KES 3,770</p>
-          </div>
-          <div className="p-4 bg-green-50 text-green-600 rounded-2xl">
-            <Banknote size={24} />
-          </div>
-        </div>
+  {/* Mobile & Cash */}
+  <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex items-center justify-between">
+    <div className="space-y-1">
+      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mobile & Cash</p>
+      <p className="text-2xl font-black text-green-600">
+        KES {salesStats.mobileAndCash.toLocaleString()}
+      </p>
+    </div>
+    <div className="p-4 bg-green-50 text-green-600 rounded-2xl">
+      <Banknote size={24} />
+    </div>
+  </div>
 
-        <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex items-center justify-between">
-          <div className="space-y-1">
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Digital Cards</p>
-            <p className="text-2xl font-black text-purple-600">KES 980</p>
-          </div>
-          <div className="p-4 bg-purple-50 text-purple-600 rounded-2xl">
-            <CreditCard size={24} />
-          </div>
-        </div>
-      </div>
+  {/* Digital Cards */}
+  <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex items-center justify-between">
+    <div className="space-y-1">
+      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Digital Cards</p>
+      <p className="text-2xl font-black text-purple-600">
+        KES {salesStats.cards.toLocaleString()}
+      </p>
+    </div>
+    <div className="p-4 bg-purple-50 text-purple-600 rounded-2xl">
+      <CreditCard size={24} />
+    </div>
+  </div>
+</div>
 
       {/* 3. SEARCH & FILTER BAR */}
       <div className="flex flex-col md:flex-row gap-4">

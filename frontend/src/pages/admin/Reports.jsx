@@ -9,8 +9,11 @@ import {
 } from "lucide-react";
 
 export default function Reports() {
-  const [timeRange, setTimeRange] = useState("Last 7 Days");
+  // 1. Unified State
+  const [activeTab, setActiveTab] = useState("Week");
+  const [loading, setLoading] = useState(false); // Recommended for later
 
+  // 2. Data Arrays (Moved up so the function can see them)
   const salesTrend = [
     { day: "Mon", sales: 1200, lastWeek: 900 },
     { day: "Tue", sales: 2100, lastWeek: 1800 },
@@ -30,6 +33,28 @@ export default function Reports() {
 
   const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6"];
 
+  // 3. Handlers
+  const handleExportData = () => {
+    if (!salesTrend || salesTrend.length === 0) return; // Guard clause
+
+    const headers = ["Period", "Current Sales", "Previous Period Sales"];
+    const csvRows = salesTrend.map(item => `${item.day},${item.sales},${item.lastWeek}`);
+    
+    const csvContent = [headers.join(","), ...csvRows].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `RetailCore_Report_${activeTab}_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a); // Better browser compatibility
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url); // Clean up memory
+  };
+
+  // ... (return function follows)
+
   return (
     <div className="p-8 bg-[#f8fafc] min-h-screen space-y-8">
       
@@ -46,22 +71,32 @@ export default function Reports() {
         </div>
         
         <div className="flex gap-3">
-          <div className="flex bg-white border border-gray-200 p-1 rounded-2xl shadow-sm">
-            {["Day", "Week", "Month"].map((tab) => (
-              <button 
-                key={tab}
-                className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${
-                  tab === "Week" ? "bg-indigo-600 text-white shadow-md" : "text-gray-400 hover:text-gray-600"
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
-          <button className="p-3 bg-white border border-gray-200 rounded-2xl text-gray-600 hover:shadow-md transition-all">
-            <Download size={20} />
-          </button>
-        </div>
+  {/* Filter Tabs */}
+  <div className="flex bg-white border border-gray-200 p-1 rounded-2xl shadow-sm">
+    {["Day", "Week", "Month"].map((tab) => (
+      <button 
+        key={tab}
+        onClick={() => setActiveTab(tab)}
+        className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${
+          activeTab === tab 
+            ? "bg-indigo-600 text-white shadow-md" 
+            : "text-gray-400 hover:text-gray-600 hover:bg-gray-50"
+        }`}
+      >
+        {tab}
+      </button>
+    ))}
+  </div>
+
+  {/* Export Button */}
+  <button 
+    onClick={handleExportData}
+    title="Download Report"
+    className="p-3 bg-white border border-gray-200 rounded-2xl text-gray-600 hover:shadow-md hover:border-indigo-100 hover:text-indigo-600 transition-all active:scale-95"
+  >
+    <Download size={20} />
+  </button>
+</div>
       </div>
 
       {/* 2. INTELLIGENCE CARDS */}

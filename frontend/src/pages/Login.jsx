@@ -42,13 +42,19 @@ function Login() {
       const parsed = JSON.parse(storedAuth);
       const role = parsed.user?.role || parsed.user?.branches?.[0]?.role || "OWNER";
 
-      if (role === "OWNER" || role === "ADMIN") {
-        const hasBranches = parsed.user?.branches?.length > 0 || parsed.branches?.length > 0;
-        const target = hasBranches ? "/admin/dashboard" : "/admin/branches";
-        navigate(target, { replace: true });
-      } else if (role === "CASHIER") {
-        navigate("/select-branch", { replace: true });
-      }
+      // --- REPLACE THIS BLOCK INSIDE YOUR useEffect ---
+if (role === "OWNER" || role === "ADMIN") {
+  const hasBranches = parsed.user?.branches?.length > 0 || parsed.branches?.length > 0;
+  const target = hasBranches ? "/admin/dashboard" : "/admin/branches";
+  navigate(target, { replace: true });
+} 
+else if (role === "MANAGER") {
+  navigate("/manager/dashboard", { replace: true }); // New Manager redirect
+} 
+else if (role === "CASHIER") {
+  navigate("/select-branch", { replace: true });
+}
+
     }
     setCheckingAuth(false);
   }, [navigate]);
@@ -69,10 +75,17 @@ function Login() {
       const userRole = user.role || user.branches?.[0]?.role || "OWNER";
       
       if (userRole === "OWNER" || userRole === "ADMIN") {
-        navigate("/admin/branches", { replace: true }); 
-      } else {
-        navigate("/select-branch", { replace: true });
-      }
+  navigate("/admin/branches", { replace: true }); 
+} 
+else if (userRole === "MANAGER") {
+  navigate("/manager/dashboard", { replace: true }); // New Manager redirect
+} 
+else if (userRole === "CASHIER") {
+  navigate("/select-branch", { replace: true });
+} 
+else {
+  navigate("/select-branch", { replace: true }); // Fallback for anyone else
+}
     } catch (err) {
       setError(err.response?.data?.message || "Invalid login credentials");
     } finally {

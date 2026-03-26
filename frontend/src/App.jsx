@@ -21,7 +21,7 @@ import BranchDetails from "./pages/branches/BranchDetails";
 
 // Manager Pages (Add ManagerLayout here later if you create one)
 import ManagerDashboard from "./pages/manager/ManagerDashboard";
-
+import ManagerLayout from "./components/manager/ManagerLayout"; // 
 function App() {
   return (
     <BrowserRouter>
@@ -71,18 +71,21 @@ function App() {
           </Route>
 
           {/* 5. MANAGER ROUTES (Nested) */}
+          {/* 5. MANAGER ROUTES (Nested under the ManagerLayout) */}
           <Route
             path="/manager"
             element={
               <ProtectedRoute roles={["MANAGER", "OWNER"]}>
-                {/* You can add a ManagerLayout here later just like AdminLayout */}
-                <ManagerDashboard /> 
+                <ManagerLayout /> 
               </ProtectedRoute>
             }
           >
             <Route path="dashboard" element={<ManagerDashboard />} />
-            {/* Future Manager Pages go here, e.g.: */}
+            {/* We will add these pages next: */}
+            {/* <Route path="sales" element={<ManagerSales />} /> */}
             {/* <Route path="inventory" element={<ManagerInventory />} /> */}
+            {/* <Route path="staff" element={<ManagerStaff />} /> */}
+            {/* <Route path="settings" element={<ManagerSettings />} /> */}
           </Route>
 
           {/* Fallback */}

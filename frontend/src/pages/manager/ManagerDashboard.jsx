@@ -1,13 +1,24 @@
 import React from "react";
+import { useNavigate } from "react-router-dom"; // Added for redirection
+import { useAuth } from "../../auth/AuthContext"; // Import your auth hook
 import { 
   Users, 
   ShoppingCart, 
   AlertTriangle, 
   TrendingUp, 
-  Clock 
+  Clock,
+  LogOut // Added logout icon
 } from "lucide-react";
 
 const ManagerDashboard = () => {
+  const navigate = useNavigate();
+  const { logout } = useAuth(); // Destructure logout function
+
+  const handleLogout = () => {
+    logout(); // Clears the auth state and localStorage
+    navigate("/login", { replace: true }); // Sends user back to login
+  };
+
   // Mock data for the UI layout
   const stats = [
     { title: "Today's Sales", value: "KES 45,200", icon: <ShoppingCart className="text-blue-600" />, change: "+12%" },
@@ -26,9 +37,21 @@ const ManagerDashboard = () => {
             <Clock size={14} /> Daily Overview: Chuka Branch
           </p>
         </div>
-        <button className="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition shadow-sm">
-          Generate Daily Report
-        </button>
+        
+        <div className="flex gap-3">
+          <button className="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition shadow-sm text-sm">
+            Generate Daily Report
+          </button>
+          
+          {/* Working Logout Button */}
+          <button 
+            onClick={handleLogout}
+            className="flex items-center gap-2 border border-red-200 text-red-600 px-4 py-2 rounded-lg font-semibold hover:bg-red-50 transition text-sm"
+          >
+            <LogOut size={16} />
+            Log Out
+          </button>
+        </div>
       </div>
 
       {/* Quick Stats Grid */}
@@ -51,15 +74,14 @@ const ManagerDashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Revenue Velocity Section (Large) */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-          <div className="flex justify-between items-center mb-6">
+        <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 text-center">
+          <div className="flex justify-between items-center mb-6 text-left">
             <h3 className="font-bold text-gray-800 text-lg uppercase tracking-wider">Revenue Velocity</h3>
             <div className="flex gap-4 text-xs font-bold">
               <span className="flex items-center gap-1 text-blue-600">● Current Week</span>
               <span className="flex items-center gap-1 text-gray-300">● Previous Week</span>
             </div>
           </div>
-          {/* Chart Placeholder - We will use Recharts here later */}
           <div className="h-64 bg-slate-50 rounded-xl flex items-center justify-center border-2 border-dashed border-gray-200 text-gray-400 font-medium">
             [ Line Chart Area ]
           </div>
@@ -69,14 +91,12 @@ const ManagerDashboard = () => {
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
           <h3 className="font-bold text-gray-800 text-lg uppercase tracking-wider mb-6">Category Share</h3>
           <div className="h-64 flex items-center justify-center relative">
-            {/* Donut Chart Placeholder */}
             <div className="w-40 h-40 rounded-full border-[16px] border-blue-500 border-t-amber-500 border-l-green-500 border-r-purple-500"></div>
             <div className="absolute flex flex-col items-center">
                <span className="text-xs text-gray-400 font-bold">TOTAL</span>
                <span className="text-xl font-black text-gray-800">100%</span>
             </div>
           </div>
-          {/* Legend */}
           <div className="mt-6 grid grid-cols-2 gap-2">
             {["CLOTHING", "ELECTRONICS", "GROCERIES", "HOME DECOR"].map((cat) => (
               <div key={cat} className="flex items-center gap-2 text-[10px] font-black text-gray-600">

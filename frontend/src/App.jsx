@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./auth/AuthContext";
 import ProtectedRoute from "./auth/ProtectedRoute";
 
@@ -19,35 +19,39 @@ import Reports from "./pages/admin/Reports";
 import Settings from "./pages/admin/Settings";
 import BranchDetails from "./pages/branches/BranchDetails";
 
+// Manager Pages (Add ManagerLayout here later if you create one)
+import ManagerDashboard from "./pages/manager/ManagerDashboard";
+
 function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          {/* Public */}
+          {/* 1. PUBLIC ROUTES */}
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
 
-          {/* Cashier / Staff */}
+          {/* 2. SHARED ROUTES (Roles that need to pick a branch) */}
           <Route
             path="/select-branch"
             element={
-              <ProtectedRoute roles={["OWNER", "ADMIN", "CASHIER"]}>
+              <ProtectedRoute roles={["OWNER", "ADMIN", "MANAGER", "CASHIER"]}>
                 <SelectBranch />
               </ProtectedRoute>
             }
           />
 
+          {/* 3. CASHIER ROUTES */}
           <Route
             path="/pos"
             element={
-              <ProtectedRoute roles={["CASHIER"]}>
+              <ProtectedRoute roles={["CASHIER", "MANAGER", "OWNER"]}>
                 <POS />
               </ProtectedRoute>
             }
           />
 
-          {/* ================= ADMIN ROUTES ================= */}
+          {/* 4. ADMIN ROUTES (Nested) */}
           <Route
             path="/admin"
             element={
@@ -66,8 +70,23 @@ function App() {
             <Route path="branches/:id" element={<BranchDetails />} />
           </Route>
 
+          {/* 5. MANAGER ROUTES (Nested) */}
+          <Route
+            path="/manager"
+            element={
+              <ProtectedRoute roles={["MANAGER", "OWNER"]}>
+                {/* You can add a ManagerLayout here later just like AdminLayout */}
+                <ManagerDashboard /> 
+              </ProtectedRoute>
+            }
+          >
+            <Route path="dashboard" element={<ManagerDashboard />} />
+            {/* Future Manager Pages go here, e.g.: */}
+            {/* <Route path="inventory" element={<ManagerInventory />} /> */}
+          </Route>
+
           {/* Fallback */}
-          <Route path="*" element={<Index />} />
+          <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

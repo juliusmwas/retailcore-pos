@@ -22,8 +22,8 @@ import BranchDetails from "./pages/branches/BranchDetails";
 // Manager Pages (Add ManagerLayout here later if you create one)
 import ManagerDashboard from "./pages/manager/ManagerDashboard";
 import ManagerLayout from "./components/manager/ManagerLayout"; 
-import ManagerSales from "./components/manager/ManagerSales";
-import ManagerInventory from "./components/manager/ManagerInventory";
+import ManagerSales from "./pages/manager/ManagerSales";
+import ManagerInventory from "./pages/manager/ManagerInventory";
 
 function App() {
   return (

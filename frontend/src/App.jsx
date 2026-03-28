@@ -25,6 +25,7 @@ import ManagerLayout from "./components/manager/ManagerLayout";
 import ManagerSales from "./pages/manager/ManagerSales";
 import ManagerInventory from "./pages/manager/ManagerInventory";
 import ManagerStaff from "./pages/manager/ManagerStaff";
+import ManagerSettings from "./pages/manager/ManagerSettings";
 
 function App() {
   return (
@@ -89,7 +90,7 @@ function App() {
             <Route path="sales" element={<ManagerSales />} /> 
             <Route path="inventory" element={<ManagerInventory />} /> 
             <Route path="staff" element={<ManagerStaff />} /> 
-            {/* <Route path="settings" element={<ManagerSettings />} /> */}
+            <Route path="settings" element={<ManagerSettings />} /> 
           </Route>
 
           {/* Fallback */}

@@ -24,6 +24,7 @@ import ManagerDashboard from "./pages/manager/ManagerDashboard";
 import ManagerLayout from "./components/manager/ManagerLayout"; 
 import ManagerSales from "./pages/manager/ManagerSales";
 import ManagerInventory from "./pages/manager/ManagerInventory";
+import ManagerStaff from "./pages/manager/ManagerStaff";
 
 function App() {
   return (
@@ -87,7 +88,7 @@ function App() {
             {/* We will add these pages next: */}
             <Route path="sales" element={<ManagerSales />} /> 
             <Route path="inventory" element={<ManagerInventory />} /> 
-            {/* <Route path="staff" element={<ManagerStaff />} /> */}
+            <Route path="staff" element={<ManagerStaff />} /> 
             {/* <Route path="settings" element={<ManagerSettings />} /> */}
           </Route>
 

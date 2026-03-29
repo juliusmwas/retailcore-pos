@@ -49,7 +49,7 @@ if (role === "OWNER" || role === "ADMIN") {
   navigate(target, { replace: true });
 } 
 else if (role === "MANAGER") {
-  navigate("/manager/dashboard", { replace: true }); // New Manager redirect
+  navigate("/manager/dashboard", { replace: true }); 
 } 
 else if (role === "CASHIER") {
   navigate("/select-branch", { replace: true });

@@ -100,6 +100,9 @@ export const loginService = async ({ identifier, password }) => {
     { expiresIn: "1d" }
   );
 
+
+const primaryAssignment = user.branches[0];
+
   return {
     token,
     user: {
@@ -108,12 +111,16 @@ export const loginService = async ({ identifier, password }) => {
       email: user.email,
       staffNumber: user.staffNumber,
       businessId: user.businessId,
-      // Added safety for business name
+      // ✨ ADDED THIS: The specific branch this user belongs to
+      branchId: primaryAssignment?.branchId || null, 
       businessName: user.business?.name || "My Business", 
       role: userRole
     },
     business: user.business,
-    // Added safety for branches map
-    branches: user.branches?.map(ub => ub.branch) || []
+    // ✨ UPDATED THIS: Keep the role inside the branch objects
+    branches: user.branches?.map(ub => ({
+      ...ub.branch,
+      role: ub.role // This allows us to see the role per branch
+    })) || []
   };
 };

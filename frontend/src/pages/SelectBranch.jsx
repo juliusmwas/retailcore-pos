@@ -6,29 +6,31 @@ export default function SelectBranch() {
   const { user, branches, selectBranch, logout, role } = useAuth();
   const navigate = useNavigate();
 
-  // 1. DYNAMIC IDENTIFICATION: 
-  // We find the branch where the user has an assigned role (CASHIER or MANAGER).
-  // Owners/Admins don't have a specific station, so they see everything.
+  // 1. DYNAMIC DETECTION BY UNIQUE ID
+  // Owners can see everything. 
   const isOwner = role === "OWNER" || role === "ADMIN";
+
+  // We look for the branch that matches the ID saved in the user's profile.
+  // We check 'branchId' and 'branch_id' just in case of naming differences.
+  const userAssignedId = user?.branchId || user?.branch_id;
   
-  // This finds the first branch in the list that matches the user's current role
-  const assignedBranch = branches?.find(b => b.role === role);
-  const assignedBranchId = assignedBranch?.id;
+  // Debugging: Check your browser console to see these values
+  console.log("Logged User Assigned ID:", userAssignedId);
 
   const handleSelect = (branch) => {
-    // 2. Security Check
-    // A branch is "Allowed" if the user is an Owner OR if the branch ID matches their assignment
-    const isAllowed = isOwner || branch.id === assignedBranchId;
+    // 2. SECURITY CHECK
+    // Match the ID of the clicked branch against the user's assigned ID
+    const isUserStation = String(branch.id) === String(userAssignedId);
+    const canClick = isOwner || isUserStation;
 
-    if (!isAllowed) {
-      toast.error(`Access Denied: Your account is restricted to the ${assignedBranch?.name || 'assigned branch'}.`, {
-        duration: 4000,
-        style: { border: '1px solid #fee2e2', fontWeight: 'bold', fontSize: '13px' },
+    if (!canClick) {
+      toast.error(`Access Denied: Your station is not ${branch.name}.`, {
+        style: { fontWeight: 'bold', borderRadius: '12px' },
       });
       return;
     }
 
-    // 3. Success
+    // 3. SELECTION & NAVIGATION
     selectBranch(branch);
     
     if (role === "CASHIER") {
@@ -47,14 +49,16 @@ export default function SelectBranch() {
       <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-gray-100">
         <div className="text-center mb-8">
             <h2 className="text-2xl font-black text-gray-800 tracking-tight uppercase">Select Branch</h2>
-            <p className="text-sm text-gray-500 font-medium italic">Assigning session for {user?.fullName || 'Staff'}</p>
+            <p className="text-sm text-gray-500 font-medium italic">
+              Assigning session for {user?.fullName || 'Staff'}
+            </p>
         </div>
         
         <div className="space-y-3">
           {branches && branches.length > 0 ? (
             branches.map((branch) => {
-              // A branch is clickable if user is Owner OR if this is their assigned station
-              const isUserStation = branch.id === assignedBranchId;
+              // Compare IDs as strings to avoid type-mismatch errors
+              const isUserStation = String(branch.id) === String(userAssignedId);
               const canClick = isOwner || isUserStation;
 
               return (
@@ -90,7 +94,10 @@ export default function SelectBranch() {
         </div>
 
         <div className="mt-8 pt-6 border-t border-gray-100 text-center">
-          <button onClick={logout} className="text-xs font-black uppercase text-red-500 hover:text-red-700 w-full">
+          <button 
+            onClick={logout} 
+            className="text-xs font-black uppercase tracking-widest text-red-500 hover:text-red-700 transition-colors flex items-center justify-center gap-2 w-full"
+          >
             ← Sign out
           </button>
         </div>

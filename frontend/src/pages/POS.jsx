@@ -1,138 +1,236 @@
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "../auth/AuthContext";
-import { Search, ShoppingCart, User, Package, Trash2, Plus, Minus } from "lucide-react";
+import { Search, Trash2, Smartphone, Banknote, Maximize } from "lucide-react";
 
 export default function POS() {
-  const { business, activeBranch, user } = useAuth();
+  const { activeBranch } = useAuth();
   const [cart, setCart] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const searchInputRef = useRef(null);
 
-  // Auto-focus search bar on load (crucial for barcode scanners)
-  useEffect(() => {
-    searchInputRef.current?.focus();
-  }, []);
+  const total = cart.reduce((acc, item) => acc + (item.price * item.qty), 0);
 
-  const subtotal = cart.reduce((acc, item) => acc + (item.sellingPrice * item.quantity), 0);
-  const tax = subtotal * 0.16; // 16% VAT example
-  const total = subtotal + tax;
+  const handleSearch = (e) => {
+    // Only trigger when the user presses "Enter"
+    if (e.key === "Enter") {
+      e.preventDefault(); // Stop the page from refreshing
+      
+      if (!searchQuery.trim()) return;
+
+      // FOR NOW: We will use dummy data to test the UI. 
+      // Later, we will replace this with a fetch() to your database.
+      const mockProduct = {
+        id: Date.now(), // Unique ID for the row
+        name: searchQuery.toUpperCase(), // Using what you typed as the name
+        barcode: "890123456789",
+        price: 150,
+        qty: 1
+      };
+
+      // Add to cart state
+      setCart((prev) => {
+        // Check if item already exists by name (for testing)
+        const exists = prev.find(item => item.name === mockProduct.name);
+        if (exists) {
+          return prev.map(item => 
+            item.name === mockProduct.name ? { ...item, qty: item.qty + 1 } : item
+          );
+        }
+        return [mockProduct, ...prev]; // Add new item at the top
+      });
+
+      // Clear the search bar for the next scan
+      setSearchQuery("");
+    }
+  };
+
+  const startCameraScanner = () => {
+    alert("Camera Scanner coming soon! For now, please type and hit Enter.");
+  };
 
   return (
-    <div className="h-screen flex flex-col bg-gray-100 overflow-hidden">
-      {/* --- TOP NAVIGATION BAR --- */}
-      <header className="bg-white border-b px-6 py-3 flex justify-between items-center shadow-sm">
-        <div className="flex items-center gap-4">
-          <div className="bg-blue-600 text-white p-2 rounded-lg">
-            <ShoppingCart size={20} />
-          </div>
-          <div>
-            <h1 className="text-lg font-black text-gray-800 leading-none">RETAILCORE POS</h1>
-            <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-1">
-              {business?.name} <span className="mx-1">•</span> 
-              <span className="text-blue-600 font-bold">{activeBranch?.name}</span>
-            </p>
-          </div>
+    <div className="h-screen flex flex-col bg-[#f4f7f6] overflow-hidden font-sans text-slate-900">
+      {/* TOP COMPACT BAR */}
+      <header className="bg-white border-b px-4 py-2 flex justify-between items-center">
+        <div className="flex items-baseline gap-2">
+          <span className="text-xl font-black tracking-tighter text-blue-700">RETAILCORE</span>
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-l pl-2 border-slate-200">
+            {activeBranch?.name || "Main Station"}
+          </span>
         </div>
-
-        <div className="flex items-center gap-6">
-          <div className="text-right hidden md:block">
-            <p className="text-sm font-bold text-gray-800">{user?.fullName}</p>
-            <p className="text-[10px] text-gray-400 uppercase tracking-tighter">Terminal ID: {user?.staffNumber}</p>
-          </div>
-          <div className="h-10 w-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-500">
-            <User size={20} />
-          </div>
+        <div className="flex items-center gap-4">
+           <div className="bg-slate-100 px-3 py-1 rounded-md border border-slate-200">
+              <span className="text-[10px] font-black text-slate-500 uppercase mr-2">Status:</span>
+              <span className="text-[10px] font-black text-green-600 uppercase">Online</span>
+           </div>
         </div>
       </header>
 
-      <main className="flex-1 flex overflow-hidden">
-        {/* --- LEFT SECTION: PRODUCT SEARCH & LISTING --- */}
-        <section className="flex-1 p-6 flex flex-col gap-6 overflow-hidden">
-          {/* Barcode/Search Input */}
-          <div className="relative">
-            <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-gray-400">
-              <Search size={20} />
+      <div className="flex-1 flex overflow-hidden">
+        {/* CENTER COLUMN: THE ENGINE */}
+        <div className="flex-1 flex flex-col p-2 space-y-2">
+          
+          <div className="bg-white p-2 rounded-lg shadow-sm border border-slate-200">
+  <div className="relative flex items-center">
+    {/* SEARCH ICON */}
+    <div className="absolute left-4 p-1 bg-slate-100 rounded text-slate-400">
+      <Search size={18} />
+    </div>
+
+    {/* INPUT - Notice I added pr-40 to prevent text from going under the buttons */}
+    <input
+      ref={searchInputRef}
+      autoFocus
+      className="w-full p-4 pl-14 pr-44 bg-slate-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-md text-lg font-medium outline-none transition-all placeholder:text-slate-300"
+      placeholder="Scan Barcode or Search (F1)..."
+      value={searchQuery}
+      onChange={(e) => setSearchQuery(e.target.value)}
+      onKeyDown={handleSearch} // We'll add this logic next!
+    />
+
+    {/* ACTION AREA (Right Side) */}
+    <div className="absolute right-3 flex items-center gap-3">
+      {/* KEYBOARD SHORTCUTS - Hidden on small screens */}
+      <div className="hidden md:flex gap-1">
+        <kbd className="px-2 py-1 bg-white border border-slate-200 rounded text-[9px] font-bold text-slate-400 shadow-sm">F1</kbd>
+        <kbd className="px-2 py-1 bg-white border border-slate-200 rounded text-[9px] font-bold text-slate-400 shadow-sm">F2</kbd>
+      </div>
+
+      {/* THE SCAN BUTTON */}
+      <button 
+        onClick={startCameraScanner}
+        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-all shadow-md active:scale-95"
+      >
+        <Maximize size={16} />
+        <span className="text-[10px] font-black uppercase tracking-tight">Open Scanner</span>
+      </button>
+    </div>
+  </div>
+</div>
+          {/* COMPACT ITEM TABLE */}
+          <div className="flex-1 bg-white rounded-lg shadow-sm border border-slate-200 flex flex-col overflow-hidden">
+            <div className="overflow-y-auto flex-1">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-800 text-slate-300 sticky top-0 z-10">
+                  <tr>
+                    <th className="px-4 py-3 font-bold uppercase text-[10px] tracking-wider text-left">Product Description</th>
+                    <th className="px-4 py-3 font-bold uppercase text-[10px] tracking-wider text-center w-24">Qty</th>
+                    <th className="px-4 py-3 font-bold uppercase text-[10px] tracking-wider text-right w-32">Unit Price</th>
+                    <th className="px-4 py-3 font-bold uppercase text-[10px] tracking-wider text-right w-32">Subtotal</th>
+                    <th className="px-4 py-3 w-12"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {cart.length > 0 ? (
+                    cart.map((item, i) => (
+                      <tr key={i} className="hover:bg-blue-50/50 group">
+                        <td className="px-4 py-3">
+                          <p className="font-bold text-slate-800 uppercase">{item.name}</p>
+                          <p className="text-[10px] text-slate-400 font-mono">{item.barcode}</p>
+                        </td>
+                        <td className="px-4 py-3">
+                           <div className="flex items-center justify-center bg-slate-50 rounded border border-slate-200 p-1 font-bold">
+                              {item.qty}
+                           </div>
+                        </td>
+                        <td className="px-4 py-3 text-right font-medium text-slate-600 italic">
+                          {item.price.toLocaleString()}
+                        </td>
+                        <td className="px-4 py-3 text-right font-black text-slate-900">
+                          {(item.price * item.qty).toLocaleString()}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <button className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Trash2 size={16}/>
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="5" className="py-20 text-center">
+                         <div className="flex flex-col items-center opacity-20">
+                            <div className="w-16 h-16 border-4 border-dashed border-slate-400 rounded-full flex items-center justify-center mb-4">
+                               <Search size={32} />
+                            </div>
+                            <p className="font-black uppercase tracking-widest text-xs">Waiting for Scan...</p>
+                         </div>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
-            <input
-              ref={searchInputRef}
-              type="text"
-              placeholder="Scan Barcode or Search Product (F1)..."
-              className="w-full bg-white border-none shadow-md rounded-2xl py-4 pl-12 pr-4 text-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-
-          {/* Product Grid Area */}
-          <div className="flex-1 bg-white rounded-3xl shadow-inner border border-gray-100 p-8 flex flex-col items-center justify-center text-center">
-             <div className="bg-blue-50 p-6 rounded-full text-blue-300 mb-4">
-                <Package size={48} />
-             </div>
-             <h3 className="text-xl font-bold text-gray-700">Ready to Scan</h3>
-             <p className="text-gray-400 max-w-xs mt-2">
-                Use a barcode scanner or type above to start adding items to the sale.
-             </p>
-          </div>
-        </section>
-
-        {/* --- RIGHT SECTION: CART & CHECKOUT --- */}
-        <aside className="w-[400px] bg-white border-l flex flex-col shadow-2xl">
-          <div className="p-6 border-b flex justify-between items-center bg-gray-50/50">
-            <h2 className="font-black text-gray-800 uppercase tracking-tight">Current Sale</h2>
-            <button className="text-xs text-red-500 font-bold hover:bg-red-50 px-2 py-1 rounded">Clear All</button>
-          </div>
-
-          {/* Cart Items List */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
-             {cart.length === 0 ? (
-               <div className="h-full flex flex-col items-center justify-center opacity-20">
-                  <ShoppingCart size={64} />
-                  <p className="font-bold mt-4">Cart is Empty</p>
+            
+            {/* BLACK BOTTOM SUMMARY */}
+            <div className="bg-slate-900 px-6 py-4 flex justify-between items-center border-t border-slate-700">
+               <div className="flex gap-8">
+                  <div className="flex flex-col">
+                     <span className="text-[10px] font-black text-slate-500 uppercase">Items</span>
+                     <span className="text-xl font-black text-white">{cart.length}</span>
+                  </div>
                </div>
-             ) : (
-               cart.map((item, index) => (
-                 <div key={index} className="flex justify-between items-center p-3 border rounded-xl hover:border-blue-200 transition-colors bg-white">
-                    <div className="flex-1">
-                       <p className="font-bold text-gray-800 text-sm leading-tight">{item.name}</p>
-                       <p className="text-xs text-gray-400">KES {item.sellingPrice.toLocaleString()} x {item.quantity}</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                       <p className="font-bold text-blue-600">KES {(item.sellingPrice * item.quantity).toLocaleString()}</p>
-                       <button className="text-gray-300 hover:text-red-500"><Trash2 size={16} /></button>
-                    </div>
-                 </div>
-               ))
-             )}
-          </div>
-
-          {/* Totals Section */}
-          <div className="p-6 bg-gray-900 text-white rounded-t-[2rem] shadow-2xl">
-            <div className="space-y-2 mb-6">
-               <div className="flex justify-between text-gray-400 text-sm">
-                  <span>Subtotal</span>
-                  <span>KES {subtotal.toLocaleString()}</span>
-               </div>
-               <div className="flex justify-between text-gray-400 text-sm">
-                  <span>VAT (16%)</span>
-                  <span>KES {tax.toLocaleString()}</span>
-               </div>
-               <div className="flex justify-between text-xl font-black border-t border-gray-700 pt-4 mt-2">
-                  <span>TOTAL</span>
-                  <span className="text-green-400 underline decoration-2 underline-offset-4">
-                    KES {total.toLocaleString()}
+               <div className="text-right">
+                  <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest block">Amount Due</span>
+                  <span className="text-4xl font-black text-green-400 tracking-tighter">
+                    <span className="text-lg mr-1 text-green-600">KES</span>
+                    {total.toLocaleString()}
                   </span>
                </div>
             </div>
-
-            <button 
-              disabled={cart.length === 0}
-              className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:cursor-not-allowed py-5 rounded-2xl font-black text-lg uppercase tracking-widest transition-all shadow-lg active:scale-95"
-            >
-              Process Payment (F2)
-            </button>
           </div>
+        </div>
+
+        {/* RIGHT SIDEBAR: THE PAY STATION */}
+        <aside className="w-72 bg-slate-200/50 p-2 flex flex-col gap-2">
+           <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-300 flex-1 flex flex-col">
+              <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Payment Methods</h2>
+              
+              <div className="space-y-2 flex-1">
+                 <button className="w-full flex items-center gap-4 p-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-all shadow-md active:scale-95">
+                    <Banknote size={24} />
+                    <div className="text-left">
+                       <p className="text-xs font-black uppercase leading-none">Cash</p>
+                       <p className="text-[10px] opacity-70">F2</p>
+                    </div>
+                 </button>
+
+                 <button className="w-full flex items-center gap-4 p-4 bg-[#41ab3b] hover:bg-[#368f31] text-white rounded-lg transition-all shadow-md active:scale-95 border-b-4 border-black/20">
+                    <div className="font-black text-xl italic">M</div>
+                    <div className="text-left">
+                       <p className="text-xs font-black uppercase leading-none">M-PESA STK</p>
+                       <p className="text-[10px] opacity-70">F3</p>
+                    </div>
+                 </button>
+
+                 <button className="w-full flex items-center gap-4 p-4 bg-slate-800 hover:bg-slate-900 text-white rounded-lg transition-all shadow-md active:scale-95">
+                    <creditCard size={24} />
+                    <div className="text-left">
+                       <p className="text-xs font-black uppercase leading-none">Card Payment</p>
+                       <p className="text-[10px] opacity-70">F4</p>
+                    </div>
+                 </button>
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col gap-2">
+                 <button className="w-full py-3 bg-white border border-slate-300 text-slate-600 rounded-md text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-colors">
+                    Suspend Sale
+                 </button>
+              </div>
+           </div>
+
+           {/* OPERATOR CARD */}
+           <div className="bg-slate-800 p-4 rounded-lg text-white flex items-center gap-3">
+              <div className="w-8 h-8 rounded bg-blue-500 flex items-center justify-center font-black text-xs">
+                JD
+              </div>
+              <div className="leading-none">
+                 <p className="text-[10px] font-black uppercase text-slate-400">Cashier</p>
+                 <p className="text-xs font-bold truncate w-32">Jane Doe</p>
+              </div>
+           </div>
         </aside>
-      </main>
+      </div>
     </div>
   );
 }

@@ -111,16 +111,15 @@ const primaryAssignment = user.branches[0];
       email: user.email,
       staffNumber: user.staffNumber,
       businessId: user.businessId,
-      // ✨ ADDED THIS: The specific branch this user belongs to
-      branchId: primaryAssignment?.branchId || null, 
+      branchId: primaryAssignment?.branchId || null,
+      branchName: primaryAssignment?.branch?.name || "Main Station",
       businessName: user.business?.name || "My Business", 
       role: userRole
     },
     business: user.business,
-    // ✨ UPDATED THIS: Keep the role inside the branch objects
     branches: user.branches?.map(ub => ({
       ...ub.branch,
-      role: ub.role // This allows us to see the role per branch
+      role: ub.role 
     })) || []
   };
 };

@@ -33,6 +33,7 @@ const ManagerLayout = () => {
     navigate("/login");
   };
 
+
   return (
     <div className="flex h-screen bg-gray-50">
    
@@ -114,7 +115,14 @@ const ManagerLayout = () => {
         <Menu size={20} className={`transition-transform duration-300 ${isCollapsed ? "" : "rotate-90"}`} />
       </button>
 
-            <h2 className="font-semibold text-gray-700">Manager Access: {user?.branchName || "Current Branch"}</h2>
+     <h2 className="text-base font-bold text-gray-800 tracking-tight">
+  {/* The '?' starts the condition, and the ':' is the 'else' */}
+  {user?.branchName ? (
+    <span className="capitalize">{user.branchName}</span>
+  ) : (
+    <span className="text-gray-400 italic font-medium">Loading Branch...</span>
+  )}
+</h2>
           </div>
           
           <div className="flex items-center gap-4">

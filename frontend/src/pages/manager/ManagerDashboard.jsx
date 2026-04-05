@@ -46,31 +46,35 @@ const ManagerDashboard = () => {
 
   // Map the Real Data to your existing UI stats array
   const stats = [
-    { 
-      title: "Today's Sales", 
-      value: `KES ${dashboardData?.todaySales?.toLocaleString() || '0'}`, 
-      icon: <ShoppingCart className="text-blue-600" />, 
-      change: dashboardData?.salesGrowth || "0%" 
-    },
-    { 
-      title: "Active Cashiers", 
-      value: dashboardData?.activeCashiers || "0", 
-      icon: <Users className="text-green-600" />, 
-      change: "On Shift" 
-    },
-    { 
-      title: "Low Stock Items", 
-      value: dashboardData?.lowStockCount || "0", 
-      icon: <AlertTriangle className="text-amber-600" />, 
-      change: "Action Needed" 
-    },
-    { 
-      title: "Avg. Transaction", 
-      value: `KES ${dashboardData?.avgTicket?.toLocaleString() || '0'}`, 
-      icon: <TrendingUp className="text-purple-600" />, 
-      change: "+0%" 
-    },
-  ];
+  { 
+    title: "Today's Sales", 
+    value: dashboardData?.todaySales ? `KES ${dashboardData.todaySales.toLocaleString()}` : "KES 0", 
+    icon: <ShoppingCart className="text-blue-600" />, 
+    change: dashboardData?.salesGrowth || "+0%",
+    isPositive: true 
+  },
+  { 
+    title: "Active Cashiers", 
+    value: dashboardData?.activeCashiers || "0", 
+    icon: <Users className="text-green-600" />, 
+    change: "Live Now",
+    isPositive: true
+  },
+  { 
+    title: "Low Stock Items", 
+    value: dashboardData?.lowStockCount || "0", 
+    icon: <AlertTriangle className="text-amber-600" />, 
+    change: dashboardData?.lowStockCount > 0 ? "Action Needed" : "All Clear",
+    isWarning: dashboardData?.lowStockCount > 0 
+  },
+  { 
+    title: "Avg. Transaction", 
+    value: dashboardData?.avgTicket ? `KES ${dashboardData.avgTicket.toLocaleString()}` : "KES 0", 
+    icon: <TrendingUp className="text-purple-600" />, 
+    change: dashboardData?.ticketGrowth || "+0%",
+    isPositive: true
+  },
+];
 
   if (isLoading) return <div className="p-10 text-center font-bold">Initializing Command Center...</div>;
 
@@ -113,20 +117,36 @@ const ManagerDashboard = () => {
 </div>
 
       {/* Quick Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {stats.map((stat, index) => (
-          <div key={index} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
-            <div className="flex justify-between items-start mb-4">
-              <div className="p-2 bg-gray-50 rounded-lg">{stat.icon}</div>
-              <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-full">
-                {stat.change}
-              </span>
-            </div>
-            <p className="text-gray-500 text-sm font-medium">{stat.title}</p>
-            <h3 className="text-2xl font-bold text-gray-800">{stat.value}</h3>
-          </div>
-        ))}
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+  {stats.map((stat, index) => (
+    <div key={index} className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
+      <div className="flex justify-between items-start mb-4">
+        <div className="p-3 bg-gray-50 rounded-2xl group-hover:bg-blue-50 transition-colors">
+          {React.cloneElement(stat.icon, { size: 24 })}
+        </div>
+        <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg uppercase tracking-wider ${
+          stat.isWarning 
+            ? "bg-red-50 text-red-600 border border-red-100" 
+            : "bg-green-50 text-green-600 border border-green-100"
+        }`}>
+          {stat.change}
+        </span>
       </div>
+      <div>
+        <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-1">
+          {stat.title}
+        </p>
+        <h3 className="text-2xl font-bold text-gray-900 tracking-tight">
+          {isLoading ? (
+            <div className="h-8 w-24 bg-gray-100 animate-pulse rounded-md" />
+          ) : (
+            stat.value
+          )}
+        </h3>
+      </div>
+    </div>
+  ))}
+</div>
 
       {/* Main Content: Charts Placeholder */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

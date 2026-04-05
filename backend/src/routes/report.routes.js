@@ -1,6 +1,6 @@
 import express from "express";
 import { getManagerSummary } from "../controllers/report.controller.js";
-import { verifyToken } from "../middleware/verifyToken.js"; // Use your existing auth middleware
+import { verifyToken } from "../middleware/authMiddleware.js"; // Use your existing auth middleware
 
 const router = express.Router();
 

@@ -1,5 +1,5 @@
 import { prisma } from "../lib/prisma.js";
-import { startOfDay, endOfDay } from "date-fns"; 
+import { startOfDay, endOfDay } from "date-fns";
 
 export const getManagerSummary = async (req, res) => {
   try {
@@ -13,7 +13,7 @@ export const getManagerSummary = async (req, res) => {
     const start = startOfDay(today);
     const end = endOfDay(today);
 
-    // 1. Today's Sales Calculation
+    // 1. Today's Sales (Matches Sale model)
     const salesData = await prisma.sale.aggregate({
       where: {
         branchId: branchId,
@@ -24,24 +24,30 @@ export const getManagerSummary = async (req, res) => {
       _count: { id: true },
     });
 
-    // 2. Active Cashiers (Users assigned to this branch who are ACTIVE)
-    const activeCashiers = await prisma.user.count({
-      where: {
-        branches: { some: { branchId: branchId } },
-        status: "ACTIVE",
-        role: "CASHIER",
-      },
-    });
-
-    // 3. Low Stock Items (Products in this branch below minStockLevel)
-    const lowStockCount = await prisma.product.count({
+    // 2. Active Cashiers (Matches UserBranch model)
+    // We count UserBranch entries where the role is CASHIER for this branch
+    const activeCashiers = await prisma.userBranch.count({
       where: {
         branchId: branchId,
-        quantity: { lt: prisma.product.fields.minStockLevel },
+        role: "CASHIER",
+        user: {
+          status: "ACTIVE" // Only count them if the main user account is ACTIVE
+        }
       },
     });
 
-    // 4. Average Ticket (Total Sales / Number of Sales)
+    // 3. Low Stock Items (Matches ProductInventory model)
+    // Your schema uses 'stock' and 'minStock' fields
+    const lowStockCount = await prisma.productInventory.count({
+      where: {
+        branchId: branchId,
+        stock: {
+          lte: prisma.productInventory.fields.minStock // Dynamic check against your set minStock
+        }
+      },
+    });
+
+    // 4. Average Ticket
     const totalSales = salesData._sum.totalAmount || 0;
     const salesCount = salesData._count.id || 0;
     const avgTicket = salesCount > 0 ? totalSales / salesCount : 0;
@@ -51,7 +57,7 @@ export const getManagerSummary = async (req, res) => {
       activeCashiers: activeCashiers,
       lowStockCount: lowStockCount,
       avgTicket: Math.round(avgTicket),
-      salesGrowth: "+12%", // Mocking growth for now
+      salesGrowth: "+0%", 
     });
   } catch (error) {
     console.error("Report Error:", error);

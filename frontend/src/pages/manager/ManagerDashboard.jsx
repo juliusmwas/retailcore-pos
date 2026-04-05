@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom"; // Added for redirection
 import { useAuth } from "../../auth/AuthContext"; // Import your auth hook
+import axios from "axios";
 import { 
   Users, 
   ShoppingCart, 
@@ -10,49 +11,106 @@ import {
   LogOut // Added logout icon
 } from "lucide-react";
 
-const ManagerDashboard = () => {
-  const navigate = useNavigate();
-  const { logout } = useAuth(); // Destructure logout function
-
-  const handleLogout = () => {
+ const handleLogout = () => {
     logout(); // Clears the auth state and localStorage
     navigate("/login", { replace: true }); // Sends user back to login
   };
 
-  // Mock data for the UI layout
+const ManagerDashboard = () => {
+  const { user, token } = useAuth();
+  const [dashboardData, setDashboardData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // 🔄 The "Trigger"
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        setIsLoading(true);
+        // We pass the branchId so the backend knows WHICH branch to calculate for
+        const response = await axios.get(
+          `http://localhost:5000/api/reports/manager-summary?branchId=${user?.branchId}`, 
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setDashboardData(response.data);
+      } catch (err) {
+        console.error("Dashboard Load Error:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (user?.branchId) {
+      fetchStats();
+    }
+  }, [user?.branchId, token]);
+
+  // Map the Real Data to your existing UI stats array
   const stats = [
-    { title: "Today's Sales", value: "KES 45,200", icon: <ShoppingCart className="text-blue-600" />, change: "+12%" },
-    { title: "Active Cashiers", value: "4", icon: <Users className="text-green-600" />, change: "Full Staff" },
-    { title: "Low Stock Items", value: "12", icon: <AlertTriangle className="text-amber-600" />, change: "Action Needed" },
-    { title: "Avg. Transaction", value: "KES 1,250", icon: <TrendingUp className="text-purple-600" />, change: "+5.4%" },
+    { 
+      title: "Today's Sales", 
+      value: `KES ${dashboardData?.todaySales?.toLocaleString() || '0'}`, 
+      icon: <ShoppingCart className="text-blue-600" />, 
+      change: dashboardData?.salesGrowth || "0%" 
+    },
+    { 
+      title: "Active Cashiers", 
+      value: dashboardData?.activeCashiers || "0", 
+      icon: <Users className="text-green-600" />, 
+      change: "On Shift" 
+    },
+    { 
+      title: "Low Stock Items", 
+      value: dashboardData?.lowStockCount || "0", 
+      icon: <AlertTriangle className="text-amber-600" />, 
+      change: "Action Needed" 
+    },
+    { 
+      title: "Avg. Transaction", 
+      value: `KES ${dashboardData?.avgTicket?.toLocaleString() || '0'}`, 
+      icon: <TrendingUp className="text-purple-600" />, 
+      change: "+0%" 
+    },
   ];
+
+  if (isLoading) return <div className="p-10 text-center font-bold">Initializing Command Center...</div>;
+
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen font-sans">
       {/* Header Section */}
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">Manager Command Center</h1>
-          <p className="text-sm text-gray-500 flex items-center gap-1">
-            <Clock size={14} /> Daily Overview: Chuka Branch
-          </p>
-        </div>
-        
-        <div className="flex gap-3">
-          <button className="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition shadow-sm text-sm">
-            Generate Daily Report
-          </button>
-          
-          {/* Working Logout Button */}
-          <button 
-            onClick={handleLogout}
-            className="flex items-center gap-2 border border-red-200 text-red-600 px-4 py-2 rounded-lg font-semibold hover:bg-red-50 transition text-sm"
-          >
-            <LogOut size={16} />
-            Log Out
-          </button>
-        </div>
+<div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+  <div>
+    <h1 className="text-2xl font-black text-gray-900 tracking-tight">
+      Manager Command Center
+    </h1>
+    <div className="flex items-center gap-2 mt-1">
+      <div className="flex items-center gap-1.5 bg-blue-50 px-2 py-1 rounded-md border border-blue-100">
+        <Clock size={12} className="text-blue-600" />
+        <p className="text-[11px] font-bold text-blue-700 uppercase tracking-wider">
+          {new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+        </p>
       </div>
+      <span className="text-gray-300 text-xs">|</span>
+      <p className="text-sm text-gray-500 font-medium">
+        Daily Overview: <span className="text-gray-800 font-bold capitalize">{user?.branchName || "Main Station"}</span>
+      </p>
+    </div>
+  </div>
+  
+  <div className="flex items-center gap-3 w-full md:w-auto">
+    <button className="flex-1 md:flex-none bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-blue-700 transition-all shadow-md shadow-blue-100 text-sm active:scale-95">
+      Generate Daily Report
+    </button>
+    
+    <button 
+      onClick={handleLogout}
+      className="flex items-center justify-center gap-2 border border-red-100 text-red-500 px-4 py-2.5 rounded-xl font-bold hover:bg-red-50 hover:border-red-200 transition-all text-sm active:scale-95"
+    >
+      <LogOut size={16} />
+      <span className="hidden sm:inline">Log Out</span>
+    </button>
+  </div>
+</div>
 
       {/* Quick Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

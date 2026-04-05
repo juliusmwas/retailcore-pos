@@ -80,25 +80,54 @@ export const getManagerSummary = async (req, res) => {
       .filter((cat) => cat.value > 0); // Only show categories that have items
 
     // Add 'categoryShare' to your res.status(200).json({ ... })
-    // 6. Revenue Velocity (Last 7 Days)
-    const sevenDaysAgo = startOfDay(subDays(new Date(), 6));
 
-    const dailySales = await prisma.sale.groupBy({
+    // 6. Comparative Revenue Velocity (Last 14 Days)
+    const now = new Date();
+    const currentStart = startOfDay(subDays(now, 6));
+    const previousStart = startOfDay(subDays(now, 13));
+    const previousEnd = endOfDay(subDays(now, 7));
+
+    // Fetch Data
+    const currentSales = await prisma.sale.groupBy({
       by: ["createdAt"],
       where: {
-        branchId: branchId,
+        branchId,
         status: "COMPLETED",
-        createdAt: { gte: sevenDaysAgo },
+        createdAt: { gte: currentStart },
       },
       _sum: { totalAmount: true },
-      orderBy: { createdAt: "asc" },
     });
 
-    // ✅ FIX: Changed 'dailyStats' to 'dailySales' to match the variable above
-    const revenueVelocity = dailySales.map((stat) => ({
-      day: format(new Date(stat.createdAt), "EEE"),
-      amount: stat._sum.totalAmount || 0,
-    }));
+    const previousSales = await prisma.sale.groupBy({
+      by: ["createdAt"],
+      where: {
+        branchId,
+        status: "COMPLETED",
+        createdAt: { gte: previousStart, lte: previousEnd },
+      },
+      _sum: { totalAmount: true },
+    });
+
+    // Create a helper function to sum totals by day of week
+    const getDailyTotal = (salesArray, targetDayIndex) => {
+      return salesArray
+        .filter((s) => new Date(s.createdAt).getDay() === targetDayIndex)
+        .reduce((sum, s) => sum + (s._sum.totalAmount || 0), 0);
+    };
+
+    const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+    // We want to show the last 7 days ending TODAY
+    const revenueVelocity = Array.from({ length: 7 }).map((_, i) => {
+      const date = subDays(now, 6 - i);
+      const dayIndex = date.getDay();
+
+      return {
+        day: daysOfWeek[dayIndex],
+        amount: getDailyTotal(currentSales, dayIndex),
+        prevAmount: getDailyTotal(previousSales, dayIndex),
+      };
+    });
 
     res.status(200).json({
       todaySales: totalSales,

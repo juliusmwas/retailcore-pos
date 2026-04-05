@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom"; // Added for redirection
-import { useAuth } from "../../auth/AuthContext"; // Import your auth hook
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../auth/AuthContext";
 import axios from "axios";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable"; // Import the function directly
 import {
   LineChart,
   Line,
@@ -19,27 +21,85 @@ import {
   AlertTriangle,
   TrendingUp,
   Clock,
-  LogOut, // Added logout icon
+  LogOut,
+  FileText,
 } from "lucide-react";
 
-const handleLogout = () => {
-  logout(); // Clears the auth state and localStorage
-  navigate("/login", { replace: true }); // Sends user back to login
-};
-
 const ManagerDashboard = () => {
-  const { user, token } = useAuth();
+  // 1. Hooks & Auth
+  const { user, token, logout } = useAuth(); // Ensure logout is destructured here
+  const navigate = useNavigate();
+
+  // 2. State
   const [dashboardData, setDashboardData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 🔄 The "Trigger"
+  // 3. Handlers (Moved INSIDE so they can see state/hooks)
+  const handleLogout = () => {
+    logout();
+    navigate("/login", { replace: true });
+  };
+
+  const handleGenerateReport = () => {
+    if (!dashboardData) {
+      alert("No data available to generate report yet.");
+      return;
+    }
+
+    const doc = new jsPDF();
+    const date = new Date().toLocaleDateString();
+    const branchName = user?.branchName || "Chuka Branch";
+
+    // Header
+    doc.setFontSize(20);
+    doc.setTextColor(40);
+    doc.text("RETAILCORE POS - DAILY SUMMARY", 14, 22);
+
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Branch: ${branchName} | Date: ${date}`, 14, 30);
+
+    // ✅ CORRECT WAY: Call autoTable directly and pass the 'doc' instance
+    autoTable(doc, {
+      startY: 40,
+      head: [["Metric", "Value"]],
+      body: [
+        [
+          "Total Sales (Today)",
+          `KES ${dashboardData.todaySales?.toLocaleString() || 0}`,
+        ],
+        [
+          "Average Ticket",
+          `KES ${dashboardData.avgTicket?.toLocaleString() || 0}`,
+        ],
+        ["Active Cashiers", dashboardData.activeCashiers || 0],
+        ["Low Stock Alerts", dashboardData.lowStockCount || 0],
+      ],
+      theme: "striped",
+      headStyles: { fillColor: [37, 99, 235] },
+    });
+
+    // Category Table
+    if (dashboardData.categoryShare?.length > 0) {
+      autoTable(doc, {
+        startY: doc.lastAutoTable.finalY + 10, // Accessing previous table position
+        head: [["Category Share", "Item Count"]],
+        body: dashboardData.categoryShare.map((cat) => [cat.name, cat.value]),
+        headStyles: { fillColor: [245, 158, 11] },
+      });
+    }
+
+    doc.save(`Daily_Report_${branchName.replace(/\s+/g, "_")}_${date}.pdf`);
+  };
+  // 4. Data Fetching
   useEffect(() => {
     const fetchStats = async () => {
+      if (!user?.branchId) return;
+
       try {
         setIsLoading(true);
-        // We pass the branchId so the backend knows WHICH branch to calculate for
         const response = await axios.get(
-          `http://localhost:5000/api/reports/manager-summary?branchId=${user?.branchId}`,
+          `http://localhost:5000/api/reports/manager-summary?branchId=${user.branchId}`,
           { headers: { Authorization: `Bearer ${token}` } },
         );
         setDashboardData(response.data);
@@ -50,12 +110,10 @@ const ManagerDashboard = () => {
       }
     };
 
-    if (user?.branchId) {
-      fetchStats();
-    }
+    fetchStats();
   }, [user?.branchId, token]);
 
-  // Map the Real Data to your existing UI stats array
+  // 5. Derived UI Data
   const stats = [
     {
       title: "Today's Sales",
@@ -93,8 +151,13 @@ const ManagerDashboard = () => {
 
   if (isLoading)
     return (
-      <div className="p-10 text-center font-bold">
-        Initializing Command Center...
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="font-black text-gray-400 uppercase tracking-widest text-xs">
+            Initializing Command Center...
+          </p>
+        </div>
       </div>
     );
 
@@ -128,7 +191,11 @@ const ManagerDashboard = () => {
         </div>
 
         <div className="flex items-center gap-3 w-full md:w-auto">
-          <button className="flex-1 md:flex-none bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-blue-700 transition-all shadow-md shadow-blue-100 text-sm active:scale-95">
+          <button
+            onClick={handleGenerateReport}
+            className="flex-1 md:flex-none bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-blue-700 transition-all shadow-md shadow-blue-100 text-sm active:scale-95 flex items-center justify-center gap-2"
+          >
+            <FileText size={16} />
             Generate Daily Report
           </button>
 

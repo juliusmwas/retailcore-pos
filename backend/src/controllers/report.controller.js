@@ -31,8 +31,8 @@ export const getManagerSummary = async (req, res) => {
         branchId: branchId,
         role: "CASHIER",
         user: {
-          status: "ACTIVE" // Only count them if the main user account is ACTIVE
-        }
+          status: "ACTIVE", // Only count them if the main user account is ACTIVE
+        },
       },
     });
 
@@ -42,8 +42,8 @@ export const getManagerSummary = async (req, res) => {
       where: {
         branchId: branchId,
         stock: {
-          lte: prisma.productInventory.fields.minStock // Dynamic check against your set minStock
-        }
+          lte: prisma.productInventory.fields.minStock, // Dynamic check against your set minStock
+        },
       },
     });
 
@@ -52,12 +52,41 @@ export const getManagerSummary = async (req, res) => {
     const salesCount = salesData._count.id || 0;
     const avgTicket = salesCount > 0 ? totalSales / salesCount : 0;
 
+    // 5. Category Share (Stock Distribution)
+    const categoryData = await prisma.category.findMany({
+      select: {
+        name: true,
+        _count: {
+          select: {
+            products: {
+              where: {
+                inventory: {
+                  some: { branchId: branchId },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // Format it for the frontend
+    const categoryShare = categoryData
+      .map((cat) => ({
+        name: cat.name.toUpperCase(),
+        value: cat._count.products,
+      }))
+      .filter((cat) => cat.value > 0); // Only show categories that have items
+
+    // Add 'categoryShare' to your res.status(200).json({ ... })
+
     res.status(200).json({
       todaySales: totalSales,
       activeCashiers: activeCashiers,
       lowStockCount: lowStockCount,
       avgTicket: Math.round(avgTicket),
-      salesGrowth: "+0%", 
+      salesGrowth: "+0%",
+      categoryShare: categoryShare,
     });
   } catch (error) {
     console.error("Report Error:", error);

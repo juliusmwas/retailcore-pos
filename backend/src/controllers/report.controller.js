@@ -129,6 +129,17 @@ export const getManagerSummary = async (req, res) => {
       };
     });
 
+    const branchInfo = await prisma.branch.findUnique({
+      where: { id: branchId },
+      include: {
+        business: {
+          select: { name: true },
+        },
+      },
+    });
+
+    const businessName = branchInfo?.business?.name || "RETAILCORE POS";
+
     res.status(200).json({
       todaySales: totalSales,
       activeCashiers: activeCashiers,
@@ -137,6 +148,7 @@ export const getManagerSummary = async (req, res) => {
       salesGrowth: "+0%",
       categoryShare: categoryShare,
       revenueVelocity: revenueVelocity,
+      businessName: businessName,
     });
   } catch (error) {
     console.error("Report Error:", error);

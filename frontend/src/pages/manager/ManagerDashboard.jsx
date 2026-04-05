@@ -41,23 +41,28 @@ const ManagerDashboard = () => {
   };
 
   const handleGenerateReport = () => {
-    if (!dashboardData) {
-      alert("No data available to generate report yet.");
-      return;
-    }
+    if (!dashboardData) return;
 
     const doc = new jsPDF();
     const date = new Date().toLocaleDateString();
-    const branchName = user?.branchName || "Chuka Branch";
 
-    // Header
-    doc.setFontSize(20);
-    doc.setTextColor(40);
-    doc.text("RETAILCORE POS - DAILY SUMMARY", 14, 22);
+    // Get the real business name from the DB, fallback to RetailCore if empty
+    const businessTitle =
+      dashboardData?.businessName?.toUpperCase() || "RETAILCORE POS";
+    const branchName = user?.branchName || "Main Branch";
 
+    // Header - Now using Dynamic Business Name
+    doc.setFontSize(22);
+    doc.setTextColor(37, 99, 235); // Blue-600 color for the Business Name
+    doc.setFont("helvetica", "bold");
+    doc.text(businessTitle, 14, 22);
+
+    // Subheader
     doc.setFontSize(10);
     doc.setTextColor(100);
-    doc.text(`Branch: ${branchName} | Date: ${date}`, 14, 30);
+    doc.setFont("helvetica", "normal");
+    doc.text(`DAILY PERFORMANCE SUMMARY`, 14, 28);
+    doc.text(`Branch: ${branchName} | Date: ${date}`, 14, 34);
 
     // ✅ CORRECT WAY: Call autoTable directly and pass the 'doc' instance
     autoTable(doc, {

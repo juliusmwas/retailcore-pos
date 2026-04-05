@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useAuth } from "../../auth/AuthContext"; // Your auth hook
 import { Search, Filter, Eye, Download, FileText } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const ManagerSales = () => {
   const { user, token } = useAuth();
@@ -31,6 +33,89 @@ const ManagerSales = () => {
     fetchSales();
   }, [user?.branchId, token]);
 
+  const handlePrintDailyLog = () => {
+    if (sales.length === 0) {
+      window.alert(
+        "Print Failed: The daily sales log is empty. Please process a sale before attempting to print.",
+      );
+      return;
+    }
+
+    const doc = new jsPDF();
+    const date = new Date().toLocaleDateString();
+
+    // Header
+    doc.setFontSize(18);
+    doc.text(`${user?.businessName || "RETAILCORE"} - DAILY SALES LOG`, 14, 20);
+    doc.setFontSize(10);
+    doc.text(`Branch: ${user?.branchName || "Chuka"} | Date: ${date}`, 14, 28);
+
+    // Table
+    autoTable(doc, {
+      startY: 35,
+      head: [["ID", "Time", "Customer", "Method", "Amount", "Status"]],
+      body: sales.map((s) => [
+        s.id,
+        s.time,
+        s.customer,
+        s.method,
+        s.total,
+        s.status,
+      ]),
+      theme: "grid",
+      headStyles: { fillColor: [37, 99, 235] }, // Blue-600
+    });
+
+    doc.save(`Daily_Sales_Log_${date}.pdf`);
+  };
+
+  const handleExportCSV = () => {
+    if (sales.length === 0) {
+      window.alert(
+        "Export Failed: There are no sales records currently available for the Chuka Branch.",
+      );
+      return;
+    }
+
+    // 1. Define Headers
+    const headers = [
+      "Receipt ID",
+      "Time",
+      "Customer",
+      "Payment Method",
+      "Amount",
+      "Status",
+    ];
+
+    // 2. Map sales data to rows
+    const rows = sales.map((sale) => [
+      sale.id,
+      sale.time,
+      sale.customer,
+      sale.method,
+      // Clean the "KES" prefix for the spreadsheet
+      sale.total.replace("KES ", "").replace(",", ""),
+      sale.status,
+    ]);
+
+    // 3. Create CSV Content
+    const csvContent = [headers, ...rows].map((e) => e.join(",")).join("\n");
+
+    // 4. Create Download Link
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute(
+      "download",
+      `Sales_Report_${new Date().toLocaleDateString()}.csv`,
+    );
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header section */}
@@ -44,10 +129,17 @@ const ManagerSales = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          <button className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-xl font-bold text-xs hover:bg-gray-50 transition shadow-sm">
+          <button
+            onClick={handleExportCSV}
+            className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-xl font-bold text-xs hover:bg-gray-50 transition shadow-sm"
+          >
             <Download size={16} /> EXPORT CSV
           </button>
-          <button className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl font-bold text-xs hover:bg-blue-700 transition shadow-md">
+
+          <button
+            onClick={handlePrintDailyLog}
+            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl font-bold text-xs hover:bg-blue-700 transition shadow-md"
+          >
             <FileText size={16} /> PRINT DAILY LOG
           </button>
         </div>

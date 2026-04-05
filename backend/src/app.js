@@ -5,6 +5,7 @@ import branchRoutes from "./routes/branch.routes.js";
 import dashboardRoutes from "./routes/dashboard.routes.js";
 import staffRoutes from "./routes/staff.routes.js";
 import productRoutes from './routes/productRoutes.js';
+import reportRoutes from "./routes/report.routes.js";
 
 const app = express();
 
@@ -38,6 +39,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/staff", staffRoutes);
 app.use('/api/products', productRoutes);
+app.use("/api/reports", reportRoutes);
 
 app.get("/", (req, res) => {
   res.send("Backend is running!");

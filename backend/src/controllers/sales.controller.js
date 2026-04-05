@@ -1,4 +1,5 @@
 import { format } from "date-fns";
+import { prisma } from "../lib/prisma.js"; // Adjust path to match your project
 
 // Get Sales Stats
 export const getSalesStats = async (req, res) => {
@@ -46,7 +47,6 @@ export const getSalesStats = async (req, res) => {
   }
 };
 
-// Get Detailed Sales List for the Table
 export const getBranchSalesList = async (req, res) => {
   const { branchId } = req.query;
 
@@ -58,20 +58,25 @@ export const getBranchSalesList = async (req, res) => {
     const sales = await prisma.sale.findMany({
       where: { branchId },
       include: {
-        customer: { select: { name: true } }, // Get customer name from relation
+        user: {
+          select: { fullName: true }, // In your schema it's 'fullName', not 'name'
+        },
+        items: true,
       },
-      orderBy: { createdAt: "desc" }, // Latest sales first
-      take: 100, // Get the last 100 sales for now
+      orderBy: { createdAt: "desc" },
+      take: 100,
     });
 
-    // Format for your Manager Dashboard UI
     const formattedSales = sales.map((sale) => ({
-      id: sale.id,
-      time: format(new Date(sale.createdAt), "hh:mm a"), // e.g. 10:45 AM
-      customer: sale.customer?.name || "Walking Customer",
-      method: sale.paymentMethod,
+      // Use your invoiceNo or a sliced ID for the Receipt ID
+      id: sale.invoiceNo || sale.id.slice(0, 8).toUpperCase(),
+      time: format(new Date(sale.createdAt), "hh:mm a"),
+      // Since there's no Customer model relation yet, we show the Cashier or 'Walking Customer'
+      customer: "Walking Customer",
+      cashier: sale.user?.fullName || "Staff",
+      method: sale.paymentMethod, // This will return CASH, MPESA, etc.
       total: `KES ${sale.totalAmount.toLocaleString()}`,
-      status: sale.status, // Matches your UI: COMPLETED, VOIDED, etc.
+      status: sale.status, // COMPLETED, PENDING, etc.
     }));
 
     res.json(formattedSales);

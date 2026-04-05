@@ -3,15 +3,13 @@ import {
   getBranchSalesList,
   getSalesStats,
 } from "../controllers/sales.controller.js";
-import { protect } from "../middleware/authMiddleware.js"; // Assuming you have auth middleware
+// Update this line to use the actual exported name: authenticateToken
+import { authenticateToken } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// Get the detailed list for your Manager Table
-// URL: http://localhost:5000/api/sales/list?branchId=...
-router.get("/list", protect, getBranchSalesList);
-
-// Get the stats (Volume, MPESA vs Card)
-router.get("/stats", protect, getSalesStats);
+// Use 'authenticateToken' instead of 'protect'
+router.get("/list", authenticateToken, getBranchSalesList);
+router.get("/stats", authenticateToken, getSalesStats);
 
 export default router;

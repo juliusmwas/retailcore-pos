@@ -9,6 +9,8 @@ const ManagerSales = () => {
   const { user, token } = useAuth();
   const [sales, setSales] = useState([]); // Real data starts empty
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterMethod, setFilterMethod] = useState("ALL");
 
   useEffect(() => {
     const fetchSales = async () => {
@@ -116,6 +118,17 @@ const ManagerSales = () => {
     document.body.removeChild(link);
   };
 
+  const filteredSales = sales.filter((sale) => {
+    const matchesSearch =
+      sale.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      sale.customer.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesFilter =
+      filterMethod === "ALL" || sale.method === filterMethod;
+
+    return matchesSearch && matchesFilter;
+  });
+
   return (
     <div className="space-y-6">
       {/* Header section */}
@@ -155,14 +168,23 @@ const ManagerSales = () => {
           <input
             type="text"
             placeholder="Search by Receipt ID or Customer..."
-            className="w-full pl-10 pr-4 py-2 bg-gray-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500 transition"
+            className="w-full pl-10 pr-4 py-2 bg-gray-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500 transition font-medium"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-xl cursor-pointer hover:bg-gray-100">
+        <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-xl hover:bg-gray-100 transition">
           <Filter size={16} className="text-gray-500" />
-          <span className="text-sm font-bold text-gray-600 uppercase tracking-tighter">
-            Filter By Method
-          </span>
+          <select
+            className="bg-transparent border-none text-sm font-bold text-gray-600 uppercase tracking-tighter focus:ring-0 cursor-pointer outline-none"
+            value={filterMethod}
+            onChange={(e) => setFilterMethod(e.target.value)}
+          >
+            <option value="ALL">ALL METHODS</option>
+            <option value="CASH">CASH</option>
+            <option value="MPESA">MPESA</option>
+            <option value="CARD">CARD</option>
+          </select>
         </div>
       </div>
 
@@ -203,19 +225,20 @@ const ManagerSales = () => {
                   Fetching transaction history...
                 </td>
               </tr>
-            ) : sales.length === 0 ? (
-              // Empty state
+            ) : filteredSales.length === 0 ? ( // Use filteredSales here
               <tr>
                 <td
                   colSpan="7"
                   className="px-6 py-10 text-center text-gray-400 font-medium"
                 >
-                  No sales recorded for this branch yet.
+                  {searchTerm || filterMethod !== "ALL"
+                    ? `No results matching "${searchTerm}"`
+                    : "No sales recorded for this branch yet."}
                 </td>
               </tr>
             ) : (
               // Real Data
-              sales.map((sale) => (
+              filteredSales.map((sale) => (
                 <tr
                   key={sale.id}
                   className="hover:bg-blue-50/30 transition group"

@@ -3,6 +3,17 @@ import { useNavigate } from "react-router-dom"; // Added for redirection
 import { useAuth } from "../../auth/AuthContext"; // Import your auth hook
 import axios from "axios";
 import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Area,
+  AreaChart,
+} from "recharts";
+import {
   Users,
   ShoppingCart,
   AlertTriangle,
@@ -170,23 +181,88 @@ const ManagerDashboard = () => {
 
       {/* Main Content: Charts Placeholder */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Revenue Velocity Section (Large) */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 text-center">
-          <div className="flex justify-between items-center mb-6 text-left">
-            <h3 className="font-bold text-gray-800 text-lg uppercase tracking-wider">
-              Revenue Velocity
-            </h3>
-            <div className="flex gap-4 text-xs font-bold">
-              <span className="flex items-center gap-1 text-blue-600">
-                ● Current Week
+        {/* Revenue Velocity Section */}
+        <div className="lg:col-span-2 bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h3 className="font-black text-gray-900 text-sm uppercase tracking-widest">
+                Revenue Velocity
+              </h3>
+              <p className="text-[10px] text-gray-400 font-bold uppercase mt-1">
+                7-Day Sales Trend
+              </p>
+            </div>
+            <div className="flex gap-4 text-[10px] font-black uppercase tracking-tighter">
+              <span className="flex items-center gap-1.5 text-blue-600">
+                <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>{" "}
+                Current Week
               </span>
-              <span className="flex items-center gap-1 text-gray-300">
-                ● Previous Week
+              <span className="flex items-center gap-1.5 text-gray-300">
+                <span className="w-2 h-2 rounded-full bg-gray-200"></span>{" "}
+                Previous Week
               </span>
             </div>
           </div>
-          <div className="h-64 bg-slate-50 rounded-xl flex items-center justify-center border-2 border-dashed border-gray-200 text-gray-400 font-medium">
-            [ Line Chart Area ]
+
+          <div className="h-72 w-full">
+            {dashboardData?.revenueVelocity?.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={dashboardData.revenueVelocity}>
+                  <defs>
+                    <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#2563eb" stopOpacity={0.1} />
+                      <stop offset="95%" stopColor="#2563eb" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    vertical={false}
+                    stroke="#f8fafc"
+                  />
+                  <XAxis
+                    dataKey="day"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: "#94a3b8", fontSize: 10, fontWeight: 900 }}
+                    dy={10}
+                  />
+                  <YAxis hide />
+                  <Tooltip
+                    cursor={{ stroke: "#e2e8f0", strokeWidth: 2 }}
+                    contentStyle={{
+                      borderRadius: "16px",
+                      border: "none",
+                      boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)",
+                      padding: "12px",
+                    }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="amount"
+                    stroke="#2563eb"
+                    strokeWidth={4}
+                    fillOpacity={1}
+                    fill="url(#colorRev)"
+                    dot={{
+                      r: 4,
+                      fill: "#2563eb",
+                      strokeWidth: 2,
+                      stroke: "#fff",
+                    }}
+                    activeDot={{ r: 6, strokeWidth: 0 }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full bg-gray-50 rounded-3xl flex flex-col items-center justify-center border-2 border-dashed border-gray-100 group">
+                <div className="p-3 bg-white rounded-full shadow-sm mb-3 group-hover:scale-110 transition-transform">
+                  <TrendingUp className="text-gray-300" size={24} />
+                </div>
+                <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">
+                  Awaiting Sales Data
+                </p>
+              </div>
+            )}
           </div>
         </div>
 

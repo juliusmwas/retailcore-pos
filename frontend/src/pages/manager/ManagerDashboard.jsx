@@ -197,8 +197,8 @@ const ManagerDashboard = () => {
                 <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>{" "}
                 Current Week
               </span>
-              <span className="flex items-center gap-1.5 text-gray-300">
-                <span className="w-2 h-2 rounded-full bg-gray-200"></span>{" "}
+              <span className="flex items-center gap-1.5 text-gray-400">
+                <span className="w-2 h-2 rounded-full bg-gray-300"></span>{" "}
                 Previous Week
               </span>
             </div>
@@ -209,16 +209,25 @@ const ManagerDashboard = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={dashboardData.revenueVelocity}>
                   <defs>
-                    <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
+                    {/* Gradient for Current Week */}
+                    <linearGradient
+                      id="colorCurrent"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
                       <stop offset="5%" stopColor="#2563eb" stopOpacity={0.1} />
                       <stop offset="95%" stopColor="#2563eb" stopOpacity={0} />
                     </linearGradient>
                   </defs>
+
                   <CartesianGrid
                     strokeDasharray="3 3"
                     vertical={false}
                     stroke="#f8fafc"
                   />
+
                   <XAxis
                     dataKey="day"
                     axisLine={false}
@@ -226,7 +235,9 @@ const ManagerDashboard = () => {
                     tick={{ fill: "#94a3b8", fontSize: 10, fontWeight: 900 }}
                     dy={10}
                   />
+
                   <YAxis hide />
+
                   <Tooltip
                     cursor={{ stroke: "#e2e8f0", strokeWidth: 2 }}
                     contentStyle={{
@@ -234,15 +245,33 @@ const ManagerDashboard = () => {
                       border: "none",
                       boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)",
                       padding: "12px",
+                      fontSize: "12px",
+                      fontWeight: "bold",
                     }}
                   />
+
+                  {/* Previous Week Line (Dashed Grey) */}
                   <Area
                     type="monotone"
-                    dataKey="amount"
+                    dataKey="prevAmount" // Matches the key from backend
+                    name="Previous Week"
+                    stroke="#d1d5db"
+                    strokeWidth={2}
+                    strokeDasharray="5 5"
+                    fill="transparent"
+                    dot={false}
+                    activeDot={{ r: 4, fill: "#94a3b8" }}
+                  />
+
+                  {/* Current Week Line (Solid Blue) */}
+                  <Area
+                    type="monotone"
+                    dataKey="amount" // Matches the key from backend
+                    name="Current Week"
                     stroke="#2563eb"
                     strokeWidth={4}
                     fillOpacity={1}
-                    fill="url(#colorRev)"
+                    fill="url(#colorCurrent)"
                     dot={{
                       r: 4,
                       fill: "#2563eb",

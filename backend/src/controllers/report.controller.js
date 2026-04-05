@@ -1,5 +1,6 @@
 import { prisma } from "../lib/prisma.js";
 import { startOfDay, endOfDay } from "date-fns";
+import { subDays, format } from "date-fns";
 
 export const getManagerSummary = async (req, res) => {
   try {
@@ -79,6 +80,25 @@ export const getManagerSummary = async (req, res) => {
       .filter((cat) => cat.value > 0); // Only show categories that have items
 
     // Add 'categoryShare' to your res.status(200).json({ ... })
+    // 6. Revenue Velocity (Last 7 Days)
+    const sevenDaysAgo = startOfDay(subDays(new Date(), 6));
+
+    const dailySales = await prisma.sale.groupBy({
+      by: ["createdAt"],
+      where: {
+        branchId: branchId,
+        status: "COMPLETED",
+        createdAt: { gte: sevenDaysAgo },
+      },
+      _sum: { totalAmount: true },
+      orderBy: { createdAt: "asc" },
+    });
+
+    // ✅ FIX: Changed 'dailyStats' to 'dailySales' to match the variable above
+    const revenueVelocity = dailySales.map((stat) => ({
+      day: format(new Date(stat.createdAt), "EEE"),
+      amount: stat._sum.totalAmount || 0,
+    }));
 
     res.status(200).json({
       todaySales: totalSales,
@@ -87,6 +107,7 @@ export const getManagerSummary = async (req, res) => {
       avgTicket: Math.round(avgTicket),
       salesGrowth: "+0%",
       categoryShare: categoryShare,
+      revenueVelocity: revenueVelocity,
     });
   } catch (error) {
     console.error("Report Error:", error);

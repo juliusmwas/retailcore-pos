@@ -1,5 +1,9 @@
 import express from "express";
-import { addStaff, getStaff, updateStaff } from "../controllers/staff.controller.js";
+import {
+  addStaff,
+  getStaff,
+  updateStaff,
+} from "../controllers/staff.controller.js";
 import { verifyToken } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
@@ -8,6 +12,7 @@ const router = express.Router();
 router.post("/", verifyToken, addStaff);
 router.get("/", verifyToken, getStaff);
 
-router.put("/:id", verifyToken, updateStaff)
+router.put("/:id", verifyToken, updateStaff);
+router.get("/directory", verifyToken, getStaff);
 
 export default router;

@@ -4,24 +4,23 @@ import bcrypt from "bcryptjs";
 export const addStaff = async (req, res) => {
   try {
     // 1. Destructure fields - ensure these match your frontend formData
-    const { fullName, email, password, role, branchId, staffNumber, phone } = req.body;
+    const { fullName, email, password, role, branchId, staffNumber, phone } =
+      req.body;
     const { businessId } = req.user;
 
     // 2. Check for existing Email or Staff Number
     const existingUser = await prisma.user.findFirst({
       where: {
-        OR: [
-          { email },
-          { staffNumber }
-        ]
-      }
+        OR: [{ email }, { staffNumber }],
+      },
     });
 
     if (existingUser) {
-      return res.status(400).json({ 
-        message: existingUser.email === email 
-          ? "A user with this email already exists." 
-          : "This Staff Number is already assigned." 
+      return res.status(400).json({
+        message:
+          existingUser.email === email
+            ? "A user with this email already exists."
+            : "This Staff Number is already assigned.",
       });
     }
 
@@ -32,13 +31,13 @@ export const addStaff = async (req, res) => {
       // Create the core User record
       const newUser = await tx.user.create({
         data: {
-          fullName,      // Matches schema
+          fullName, // Matches schema
           email,
-          staffNumber,   // Matches schema
+          staffNumber, // Matches schema
           phone,
           password: hashedPassword,
           businessId,
-          status: "ACTIVE"
+          status: "ACTIVE",
         },
       });
 
@@ -47,18 +46,22 @@ export const addStaff = async (req, res) => {
         data: {
           userId: newUser.id,
           branchId: branchId,
-          role: role || "CASHIER"
-        }
+          role: role || "CASHIER",
+        },
       });
 
       return newUser;
     });
 
     const { password: _, ...staffData } = result;
-    res.status(201).json({ message: "Staff onboarded successfully", data: staffData });
+    res
+      .status(201)
+      .json({ message: "Staff onboarded successfully", data: staffData });
   } catch (error) {
     console.error("Staff Creation Error:", error);
-    res.status(500).json({ message: "Internal server error during onboarding." });
+    res
+      .status(500)
+      .json({ message: "Internal server error during onboarding." });
   }
 };
 
@@ -72,32 +75,36 @@ export const getStaff = async (req, res) => {
       where: {
         businessId: businessId,
         // Filter by branch if branchId is provided and not "ALL"
-        ...(branchId && branchId !== "ALL" ? {
-          branches: {
-            some: { branchId: branchId }
-          }
-        } : {})
+        ...(branchId && branchId !== "ALL"
+          ? {
+              branches: {
+                some: { branchId: branchId },
+              },
+            }
+          : {}),
       },
       include: {
         branches: {
           include: {
-            branch: { select: { name: true } }
-          }
-        }
+            branch: { select: { name: true } },
+          },
+        },
       },
-      orderBy: { fullName: 'asc' }
+      orderBy: { fullName: "asc" },
     });
 
     // 2. Flatten the data so the frontend gets a clean object
-    const formattedStaff = staff.map(member => {
+    const formattedStaff = staff.map((member) => {
       // Get the first branch name if they are assigned to one
       const assignedBranchName = member.branches?.[0]?.branch?.name;
-      
+
       return {
         ...member,
         // We use the role from the User model, or fallback to the junction table role
-        role: member.branches?.[0]?.role || "ADMIN", 
-        branchName: assignedBranchName || (member.staffNumber ? "Unassigned" : "Global/Head Office")
+        role: member.branches?.[0]?.role || "ADMIN",
+        branchName:
+          assignedBranchName ||
+          (member.staffNumber ? "Unassigned" : "Global/Head Office"),
       };
     });
 
@@ -120,15 +127,15 @@ export const updateStaff = async (req, res) => {
     const updatedStaff = await prisma.$transaction(async (tx) => {
       // Update core user info
       const user = await tx.user.update({
-        where: { 
-          id: id, 
-          businessId: businessId // Ensures you can't edit users from other businesses
+        where: {
+          id: id,
+          businessId: businessId, // Ensures you can't edit users from other businesses
         },
         data: {
           fullName,
           email,
-          status
-        }
+          status,
+        },
       });
 
       // Update the Role/Branch in the junction table if provided
@@ -137,8 +144,8 @@ export const updateStaff = async (req, res) => {
           where: { userId: id },
           data: {
             ...(role && { role }),
-            ...(branchId && { branchId })
-          }
+            ...(branchId && { branchId }),
+          },
         });
       }
 
@@ -148,13 +155,13 @@ export const updateStaff = async (req, res) => {
     // 3. Return the updated user (Frontend expects this to update the list)
     res.status(200).json({
       success: true,
-      data: updatedStaff
+      data: updatedStaff,
     });
   } catch (error) {
     console.error("Update Staff Error:", error);
-    res.status(500).json({ 
-      message: "Failed to update staff member", 
-      error: error.message 
+    res.status(500).json({
+      message: "Failed to update staff member",
+      error: error.message,
     });
   }
 };

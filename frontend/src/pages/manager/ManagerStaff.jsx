@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../auth/AuthContext";
+import axios from "axios";
 import {
   Users2,
   ShieldCheck,
@@ -11,8 +12,48 @@ import {
 
 const ManagerStaff = () => {
   const { user, token } = useAuth();
+  const [staff, setStaff] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // 1. DEFINE IT FIRST
+  const fetchStaff = async () => {
+    if (!user?.branchId || !token) return;
+    try {
+      setLoading(true);
+      const response = await axios.get(
+        `http://localhost:5000/api/staff/directory?branchId=${user.branchId}`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      // Backend returns { data: [...] }
+      setStaff(response.data.data || []);
+    } catch (error) {
+      console.error("Error loading staff:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 2. CALL IT SECOND
+  useEffect(() => {
+    fetchStaff();
+  }, [user?.branchId, token]);
+
+  // 3. CALCULATE DATA THIRD
+  const activeNow = staff.filter((member) => member.status === "ACTIVE").length;
+
+  const topSeller =
+    staff.length > 0
+      ? staff.reduce((prev, current) => {
+          const getAmount = (val) =>
+            Number(String(val || 0).replace(/[^0-9.-]+/g, ""));
+          return getAmount(current.salesToday) > getAmount(prev.salesToday)
+            ? current
+            : prev;
+        }, staff[0])
+      : { fullName: "N/A" };
+
   // Mock Data - Only showing staff assigned to the Chuka Branch
-  const [staff] = useState([
+  const [staff1] = useState([
     {
       id: "STF-1003",
       name: "Hannah Janet",
@@ -62,6 +103,7 @@ const ManagerStaff = () => {
 
       {/* Staff Highlights */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Total Team */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
           <div className="p-3 bg-purple-50 text-purple-600 rounded-xl">
             <Users2 size={24} />
@@ -71,10 +113,12 @@ const ManagerStaff = () => {
               Total Team
             </p>
             <h3 className="text-xl font-bold text-gray-800">
-              {staff.length} Members
+              {loading ? "..." : `${staff.length} Members`}
             </h3>
           </div>
         </div>
+
+        {/* Active Now */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
           <div className="p-3 bg-green-50 text-green-600 rounded-xl">
             <Clock size={24} />
@@ -83,9 +127,13 @@ const ManagerStaff = () => {
             <p className="text-xs font-black text-gray-400 uppercase tracking-widest">
               Active Now
             </p>
-            <h3 className="text-xl font-bold text-gray-800">2 On Shift</h3>
+            <h3 className="text-xl font-bold text-gray-800">
+              {loading ? "..." : `${activeNow} On Shift`}
+            </h3>
           </div>
         </div>
+
+        {/* Top Seller */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
           <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
             <Award size={24} />
@@ -94,14 +142,21 @@ const ManagerStaff = () => {
             <p className="text-xs font-black text-gray-400 uppercase tracking-widest">
               Top Seller
             </p>
-            <h3 className="text-xl font-bold text-gray-800">Hannah J.</h3>
+            <h3 className="text-xl font-bold text-gray-800">
+              {loading
+                ? "..."
+                : topSeller.fullName?.split(" ")[0] +
+                  (topSeller.fullName?.split(" ")[1]
+                    ? ` ${topSeller.fullName.split(" ")[1][0]}.`
+                    : "")}
+            </h3>
           </div>
         </div>
       </div>
 
       {/* Staff List Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {staff.map((member) => (
+        {staff1.map((member) => (
           <div
             key={member.id}
             className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-4 relative overflow-hidden group hover:border-blue-200 transition-all"

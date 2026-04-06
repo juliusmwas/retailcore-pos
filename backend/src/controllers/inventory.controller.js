@@ -83,3 +83,24 @@ export const adjustStock = async (req, res) => {
     res.status(500).json({ error: "Server error during stock adjustment" });
   }
 };
+
+export const createRestockRequest = async (req, res) => {
+  const { inventoryId, quantity } = req.body;
+  const { branchId } = req.user; // Get from the authenticated token
+
+  try {
+    const request = await prisma.restockRequest.create({
+      data: {
+        inventoryId,
+        branchId,
+        quantity: parseInt(quantity),
+        status: "PENDING",
+      },
+    });
+
+    res.json({ message: "Request sent to Admin successfully", request });
+  } catch (error) {
+    console.error("Restock Error:", error);
+    res.status(500).json({ error: "Failed to submit restock request" });
+  }
+};

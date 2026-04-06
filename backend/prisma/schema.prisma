@@ -193,3 +193,15 @@ enum SaleStatus {
   CANCELLED
   REFUNDED
 }
+
+model RestockRequest {
+  id           String   @id @default(uuid())
+  branchId     String
+  inventoryId  String
+  quantity     Int
+  status       String   @default("PENDING") // PENDING, APPROVED, SHIPPED, DELIVERED
+  createdAt    DateTime @default(now())
+  
+  inventory    ProductInventory @relation(fields: [inventoryId], references: [id])
+  branch       Branch           @relation(fields: [branchId], references: [id])
+}

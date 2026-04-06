@@ -11,6 +11,8 @@ const ManagerInventory = () => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [adjustValue, setAdjustValue] = useState(0);
   const [adjustReason, setAdjustReason] = useState("STOCKTAKE");
+  const [restockItem, setRestockItem] = useState(null);
+  const [restockQty, setRestockQty] = useState(0);
 
   // 1. Fetching Logic (Memoized so it doesn't change on every render)
   const fetchInventory = async () => {
@@ -91,6 +93,25 @@ const ManagerInventory = () => {
     );
   });
 
+  const handleRequestRestock = async () => {
+    try {
+      await axios.post(
+        "http://localhost:5000/api/inventory/restock-request",
+        {
+          inventoryId: restockItem.dbId,
+          quantity: restockQty,
+        },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+
+      window.alert("Request submitted to Head Office!");
+      setRestockItem(null);
+      setRestockQty(0);
+    } catch (error) {
+      window.alert("Failed to send request.");
+    }
+  };
+
   // --- RETURN STARTS HERE ---
 
   return (
@@ -108,7 +129,14 @@ const ManagerInventory = () => {
             </span>
           </p>
         </div>
-        <button className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-blue-700 transition shadow-lg shadow-blue-200">
+        <button
+          onClick={() => {
+            // For the MVP top button, we just open the modal.
+            // We set an empty object or a placeholder so the modal knows to show up.
+            setRestockItem({ name: "New Requisition", dbId: null });
+          }}
+          className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-blue-700 transition shadow-lg shadow-blue-200"
+        >
           <Plus size={18} /> REQUEST RESTOCK
         </button>
       </div>
@@ -413,6 +441,81 @@ const ManagerInventory = () => {
               >
                 Authorize Adjustment
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {restockItem && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="p-6 border-b border-gray-50 bg-blue-50/30">
+              <h2 className="font-black text-gray-800">Manual Restock</h2>
+              <p className="text-[10px] text-blue-600 font-bold uppercase">
+                Chuka Branch Requisition
+              </p>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {/* If we clicked a specific item in a row, show the name. 
+            If we clicked the top button, show a selection dropdown */}
+              <div>
+                <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">
+                  Product
+                </label>
+                {restockItem.dbId ? (
+                  <p className="font-bold text-gray-800">{restockItem.name}</p>
+                ) : (
+                  <select
+                    className="w-full p-3 bg-gray-50 rounded-xl font-bold text-sm outline-none"
+                    onChange={(e) => {
+                      const item = inventory.find(
+                        (i) => i.dbId === e.target.value,
+                      );
+                      setRestockItem(item);
+                    }}
+                  >
+                    <option value="">Select a product...</option>
+                    {inventory.map((i) => (
+                      <option key={i.dbId} value={i.dbId}>
+                        {i.name} ({i.stock} left)
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">
+                  Quantity Needed
+                </label>
+                <input
+                  type="number"
+                  className="w-full p-3 bg-gray-50 rounded-xl font-black text-lg outline-none focus:ring-2 focus:ring-blue-500"
+                  value={restockQty}
+                  onChange={(e) => setRestockQty(e.target.value)}
+                  placeholder="0"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => {
+                    setRestockItem(null);
+                    setRestockQty(0);
+                  }}
+                  className="flex-1 py-3 text-gray-400 font-bold text-xs uppercase tracking-widest"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleRequestRestock}
+                  disabled={!restockItem?.dbId || restockQty <= 0}
+                  className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-blue-100 disabled:bg-gray-200"
+                >
+                  Send Request
+                </button>
+              </div>
             </div>
           </div>
         </div>

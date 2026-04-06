@@ -47,6 +47,8 @@ model Branch {
   inventory     ProductInventory[]
   users         UserBranch[]
   sales     Sale[]
+  phone         String?           // Public branch phone for receipts
+  receiptFooter String?           // Custom message for receipts
 }
 
 model User {

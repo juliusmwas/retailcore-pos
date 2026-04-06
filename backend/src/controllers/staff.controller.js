@@ -168,39 +168,74 @@ export const updateStaff = async (req, res) => {
 
 export const updateSettings = async (req, res) => {
   try {
-    const userId = req.user.id; // From verifyToken middleware
-    const { fullName, currentPassword, newPassword } = req.body;
+    const userId = req.user.id;
+    const {
+      fullName,
+      currentPassword,
+      newPassword,
+      branchPhone,
+      receiptFooter,
+    } = req.body;
 
-    const updateData = {};
+    const userUpdateData = {};
 
-    // 1. If changing name
-    if (fullName) updateData.fullName = fullName;
+    // 1. Logic for User Profile (Name & Password)
+    if (fullName) userUpdateData.fullName = fullName;
 
-    // 2. If attempting to change password
     if (newPassword) {
+      if (!currentPassword) {
+        return res
+          .status(400)
+          .json({ message: "Current password is required to change password" });
+      }
+
       const user = await prisma.user.findUnique({ where: { id: userId } });
 
-      // Verify current password first
       const isMatch = await bcrypt.compare(currentPassword, user.password);
       if (!isMatch) {
         return res.status(400).json({ message: "Current password incorrect" });
       }
 
-      // Hash the new password
-      updateData.password = await bcrypt.hash(newPassword, 10);
+      userUpdateData.password = await bcrypt.hash(newPassword, 10);
     }
 
+    // Update User Table
     const updatedUser = await prisma.user.update({
       where: { id: userId },
-      data: updateData,
+      data: userUpdateData,
     });
+
+    // 2. Logic for Branch Configuration
+    // We fetch the branch associated with this user
+    if (branchPhone || receiptFooter) {
+      // 1. Find the branch via the UserBranch join table
+      const userBranchRelation = await prisma.userBranch.findFirst({
+        where: { userId: userId },
+        select: { branchId: true },
+      });
+
+      if (userBranchRelation?.branchId) {
+        // 2. Update the Branch table using the new fields we just added to the schema
+        await prisma.branch.update({
+          where: { id: userBranchRelation.branchId },
+          data: {
+            phone: branchPhone || undefined,
+            receiptFooter: receiptFooter || undefined,
+          },
+        });
+      }
+    }
 
     res.status(200).json({
       success: true,
-      message: "Profile updated",
-      data: { fullName: updatedUser.fullName },
+      message: "Settings and Branch details updated successfully",
+      data: {
+        fullName: updatedUser.fullName,
+        // Send back any updated branch info if needed
+      },
     });
   } catch (error) {
+    console.error("Update Error:", error);
     res.status(500).json({ message: "Server error updating settings" });
   }
 };

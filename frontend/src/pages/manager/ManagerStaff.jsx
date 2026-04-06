@@ -57,6 +57,25 @@ const ManagerStaff = () => {
           ) // Default to first cashier found
       : { fullName: "N/A" };
 
+  const formatLastLogin = (dateString) => {
+    if (!dateString || dateString === "Never") return "Never";
+    try {
+      const date = new Date(dateString);
+      return date
+        .toLocaleString("en-GB", {
+          weekday: "short",
+          day: "2-digit",
+          month: "short",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+        })
+        .replace(",", ""); // Removes the comma after the month for a cleaner look
+    } catch (e) {
+      return dateString;
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -127,84 +146,117 @@ const ManagerStaff = () => {
           </div>
         </div>
       </div>
-
       {/* Staff List Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {staff.map((member) => (
-          <div
-            key={member.id}
-            className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-4 relative overflow-hidden group hover:border-blue-200 transition-all"
-          >
-            <div className="flex justify-between items-start">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center font-bold text-gray-500 text-lg border border-gray-200 uppercase">
-                  {/* Use fullName */}
-                  {member.fullName?.charAt(0) || "U"}
+        {staff.map((member) => {
+          const isMe = member.id === user?.id;
+          // Check if the role is a Manager or Admin to hide sales
+          const isManager =
+            member.role === "MANAGER" || member.role === "ADMIN" || isMe;
+
+          return (
+            <div
+              key={member.id}
+              className={`p-5 rounded-2xl shadow-sm border flex flex-col gap-4 relative overflow-hidden transition-all ${
+                isMe
+                  ? "bg-blue-50/50 border-blue-200 ring-1 ring-blue-100"
+                  : "bg-white border-gray-100 group hover:border-blue-200"
+              }`}
+            >
+              <div className="flex justify-between items-start">
+                <div className="flex items-center gap-4">
+                  <div
+                    className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg border uppercase ${
+                      isMe
+                        ? "bg-blue-600 text-white border-blue-700"
+                        : "bg-gray-100 text-gray-500 border-gray-200"
+                    }`}
+                  >
+                    {member.fullName?.charAt(0) || "U"}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-bold text-gray-800 capitalize">
+                        {member.fullName}
+                      </h4>
+                      {isMe && (
+                        <span className="text-[9px] bg-blue-600 text-white px-1.5 py-0.5 rounded-md font-black uppercase tracking-tighter">
+                          You
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-400 font-bold uppercase tracking-tighter">
+                      {member.staffNumber || "NO ID"} • {member.role}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="font-bold text-gray-800">{member.fullName}</h4>
-                  <p className="text-xs text-gray-400 font-bold uppercase tracking-tighter">
-                    {member.staffNumber || "NO ID"}
+                {!isMe && (
+                  <button className="text-gray-400 hover:text-gray-600 p-1">
+                    <MoreVertical size={18} />
+                  </button>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-2 border-y border-gray-50">
+                <div className="border-b sm:border-b-0 sm:border-r border-gray-50 pb-2 sm:pb-0">
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                    Sales Today
+                  </p>
+                  <p
+                    className={`text-sm font-black ${isManager ? "text-gray-400 italic font-medium" : "text-blue-600"}`}
+                  >
+                    {isManager ? "N/A (Admin)" : member.salesToday || "KES 0"}
+                  </p>
+                </div>
+                <div className="sm:pl-2">
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                    Last Check-in
+                  </p>
+                  <p className="text-sm font-bold text-gray-600">
+                    {formatLastLogin(member.lastLogin)}
                   </p>
                 </div>
               </div>
-              <button className="text-gray-400 hover:text-gray-600 p-1">
-                <MoreVertical size={18} />
-              </button>
-            </div>
 
-            <div className="grid grid-cols-2 gap-4 py-2 border-y border-gray-50">
-              <div>
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                  Sales Today
-                </p>
-                <p className="text-sm font-black text-blue-600">
-                  {member.salesToday || "KES 0"}
-                </p>
-              </div>
-              <div>
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                  Last Check-in
-                </p>
-                <p className="text-sm font-bold text-gray-600">
-                  {member.lastLogin || "Never"}
-                </p>
-              </div>
-            </div>
+              <div className="flex justify-between items-center pt-2">
+                <span
+                  className={`px-3 py-1 rounded-full text-[10px] font-black ${
+                    member.status === "ACTIVE"
+                      ? "bg-green-50 text-green-600"
+                      : "bg-red-50 text-red-600"
+                  }`}
+                >
+                  {member.status}
+                </span>
 
-            <div className="flex justify-between items-center pt-2">
-              <span
-                className={`px-3 py-1 rounded-full text-[10px] font-black ${
-                  member.status === "ACTIVE"
-                    ? "bg-green-50 text-green-600"
-                    : "bg-red-50 text-red-600"
-                }`}
-              >
-                {member.status}
-              </span>
-
-              {/* Manager Action Button linked to your handleToggleStatus function */}
-              <button
-                onClick={() => handleToggleStatus(member.id, member.status)}
-                className={`flex items-center gap-1.5 text-[10px] font-black px-2 py-1 rounded-lg transition uppercase ${
-                  member.status === "ACTIVE"
-                    ? "text-red-500 hover:bg-red-50"
-                    : "text-blue-600 hover:bg-blue-50"
-                }`}
-              >
-                {member.status === "ACTIVE" ? (
-                  <>
-                    <Ban size={14} /> Suspend Access
-                  </>
+                {!isMe ? (
+                  <button
+                    onClick={() => handleToggleStatus(member.id, member.status)}
+                    className={`flex items-center gap-1.5 text-[10px] font-black px-2 py-1 rounded-lg transition uppercase ${
+                      member.status === "ACTIVE"
+                        ? "text-red-500 hover:bg-red-50"
+                        : "text-blue-600 hover:bg-blue-50"
+                    }`}
+                  >
+                    {member.status === "ACTIVE" ? (
+                      <>
+                        <Ban size={14} /> Suspend Access
+                      </>
+                    ) : (
+                      <>
+                        <ShieldCheck size={14} /> Reactivate
+                      </>
+                    )}
+                  </button>
                 ) : (
-                  <>
-                    <ShieldCheck size={14} /> Reactivate
-                  </>
+                  <span className="text-[10px] font-bold text-blue-400 italic px-2 flex items-center gap-1">
+                    <ShieldCheck size={12} /> Managed Account
+                  </span>
                 )}
-              </button>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

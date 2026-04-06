@@ -46,16 +46,23 @@ export const getBranchInventory = async (req, res) => {
 };
 
 export const adjustStock = async (req, res) => {
+  // We use inventoryId here because that's what the frontend sends
   const { inventoryId, adjustmentAmount, reason } = req.body;
 
   try {
-    // 1. Find the current record
+    if (!inventoryId) {
+      return res.status(400).json({ error: "Inventory ID is missing" });
+    }
+
+    // 1. Find the current record using the inventoryId from the request
     const currentInventory = await prisma.productInventory.findUnique({
-      where: { id: inventoryId },
+      where: { id: inventoryId }, // This matches the 'id' field in your DB
     });
 
     if (!currentInventory) {
-      return res.status(404).json({ error: "Inventory record not found" });
+      return res
+        .status(404)
+        .json({ error: "Inventory record not found in database" });
     }
 
     // 2. Calculate new stock level
@@ -71,9 +78,10 @@ export const adjustStock = async (req, res) => {
       data: { stock: newStock },
     });
 
+    // Send back the updated record so the frontend can show the new total
     res.json({ message: "Stock adjusted successfully", updated });
   } catch (error) {
     console.error("Adjustment Error:", error);
-    res.status(500).json({ error: "Failed to adjust stock" });
+    res.status(500).json({ error: "Server error during stock adjustment" });
   }
 };

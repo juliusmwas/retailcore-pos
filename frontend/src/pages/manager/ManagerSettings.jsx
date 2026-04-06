@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react"; // Added useEffect here
 import { useAuth } from "../../auth/AuthContext";
+import axios from "axios";
 import {
   User,
   Lock,
@@ -11,59 +12,68 @@ import {
 } from "lucide-react";
 
 const ManagerSettings = () => {
-  const { user } = useAuth(); // This brings the user object into scope
+  const { user, token } = useAuth(); // This brings the user object into scope
   const [activeTab, setActiveTab] = useState("profile");
 
   // Add this at the top of your component
   const [formData, setFormData] = useState({
-    // Correct
-    fullName: user?.fullName || "",
-    email: user?.email || "",
-    // New password fields
+    fullName: "", // Start with empty string, never undefined
+    email: "",
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
   });
 
-  const handleSaveSettings = async () => {
-    try {
-      // Basic validation for passwords
-      if (
-        formData.newPassword &&
-        formData.newPassword !== formData.confirmPassword
-      ) {
-        return alert("New passwords do not match!");
-      }
+  // Use useEffect to fill the data once 'user' is available
+  useEffect(() => {
+    if (user) {
+      setFormData((prev) => ({
+        ...prev,
+        fullName: user.fullName || "",
+        email: user.email || "",
+      }));
+    }
+  }, [user]);
 
+  const handleSaveSettings = async () => {
+    // Use the token from useAuth() if available, otherwise fallback to localStorage
+    const activeToken =
+      token ||
+      localStorage.getItem("token") ||
+      localStorage.getItem("accessToken");
+
+    if (!activeToken) {
+      console.error("No token found in AuthContext or LocalStorage");
+      return alert("Session expired. Please log in again.");
+    }
+
+    const authHeader = activeToken.startsWith("Bearer ")
+      ? activeToken
+      : `Bearer ${activeToken}`;
+
+    try {
       const response = await axios.put(
-        `http://localhost:5000/api/staff/settings/update`,
+        "http://localhost:5000/api/staff/settings/update",
         formData,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
+        { headers: { Authorization: authHeader } },
       );
 
       if (response.data.success) {
         alert("Settings updated successfully!");
-        // Optional: Update local storage if name changed
-        const updatedUser = { ...user, ...response.data.data };
-        localStorage.setItem("user", JSON.stringify(updatedUser));
+
+        // OPTIONAL: If the user changed their name, update the local storage/context
+        // so the header "Chuka Branch" area updates immediately
+        if (formData.fullName !== user.fullName) {
+          const updatedUser = { ...user, fullName: formData.fullName };
+          localStorage.setItem("user", JSON.stringify(updatedUser));
+          // window.location.reload(); // Quickest way to refresh all UI components
+        }
       }
     } catch (error) {
       console.error("Save Error:", error);
-      alert(error.response?.data?.message || "Failed to save settings");
+      alert(error.response?.data?.message || "Connection Error");
     }
   };
-
-  // Update the state if the user object changes (optional but good practice)
-  useEffect(() => {
-    if (user) {
-      setFormData({
-        fullName: user.fullName || "",
-        email: user.email || "",
-      });
-    }
-  }, [user]);
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">

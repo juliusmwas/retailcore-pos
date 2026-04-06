@@ -1,44 +1,49 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react"; // Added useEffect here
+import axios from "axios"; // Ensure axios is also here!
 import { Search, Plus, Package, AlertCircle, ArrowUpRight } from "lucide-react";
 import { useAuth } from "../../auth/AuthContext";
 
 const ManagerInventory = () => {
-  const { user } = useAuth();
-  // Mock Data - Representing items specifically in this branch
-  const [inventory] = useState([
-    {
-      id: "PRD-001",
-      name: "Sugar 1kg",
-      category: "Groceries",
-      stock: 5,
-      price: "KES 150",
-      status: "Low Stock",
-    },
-    {
-      id: "PRD-042",
-      name: "Cooking Oil 2L",
-      category: "Groceries",
-      stock: 24,
-      price: "KES 650",
-      status: "In Stock",
-    },
-    {
-      id: "PRD-109",
-      name: "LED Bulb 12W",
-      category: "Electronics",
-      stock: 0,
-      price: "KES 300",
-      status: "Out of Stock",
-    },
-    {
-      id: "PRD-215",
-      name: "Bread (White)",
-      category: "Groceries",
-      stock: 12,
-      price: "KES 650",
-      status: "In Stock",
-    },
-  ]);
+  const { user, token } = useAuth(); // New line (Added token)
+  const [inventory, setInventory] = useState([]); // This starts as an empty list
+  const [loading, setLoading] = useState(true); // This tracks if we are fetching data
+  const [searchTerm, setSearchTerm] = useState(""); // For your search bar later
+
+  useEffect(() => {
+    const fetchInventory = async () => {
+      // Only fetch if we have a branch ID
+      if (!user?.branchId) return;
+
+      try {
+        setLoading(true);
+        const response = await axios.get(
+          `http://localhost:5000/api/inventory/branch?branchId=${user.branchId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
+
+        // Fill the basket with real data
+        setInventory(response.data);
+      } catch (error) {
+        console.error("Error fetching branch inventory:", error);
+      } finally {
+        // This stops the "..." and shows the numbers!
+        setLoading(false);
+      }
+    };
+
+    fetchInventory();
+  }, [user?.branchId, token]);
+
+  // Calculate Summary Data
+  const totalSKUs = inventory.length;
+  const lowStockCount = inventory.filter(
+    (item) => item.status === "LOW STOCK",
+  ).length;
+  const outOfStockCount = inventory.filter(
+    (item) => item.status === "OUT OF STOCK",
+  ).length;
 
   return (
     <div className="space-y-6">
@@ -62,6 +67,7 @@ const ManagerInventory = () => {
 
       {/* Inventory Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Total SKUs */}
         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
           <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
             <Package size={24} />
@@ -70,9 +76,13 @@ const ManagerInventory = () => {
             <p className="text-xs font-black text-gray-400 uppercase tracking-widest">
               Total SKUs
             </p>
-            <h3 className="text-xl font-bold text-gray-800">142 Items</h3>
+            <h3 className="text-xl font-bold text-gray-800">
+              {loading ? "..." : `${totalSKUs} Items`}
+            </h3>
           </div>
         </div>
+
+        {/* Low Stock */}
         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4 border-l-4 border-l-amber-400">
           <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
             <AlertCircle size={24} />
@@ -81,9 +91,13 @@ const ManagerInventory = () => {
             <p className="text-xs font-black text-gray-400 uppercase tracking-widest">
               Low Stock
             </p>
-            <h3 className="text-xl font-bold text-gray-800">12 Items</h3>
+            <h3 className="text-xl font-bold text-gray-800">
+              {loading ? "..." : `${lowStockCount} Items`}
+            </h3>
           </div>
         </div>
+
+        {/* Out of Stock */}
         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4 border-l-4 border-l-red-500">
           <div className="p-3 bg-red-50 text-red-600 rounded-xl">
             <Package size={24} />
@@ -92,7 +106,9 @@ const ManagerInventory = () => {
             <p className="text-xs font-black text-gray-400 uppercase tracking-widest">
               Out of Stock
             </p>
-            <h3 className="text-xl font-bold text-gray-800">3 Items</h3>
+            <h3 className="text-xl font-bold text-gray-800">
+              {loading ? "..." : `${outOfStockCount} Items`}
+            </h3>
           </div>
         </div>
       </div>

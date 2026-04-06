@@ -165,3 +165,42 @@ export const updateStaff = async (req, res) => {
     });
   }
 };
+
+export const updateSettings = async (req, res) => {
+  try {
+    const userId = req.user.id; // From verifyToken middleware
+    const { fullName, currentPassword, newPassword } = req.body;
+
+    const updateData = {};
+
+    // 1. If changing name
+    if (fullName) updateData.fullName = fullName;
+
+    // 2. If attempting to change password
+    if (newPassword) {
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+
+      // Verify current password first
+      const isMatch = await bcrypt.compare(currentPassword, user.password);
+      if (!isMatch) {
+        return res.status(400).json({ message: "Current password incorrect" });
+      }
+
+      // Hash the new password
+      updateData.password = await bcrypt.hash(newPassword, 10);
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: updateData,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Profile updated",
+      data: { fullName: updatedUser.fullName },
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Server error updating settings" });
+  }
+};

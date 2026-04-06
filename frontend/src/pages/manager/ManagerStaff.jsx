@@ -57,37 +57,6 @@ const ManagerStaff = () => {
           ) // Default to first cashier found
       : { fullName: "N/A" };
 
-  // Mock Data - Only showing staff assigned to the Chuka Branch
-  const [staff1] = useState([
-    {
-      id: "STF-1003",
-      name: "Hannah Janet",
-      role: "CASHIER",
-      email: "hannahj@gmail.com",
-      salesToday: "KES 12,400",
-      status: "Active",
-      lastLogin: "08:15 AM",
-    },
-    {
-      id: "STF-1004",
-      name: "Antony Taylor",
-      role: "CASHIER",
-      email: "antony@gmail.com",
-      salesToday: "KES 8,200",
-      status: "Active",
-      lastLogin: "09:00 AM",
-    },
-    {
-      id: "STF-1010",
-      name: "Jane Doe",
-      role: "CASHIER",
-      email: "janedoe@gmail.com",
-      salesToday: "KES 0",
-      status: "Suspended",
-      lastLogin: "Never",
-    },
-  ]);
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -161,7 +130,7 @@ const ManagerStaff = () => {
 
       {/* Staff List Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {staff1.map((member) => (
+        {staff.map((member) => (
           <div
             key={member.id}
             className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-4 relative overflow-hidden group hover:border-blue-200 transition-all"
@@ -169,12 +138,13 @@ const ManagerStaff = () => {
             <div className="flex justify-between items-start">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center font-bold text-gray-500 text-lg border border-gray-200 uppercase">
-                  {member.name.charAt(0)}
+                  {/* Use fullName */}
+                  {member.fullName?.charAt(0) || "U"}
                 </div>
                 <div>
-                  <h4 className="font-bold text-gray-800">{member.name}</h4>
+                  <h4 className="font-bold text-gray-800">{member.fullName}</h4>
                   <p className="text-xs text-gray-400 font-bold uppercase tracking-tighter">
-                    {member.id}
+                    {member.staffNumber || "NO ID"}
                   </p>
                 </div>
               </div>
@@ -189,7 +159,7 @@ const ManagerStaff = () => {
                   Sales Today
                 </p>
                 <p className="text-sm font-black text-blue-600">
-                  {member.salesToday}
+                  {member.salesToday || "KES 0"}
                 </p>
               </div>
               <div>
@@ -197,7 +167,7 @@ const ManagerStaff = () => {
                   Last Check-in
                 </p>
                 <p className="text-sm font-bold text-gray-600">
-                  {member.lastLogin}
+                  {member.lastLogin || "Never"}
                 </p>
               </div>
             </div>
@@ -205,24 +175,33 @@ const ManagerStaff = () => {
             <div className="flex justify-between items-center pt-2">
               <span
                 className={`px-3 py-1 rounded-full text-[10px] font-black ${
-                  member.status === "Active"
+                  member.status === "ACTIVE"
                     ? "bg-green-50 text-green-600"
                     : "bg-red-50 text-red-600"
                 }`}
               >
-                {member.status.toUpperCase()}
+                {member.status}
               </span>
 
-              {/* Manager Action Button */}
-              {member.status === "Active" ? (
-                <button className="flex items-center gap-1.5 text-red-500 text-[10px] font-black hover:bg-red-50 px-2 py-1 rounded-lg transition uppercase">
-                  <Ban size={14} /> Suspend Access
-                </button>
-              ) : (
-                <button className="flex items-center gap-1.5 text-blue-600 text-[10px] font-black hover:bg-blue-50 px-2 py-1 rounded-lg transition uppercase">
-                  <ShieldCheck size={14} /> Reactivate
-                </button>
-              )}
+              {/* Manager Action Button linked to your handleToggleStatus function */}
+              <button
+                onClick={() => handleToggleStatus(member.id, member.status)}
+                className={`flex items-center gap-1.5 text-[10px] font-black px-2 py-1 rounded-lg transition uppercase ${
+                  member.status === "ACTIVE"
+                    ? "text-red-500 hover:bg-red-50"
+                    : "text-blue-600 hover:bg-blue-50"
+                }`}
+              >
+                {member.status === "ACTIVE" ? (
+                  <>
+                    <Ban size={14} /> Suspend Access
+                  </>
+                ) : (
+                  <>
+                    <ShieldCheck size={14} /> Reactivate
+                  </>
+                )}
+              </button>
             </div>
           </div>
         ))}

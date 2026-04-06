@@ -8,27 +8,26 @@ export const getBranchInventory = async (req, res) => {
       return res.status(400).json({ error: "Branch ID is required" });
     }
 
-    // Fetch inventory for this branch and include product details
     const inventoryItems = await prisma.productInventory.findMany({
       where: { branchId: branchId },
       include: {
         product: {
           include: {
-            category: true, // Gets the name of the category (Groceries, etc.)
+            category: true,
           },
         },
       },
     });
 
-    // Format the data so the frontend can read it easily
     const formattedData = inventoryItems.map((item) => {
-      // Logic for status
       let status = "IN STOCK";
       if (item.stock <= 0) status = "OUT OF STOCK";
       else if (item.stock <= item.minStock) status = "LOW STOCK";
 
       return {
-        id: item.product.sku, // e.g., PRD-001
+        // ERROR FIX: We MUST include the database primary key here
+        dbId: item.id,
+        id: item.product.sku,
         name: item.product.name,
         category: item.product.category?.name || "Uncategorized",
         stock: item.stock,
@@ -46,7 +45,6 @@ export const getBranchInventory = async (req, res) => {
 };
 
 export const adjustStock = async (req, res) => {
-  // We use inventoryId here because that's what the frontend sends
   const { inventoryId, adjustmentAmount, reason } = req.body;
 
   try {
@@ -54,15 +52,13 @@ export const adjustStock = async (req, res) => {
       return res.status(400).json({ error: "Inventory ID is missing" });
     }
 
-    // 1. Find the current record using the inventoryId from the request
+    // 1. Find the current record
     const currentInventory = await prisma.productInventory.findUnique({
-      where: { id: inventoryId }, // This matches the 'id' field in your DB
+      where: { id: inventoryId },
     });
 
     if (!currentInventory) {
-      return res
-        .status(404)
-        .json({ error: "Inventory record not found in database" });
+      return res.status(404).json({ error: "Inventory record not found" });
     }
 
     // 2. Calculate new stock level
@@ -78,7 +74,9 @@ export const adjustStock = async (req, res) => {
       data: { stock: newStock },
     });
 
-    // Send back the updated record so the frontend can show the new total
+    // 4. (Optional but Recommended) You could create an Audit Log here in the future
+    // using the 'reason' variable provided by the frontend.
+
     res.json({ message: "Stock adjusted successfully", updated });
   } catch (error) {
     console.error("Adjustment Error:", error);

@@ -43,13 +43,18 @@ const ManagerStaff = () => {
 
   const topSeller =
     staff.length > 0
-      ? staff.reduce((prev, current) => {
-          const getAmount = (val) =>
-            Number(String(val || 0).replace(/[^0-9.-]+/g, ""));
-          return getAmount(current.salesToday) > getAmount(prev.salesToday)
-            ? current
-            : prev;
-        }, staff[0])
+      ? staff
+          .filter((member) => member.role === "CASHIER") // Only look at cashiers
+          .reduce(
+            (prev, current) => {
+              const getAmount = (val) =>
+                Number(String(val || 0).replace(/[^0-9.-]+/g, ""));
+              return getAmount(current.salesToday) > getAmount(prev.salesToday)
+                ? current
+                : prev;
+            },
+            staff.find((m) => m.role === "CASHIER") || { fullName: "N/A" },
+          ) // Default to first cashier found
       : { fullName: "N/A" };
 
   // Mock Data - Only showing staff assigned to the Chuka Branch

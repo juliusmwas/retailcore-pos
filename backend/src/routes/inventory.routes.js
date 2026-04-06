@@ -6,5 +6,7 @@ const router = express.Router();
 
 // Full path will be: /api/inventory/branch
 router.get("/branch", authenticateToken, getBranchInventory);
+// Add this line with your other routes
+router.patch("/adjust", authenticateToken, adjustStock);
 
 export default router;

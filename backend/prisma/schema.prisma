@@ -121,6 +121,7 @@ model ProductInventory {
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@unique([productId, branchId])
+  restockRequests RestockRequest[]
 }
 
 enum Role {
@@ -195,13 +196,13 @@ enum SaleStatus {
 }
 
 model RestockRequest {
-  id           String   @id @default(uuid())
-  branchId     String
-  inventoryId  String
-  quantity     Int
-  status       String   @default("PENDING") // PENDING, APPROVED, SHIPPED, DELIVERED
-  createdAt    DateTime @default(now())
+  id          String   @id @default(uuid())
+  inventoryId String
+  branchId    String
+  quantity    Int
+  status      String   @default("PENDING")
+  createdAt   DateTime @default(now())
   
-  inventory    ProductInventory @relation(fields: [inventoryId], references: [id])
-  branch       Branch           @relation(fields: [branchId], references: [id])
+  // Relations
+  inventory   ProductInventory @relation(fields: [inventoryId], references: [id])
 }

@@ -86,21 +86,28 @@ export const adjustStock = async (req, res) => {
 
 export const createRestockRequest = async (req, res) => {
   const { inventoryId, quantity } = req.body;
-  const { branchId } = req.user; // Get from the authenticated token
 
   try {
+    const inventoryItem = await prisma.productInventory.findUnique({
+      where: { id: inventoryId },
+    });
+
+    if (!inventoryItem)
+      return res.status(404).json({ error: "Item not found" });
+
+    // Ensure 'restockRequest' starts with a lowercase 'r'
     const request = await prisma.restockRequest.create({
       data: {
-        inventoryId,
-        branchId,
+        inventoryId: inventoryId,
+        branchId: inventoryItem.branchId,
         quantity: parseInt(quantity),
         status: "PENDING",
       },
     });
 
-    res.json({ message: "Request sent to Admin successfully", request });
+    res.status(201).json({ message: "Success!", request });
   } catch (error) {
     console.error("Restock Error:", error);
-    res.status(500).json({ error: "Failed to submit restock request" });
+    res.status(500).json({ error: "Server crash" });
   }
 };

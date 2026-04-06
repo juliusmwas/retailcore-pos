@@ -45,6 +45,15 @@ const ManagerInventory = () => {
     (item) => item.status === "OUT OF STOCK",
   ).length;
 
+  const filteredInventory = inventory.filter((item) => {
+    const search = searchTerm.toLowerCase();
+    return (
+      item.name.toLowerCase().includes(search) ||
+      item.id.toLowerCase().includes(search) ||
+      item.category.toLowerCase().includes(search)
+    );
+  });
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -123,8 +132,10 @@ const ManagerInventory = () => {
             />
             <input
               type="text"
-              placeholder="Search inventory..."
-              className="w-full pl-10 pr-4 py-2 bg-gray-50 border-none rounded-xl text-sm"
+              placeholder="Search by Product Name or SKU..."
+              className="w-full pl-10 pr-4 py-2 bg-gray-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500 transition font-medium"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
         </div>
@@ -151,47 +162,88 @@ const ManagerInventory = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
-            {inventory.map((item) => (
-              <tr key={item.id} className="hover:bg-gray-50/50 transition">
-                <td className="px-6 py-4">
-                  <div className="flex flex-col">
-                    <span className="font-bold text-gray-800 text-sm">
-                      {item.name}
-                    </span>
-                    <span className="text-[10px] font-bold text-blue-500 uppercase tracking-tighter">
-                      {item.id}
+            {loading ? (
+              /* 1. Loading State - Shown while fetching from Backend */
+              <tr>
+                <td colSpan="6" className="px-6 py-12 text-center">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                    <span className="text-sm font-medium text-gray-400 italic">
+                      Syncing Chuka Branch inventory...
                     </span>
                   </div>
                 </td>
-                <td className="px-6 py-4 text-xs font-bold text-gray-500">
-                  {item.category}
-                </td>
-                <td className="px-6 py-4 font-black text-sm text-gray-700">
-                  {item.stock} Units
-                </td>
-                <td className="px-6 py-4 font-black text-sm text-gray-800">
-                  {item.price}
-                </td>
-                <td className="px-6 py-4">
-                  <span
-                    className={`px-3 py-1 rounded-full text-[10px] font-black ${
-                      item.status === "In Stock"
-                        ? "bg-green-50 text-green-600"
-                        : item.status === "Low Stock"
-                          ? "bg-amber-50 text-amber-600"
-                          : "bg-red-50 text-red-600"
-                    }`}
-                  >
-                    {item.status.toUpperCase()}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-right">
-                  <button className="text-blue-600 hover:bg-blue-50 p-2 rounded-lg font-bold text-xs flex items-center gap-1 transition">
-                    ADJUST <ArrowUpRight size={14} />
-                  </button>
+              </tr>
+            ) : filteredInventory.length === 0 ? (
+              /* 2. Empty/No Results State */
+              <tr>
+                <td
+                  colSpan="6"
+                  className="px-6 py-12 text-center text-gray-400 font-medium italic"
+                >
+                  {searchTerm
+                    ? `No items found matching "${searchTerm}"`
+                    : "No products currently stocked in this branch."}
                 </td>
               </tr>
-            ))}
+            ) : (
+              /* 3. Real Data Mapping */
+              filteredInventory.map((item) => (
+                <tr
+                  key={item.id}
+                  className="hover:bg-blue-50/30 transition group"
+                >
+                  <td className="px-6 py-4">
+                    <div className="flex flex-col">
+                      <span className="font-bold text-gray-800 text-sm">
+                        {item.name}
+                      </span>
+                      <span className="text-[10px] font-bold text-blue-500 uppercase tracking-tighter">
+                        {item.id}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-xs font-bold text-gray-500">
+                    {item.category}
+                  </td>
+                  <td className="px-6 py-4">
+                    <span
+                      className={`font-black text-sm ${item.stock <= item.minStock ? "text-amber-600" : "text-gray-700"}`}
+                    >
+                      {item.stock} Units
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 font-black text-sm text-gray-800">
+                    {item.price}
+                  </td>
+                  <td className="px-6 py-4">
+                    <span
+                      className={`px-3 py-1 rounded-full text-[10px] font-black ${
+                        item.status === "IN STOCK"
+                          ? "bg-green-50 text-green-600"
+                          : item.status === "LOW STOCK"
+                            ? "bg-amber-50 text-amber-600"
+                            : "bg-red-50 text-red-600"
+                      }`}
+                    >
+                      {item.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <button
+                      onClick={() =>
+                        window.alert(
+                          `Inventory Adjustment for ${item.name} is not yet implemented.`,
+                        )
+                      }
+                      className="text-blue-600 hover:bg-blue-600 hover:text-white px-3 py-1.5 rounded-lg font-bold text-[10px] flex items-center gap-1 transition-all border border-blue-100"
+                    >
+                      ADJUST <ArrowUpRight size={14} />
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

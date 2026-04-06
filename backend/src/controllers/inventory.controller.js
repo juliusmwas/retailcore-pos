@@ -44,3 +44,36 @@ export const getBranchInventory = async (req, res) => {
     res.status(500).json({ error: "Server error fetching inventory" });
   }
 };
+
+export const adjustStock = async (req, res) => {
+  const { inventoryId, adjustmentAmount, reason } = req.body;
+
+  try {
+    // 1. Find the current record
+    const currentInventory = await prisma.productInventory.findUnique({
+      where: { id: inventoryId },
+    });
+
+    if (!currentInventory) {
+      return res.status(404).json({ error: "Inventory record not found" });
+    }
+
+    // 2. Calculate new stock level
+    const newStock = currentInventory.stock + parseInt(adjustmentAmount);
+
+    if (newStock < 0) {
+      return res.status(400).json({ error: "Stock cannot fall below zero" });
+    }
+
+    // 3. Update the database
+    const updated = await prisma.productInventory.update({
+      where: { id: inventoryId },
+      data: { stock: newStock },
+    });
+
+    res.json({ message: "Stock adjusted successfully", updated });
+  } catch (error) {
+    console.error("Adjustment Error:", error);
+    res.status(500).json({ error: "Failed to adjust stock" });
+  }
+};

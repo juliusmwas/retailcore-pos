@@ -22,15 +22,25 @@ const ManagerSettings = () => {
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
+    branchPhone: "",
+    receiptFooter: "",
   });
 
-  // Use useEffect to fill the data once 'user' is available
+  // Update the useEffect in ManagerSettings.jsx
   useEffect(() => {
     if (user) {
+      // If your user object has an array of branches, get the first name
+      const branchName = user.branches?.[0]?.name || user.branchName || "";
+      const bizName = user.businessName || "RetailCore";
+
+      const defaultFooter = `Thank you for shopping at ${bizName} ${branchName}! Please come again.`;
+
       setFormData((prev) => ({
         ...prev,
         fullName: user.fullName || "",
         email: user.email || "",
+        branchPhone: user.branchPhone || "",
+        receiptFooter: user.receiptFooter || defaultFooter,
       }));
     }
   }, [user]);
@@ -249,38 +259,64 @@ const ManagerSettings = () => {
           )}
 
           {activeTab === "branch" && (
-            <div className="p-6 space-y-6">
-              <h3 className="text-lg font-bold text-gray-800 border-b pb-4">
-                Local Branch Config
-              </h3>
+            <div className="p-6 space-y-6 animate-in fade-in duration-300">
+              <div className="flex items-center justify-between border-b pb-4">
+                <h3 className="text-lg font-bold text-gray-800">
+                  Local Branch Config
+                </h3>
+                <span className="bg-blue-100 text-blue-700 text-[10px] px-2 py-1 rounded-md font-black uppercase">
+                  {user?.branchName || "Active Branch"}
+                </span>
+              </div>
+
               <div className="space-y-4">
+                {/* Branch Phone Number */}
                 <div className="flex items-center justify-between p-4 bg-blue-50 rounded-xl border border-blue-100">
                   <div className="flex items-center gap-3">
-                    <Smartphone className="text-blue-600" />
+                    <div className="p-2 bg-white rounded-lg shadow-sm">
+                      <Smartphone className="text-blue-600" size={20} />
+                    </div>
                     <div>
                       <p className="text-sm font-bold text-blue-900">
                         Branch Phone Number
                       </p>
                       <p className="text-xs text-blue-700">
-                        Shown on receipts for customers
+                        Printed on customer receipts
                       </p>
                     </div>
                   </div>
                   <input
                     type="text"
-                    defaultValue="+254 700 000 000"
-                    className="bg-white border-none rounded-lg text-sm font-bold p-2 w-40 text-right"
+                    placeholder="+254..."
+                    value={formData.branchPhone}
+                    onChange={(e) =>
+                      setFormData({ ...formData, branchPhone: e.target.value })
+                    }
+                    className="bg-white border-none rounded-lg text-sm font-bold p-2.5 w-48 text-right shadow-sm focus:ring-2 focus:ring-blue-400 transition-all"
                   />
                 </div>
-                <div className="space-y-1 pt-2">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+
+                {/* Receipt Footer Message */}
+                <div className="space-y-2 pt-2">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">
                     Receipt Footer Message
                   </label>
                   <textarea
-                    defaultValue="Thank you for shopping at RetailCore Chuka! Please come again."
+                    value={formData.receiptFooter}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        receiptFooter: e.target.value,
+                      })
+                    }
                     rows="3"
-                    className="w-full p-3 bg-gray-50 border-none rounded-xl text-sm font-medium"
+                    placeholder="Enter a custom message for your customers..."
+                    className="w-full p-4 bg-gray-50 border-none rounded-2xl text-sm font-medium focus:ring-2 focus:ring-blue-500 shadow-inner transition-all"
                   />
+                  <p className="text-[10px] text-gray-400 italic px-1">
+                    Tip: Mention your return policy or social media handles
+                    here.
+                  </p>
                 </div>
               </div>
             </div>

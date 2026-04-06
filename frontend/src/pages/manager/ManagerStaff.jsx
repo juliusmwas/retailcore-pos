@@ -61,18 +61,43 @@ const ManagerStaff = () => {
     if (!dateString || dateString === "Never") return "Never";
     try {
       const date = new Date(dateString);
+      // Returns "06 Apr, 11:36"
       return date
         .toLocaleString("en-GB", {
-          weekday: "short",
           day: "2-digit",
           month: "short",
           hour: "2-digit",
           minute: "2-digit",
-          hour12: true,
+          hour12: false, // Switches to the 24-hour format in your image
         })
-        .replace(",", ""); // Removes the comma after the month for a cleaner look
+        .replace(" at", ","); // Ensures a comma between the date and time
     } catch (e) {
       return dateString;
+    }
+  };
+
+  const handleToggleStatus = async (id, currentStatus) => {
+    const newStatus = currentStatus === "ACTIVE" ? "SUSPENDED" : "ACTIVE";
+
+    try {
+      // Matches your route: router.put("/:id", ...)
+      await axios.put(
+        `http://localhost:5000/api/staff/${id}`,
+        { status: newStatus },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      // Refresh the list to see the changes
+      fetchStaff();
+    } catch (error) {
+      console.error("Error updating status:", error);
+      window.alert(
+        "Failed to update staff status. Please check your connection.",
+      );
     }
   };
 
@@ -146,6 +171,7 @@ const ManagerStaff = () => {
           </div>
         </div>
       </div>
+
       {/* Staff List Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {staff.map((member) => {

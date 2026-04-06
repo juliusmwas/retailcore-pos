@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react"; // Added useEffect here
 import { useAuth } from "../../auth/AuthContext";
 import {
   User,
@@ -13,6 +13,22 @@ import {
 const ManagerSettings = () => {
   const { user } = useAuth(); // This brings the user object into scope
   const [activeTab, setActiveTab] = useState("profile");
+
+  // Add this at the top of your component
+  const [formData, setFormData] = useState({
+    fullName: user?.fullName || "",
+    email: user?.email || "",
+  });
+
+  // Update the state if the user object changes (optional but good practice)
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        fullName: user.fullName || "",
+        email: user.email || "",
+      });
+    }
+  }, [user]);
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -73,26 +89,36 @@ const ManagerSettings = () => {
                 Personal Information
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Full Name Input */}
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
                     Full Name
                   </label>
                   <input
                     type="text"
-                    defaultValue="John Doe"
-                    className="w-full p-2.5 bg-gray-50 border-none rounded-lg text-sm font-bold focus:ring-2 focus:ring-blue-500"
+                    value={formData.fullName}
+                    onChange={(e) =>
+                      setFormData({ ...formData, fullName: e.target.value })
+                    }
+                    placeholder="Enter your full name"
+                    className="w-full p-2.5 bg-gray-50 border-none rounded-lg text-sm font-bold focus:ring-2 focus:ring-blue-500 transition-all"
                   />
                 </div>
+
+                {/* Email Input (Disabled as per your design) */}
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
                     Email Address
                   </label>
                   <input
                     type="email"
-                    defaultValue="johndoe@gmail.com"
+                    value={formData.email}
                     className="w-full p-2.5 bg-gray-50 border-none rounded-lg text-sm font-bold opacity-70 cursor-not-allowed"
                     disabled
                   />
+                  <p className="text-[9px] text-gray-400 font-medium italic mt-1">
+                    Email cannot be changed. Contact admin for assistance.
+                  </p>
                 </div>
               </div>
             </div>

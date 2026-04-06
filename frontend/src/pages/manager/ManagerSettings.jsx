@@ -16,9 +16,44 @@ const ManagerSettings = () => {
 
   // Add this at the top of your component
   const [formData, setFormData] = useState({
+    // Correct
     fullName: user?.fullName || "",
     email: user?.email || "",
+    // New password fields
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
   });
+
+  const handleSaveSettings = async () => {
+    try {
+      // Basic validation for passwords
+      if (
+        formData.newPassword &&
+        formData.newPassword !== formData.confirmPassword
+      ) {
+        return alert("New passwords do not match!");
+      }
+
+      const response = await axios.put(
+        `http://localhost:5000/api/staff/settings/update`,
+        formData,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+
+      if (response.data.success) {
+        alert("Settings updated successfully!");
+        // Optional: Update local storage if name changed
+        const updatedUser = { ...user, ...response.data.data };
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+      }
+    } catch (error) {
+      console.error("Save Error:", error);
+      alert(error.response?.data?.message || "Failed to save settings");
+    }
+  };
 
   // Update the state if the user object changes (optional but good practice)
   useEffect(() => {
@@ -125,11 +160,12 @@ const ManagerSettings = () => {
           )}
 
           {activeTab === "security" && (
-            <div className="p-6 space-y-6">
+            <div className="p-6 space-y-6 animate-in fade-in duration-300">
               <h3 className="text-lg font-bold text-gray-800 border-b pb-4">
                 Security Settings
               </h3>
               <div className="space-y-4 max-w-sm">
+                {/* Current Password */}
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
                     Current Password
@@ -137,18 +173,66 @@ const ManagerSettings = () => {
                   <input
                     type="password"
                     placeholder="••••••••"
-                    className="w-full p-2.5 bg-gray-50 border-none rounded-lg text-sm"
+                    value={formData.currentPassword}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        currentPassword: e.target.value,
+                      })
+                    }
+                    className="w-full p-2.5 bg-gray-50 border-none rounded-lg text-sm focus:ring-2 focus:ring-red-200 transition-all"
                   />
                 </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                    New Password
-                  </label>
-                  <input
-                    type="password"
-                    placeholder="••••••••"
-                    className="w-full p-2.5 bg-gray-50 border-none rounded-lg text-sm"
-                  />
+
+                <div className="pt-2 border-t border-gray-50 mt-4">
+                  {/* New Password */}
+                  <div className="space-y-1 mb-4">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                      New Password
+                    </label>
+                    <input
+                      type="password"
+                      placeholder="••••••••"
+                      value={formData.newPassword}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          newPassword: e.target.value,
+                        })
+                      }
+                      className="w-full p-2.5 bg-gray-50 border-none rounded-lg text-sm focus:ring-2 focus:ring-blue-500 transition-all"
+                    />
+                  </div>
+
+                  {/* Confirm New Password */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                      Confirm New Password
+                    </label>
+                    <input
+                      type="password"
+                      placeholder="••••••••"
+                      value={formData.confirmPassword}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          confirmPassword: e.target.value,
+                        })
+                      }
+                      className={`w-full p-2.5 bg-gray-50 border-none rounded-lg text-sm focus:ring-2 transition-all ${
+                        formData.confirmPassword &&
+                        formData.newPassword !== formData.confirmPassword
+                          ? "focus:ring-red-500 text-red-600"
+                          : "focus:ring-blue-500"
+                      }`}
+                    />
+                    {formData.confirmPassword &&
+                      formData.newPassword !== formData.confirmPassword && (
+                        <p className="text-[9px] text-red-500 font-bold mt-1 uppercase tracking-tighter">
+                          Passwords do not match
+                        </p>
+                      )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -194,7 +278,10 @@ const ManagerSettings = () => {
 
           {/* Save Footer */}
           <div className="p-4 bg-gray-50 flex justify-end">
-            <button className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-xl font-bold text-sm hover:bg-blue-700 transition shadow-md">
+            <button
+              onClick={handleSaveSettings} // Add this line
+              className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-xl font-bold text-sm hover:bg-blue-700 transition shadow-md"
+            >
               <Save size={16} /> SAVE CHANGES
             </button>
           </div>

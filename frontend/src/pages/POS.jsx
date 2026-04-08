@@ -10,38 +10,46 @@ export default function POS() {
 
   const total = cart.reduce((acc, item) => acc + item.price * item.qty, 0);
 
-  const handleSearch = (e) => {
-    // Only trigger when the user presses "Enter"
+  const handleSearch = async (e) => {
     if (e.key === "Enter") {
-      e.preventDefault(); // Stop the page from refreshing
-
+      e.preventDefault();
       if (!searchQuery.trim()) return;
 
-      // FOR NOW: We will use dummy data to test the UI.
-      // Later, we will replace this with a fetch() to your database.
-      const mockProduct = {
-        id: Date.now(), // Unique ID for the row
-        name: searchQuery.toUpperCase(), // Using what you typed as the name
-        barcode: "890123456789",
-        price: 150,
-        qty: 1,
-      };
+      try {
+        // 1. Fetch from your backend using the barcode or SKU
+        const response = await axios.get(
+          `/api/products/search?query=${searchQuery}`,
+        );
+        const product = response.data;
 
-      // Add to cart state
-      setCart((prev) => {
-        // Check if item already exists by name (for testing)
-        const exists = prev.find((item) => item.name === mockProduct.name);
-        if (exists) {
-          return prev.map((item) =>
-            item.name === mockProduct.name
-              ? { ...item, qty: item.qty + 1 }
-              : item,
-          );
+        if (product) {
+          setCart((prev) => {
+            const exists = prev.find((item) => item.id === product.id);
+            if (exists) {
+              return prev.map((item) =>
+                item.id === product.id ? { ...item, qty: item.qty + 1 } : item,
+              );
+            }
+            // 2. Add the real product from PostgreSQL to the cart
+            return [
+              {
+                id: product.id,
+                name: product.name,
+                barcode: product.barcode || product.sku,
+                price: product.sellingPrice, // Matching your Prisma field name
+                qty: 1,
+              },
+              ...prev,
+            ];
+          });
+        } else {
+          alert("Product not found!");
         }
-        return [mockProduct, ...prev]; // Add new item at the top
-      });
+      } catch (error) {
+        console.error("Search failed:", error);
+        alert("Error finding product");
+      }
 
-      // Clear the search bar for the next scan
       setSearchQuery("");
     }
   };

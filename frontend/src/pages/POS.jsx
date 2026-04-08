@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { Search, Trash2, Smartphone, Banknote, Maximize } from "lucide-react";
+import axios from "axios";
 
 export default function POS() {
   const { user, activeBranch } = useAuth();
@@ -9,6 +10,18 @@ export default function POS() {
   const searchInputRef = useRef(null);
 
   const total = cart.reduce((acc, item) => acc + item.price * item.qty, 0);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "F1") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const handleSearch = async (e) => {
     if (e.key === "Enter") {

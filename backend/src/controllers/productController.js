@@ -203,24 +203,24 @@ export const updateProduct = async (req, res) => {
 export const searchProduct = async (req, res) => {
   try {
     const { query } = req.query;
+    const businessId = req.user.businessId; // Extract from your JWT token
 
     const product = await prisma.product.findFirst({
       where: {
-        OR: [
-          { barcode: query },
-          { sku: query },
-          // Optional: Add case-insensitive name search
-          { name: { contains: query, mode: "insensitive" } },
-        ],
+        businessId: businessId, // CRITICAL: Only search this user's business
+        OR: [{ barcode: query }, { sku: query }],
       },
     });
 
     if (!product) {
-      return res.status(404).json({ message: "Product not found" });
+      // This triggers the 404 you see in the console
+      return res
+        .status(404)
+        .json({ message: "Product not found in your inventory" });
     }
 
     res.json(product);
   } catch (error) {
-    res.status(500).json({ message: "Search error" });
+    res.status(500).json({ message: "Server error during search" });
   }
 };

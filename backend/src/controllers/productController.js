@@ -1,4 +1,4 @@
-import { prisma } from '../lib/prisma.js';
+import { prisma } from "../lib/prisma.js";
 
 export const createProduct = async (req, res) => {
   try {
@@ -6,16 +6,18 @@ export const createProduct = async (req, res) => {
     const businessId = req.user?.businessId || data.businessId;
 
     if (!businessId) {
-      return res.status(401).json({ message: "Unauthorized: Business ID missing" });
+      return res
+        .status(401)
+        .json({ message: "Unauthorized: Business ID missing" });
     }
 
     // 1. Find or create the Category
     const categoryRecord = await prisma.category.upsert({
       where: { name: data.category },
       update: {},
-      create: { 
-        name: data.category
-      }
+      create: {
+        name: data.category,
+      },
     });
 
     // 2. Create the Product
@@ -35,54 +37,57 @@ export const createProduct = async (req, res) => {
 
         // 3. Create Inventory records
         inventory: {
-          create: await Promise.all(data.inventory.map(async (item) => {
-            const branchRecord = await prisma.branch.findFirst({
-              where: { 
-                name: item.branch,
-                businessId: businessId 
+          create: await Promise.all(
+            data.inventory.map(async (item) => {
+              const branchRecord = await prisma.branch.findFirst({
+                where: {
+                  name: item.branch,
+                  businessId: businessId,
+                },
+              });
+
+              if (!branchRecord) {
+                throw new Error(`Branch '${item.branch}' not found.`);
               }
-            });
 
-            if (!branchRecord) {
-              throw new Error(`Branch '${item.branch}' not found.`);
-            }
-
-            return {
-              branchId: branchRecord.id,
-              stock: parseInt(item.stock),
-              minStock: parseInt(item.min)
-            };
-          }))
-        }
-      },
-      include: { 
-        inventory: {
-          include: { branch: true }
+              return {
+                branchId: branchRecord.id,
+                stock: parseInt(item.stock),
+                minStock: parseInt(item.min),
+              };
+            }),
+          ),
         },
-        category: true 
-      }
+      },
+      include: {
+        inventory: {
+          include: { branch: true },
+        },
+        category: true,
+      },
     });
 
     res.status(201).json(product);
   } catch (error) {
     console.error("Create Product Error:", error);
-    res.status(500).json({ message: "Failed to create product", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Failed to create product", error: error.message });
   }
 };
-
 
 export const getAllProducts = async (req, res) => {
   try {
     const businessId = req.user?.businessId;
-    
+
     const products = await prisma.product.findMany({
       where: { businessId: businessId }, // Only show products for this business
-      include: { 
+      include: {
         inventory: {
-          include: { branch: true }
+          include: { branch: true },
         },
-        category: true
-      }
+        category: true,
+      },
     });
     res.json(products);
   } catch (error) {
@@ -105,23 +110,25 @@ export const bulkDeleteProducts = async (req, res) => {
       // CHANGED: used 'productInventory' (matching your schema)
       await tx.productInventory.deleteMany({
         where: {
-          productId: { in: ids }
-        }
+          productId: { in: ids },
+        },
       });
 
       // 2. Delete the products themselves
       await tx.product.deleteMany({
         where: {
           id: { in: ids },
-          businessId: businessId
-        }
+          businessId: businessId,
+        },
       });
     });
 
     res.status(200).json({ message: "Products deleted successfully" });
   } catch (error) {
     console.error("Bulk Delete Error:", error);
-    res.status(500).json({ message: "Failed to delete products", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Failed to delete products", error: error.message });
   }
 };
 
@@ -147,12 +154,12 @@ export const updateProduct = async (req, res) => {
           category: {
             connectOrCreate: {
               where: { name: data.category },
-              create: { name: data.category }
-            }
-          }
+              create: { name: data.category },
+            },
+          },
         },
         // Include inventory in the return so the frontend gets the full object
-        include: { inventory: true } 
+        include: { inventory: true },
       });
 
       // 2. Update Inventory
@@ -163,19 +170,19 @@ export const updateProduct = async (req, res) => {
             where: {
               productId_branchId: {
                 productId: id,
-                branchId: item.branchId
-              }
+                branchId: item.branchId,
+              },
             },
             update: {
               stock: parseInt(item.stock) || 0,
-              minStock: parseInt(item.minStock) || 0
+              minStock: parseInt(item.minStock) || 0,
             },
             create: {
               productId: id,
               branchId: item.branchId,
               stock: parseInt(item.stock) || 0,
-              minStock: parseInt(item.minStock) || 0
-            }
+              minStock: parseInt(item.minStock) || 0,
+            },
           });
         }
       }
@@ -186,9 +193,34 @@ export const updateProduct = async (req, res) => {
     res.status(200).json(updatedProduct);
   } catch (error) {
     console.error("Update Product Error:", error);
-    res.status(500).json({ 
-      message: "Failed to update product", 
-      error: error.message 
+    res.status(500).json({
+      message: "Failed to update product",
+      error: error.message,
     });
+  }
+};
+
+export const searchProduct = async (req, res) => {
+  try {
+    const { query } = req.query;
+
+    const product = await prisma.product.findFirst({
+      where: {
+        OR: [
+          { barcode: query },
+          { sku: query },
+          // Optional: Add case-insensitive name search
+          { name: { contains: query, mode: "insensitive" } },
+        ],
+      },
+    });
+
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    res.json(product);
+  } catch (error) {
+    res.status(500).json({ message: "Search error" });
   }
 };

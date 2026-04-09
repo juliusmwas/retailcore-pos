@@ -198,6 +198,26 @@ export default function POS() {
     alert("Camera Scanner coming soon! For now, please type and hit Enter.");
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // F1: Focus Search Bar
+      if (e.key === "F1") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+
+      // F2: Trigger Cash Checkout
+      if (e.key === "F2") {
+        e.preventDefault();
+        handleCheckout("CASH"); // This matches the paymentMethod enum
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    // Clean up the event listener to prevent memory leaks or duplicate triggers
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [cart, total, activeBranch]); // Include dependencies to ensure handleCheckout uses current state
+
   return (
     <div className="h-screen flex flex-col bg-[#f4f7f6] overflow-hidden font-sans text-slate-900">
       {/* TOP COMPACT BAR */}

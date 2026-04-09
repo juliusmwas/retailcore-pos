@@ -17,6 +17,7 @@ export default function POS() {
   const [searchQuery, setSearchQuery] = useState("");
   const searchInputRef = useRef(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [suspendedSales, setSuspendedSales] = useState([]);
 
   const total = cart.reduce((acc, item) => acc + item.price * item.qty, 0);
 
@@ -151,17 +152,17 @@ export default function POS() {
     let changeDue = 0;
     let phoneNumber = "";
 
-    // 1. Handle Payment Method Specifics
     if (method === "MPESA") {
-      // MVP Demo: Ask for number to simulate the STK Push experience
-      const input = window.prompt(
-        "Enter M-PESA Number (e.g., 254712345678):",
-        "254",
-      );
-      if (!input || input.length < 10) return; // Cancel if no valid-looking number
+      const input = window.prompt("Enter M-PESA Number:", "254");
+      if (!input) return;
       phoneNumber = input;
-
-      // Start the "Processing" overlay
+      setIsProcessing(true);
+    } else if (method === "CARD") {
+      // For CARD, we just notify the cashier to use the terminal
+      const confirmCard = window.confirm(
+        `Processing CARD payment for ${total.toLocaleString()} KES. Proceed?`,
+      );
+      if (!confirmCard) return;
       setIsProcessing(true);
     } else if (method === "CASH") {
       const input = window.prompt(
@@ -170,60 +171,46 @@ export default function POS() {
       );
       if (input === null) return;
       amountReceived = parseFloat(input);
-
-      if (isNaN(amountReceived) || amountReceived < total) {
-        alert("Invalid amount or insufficient funds!");
-        return;
-      }
+      if (isNaN(amountReceived) || amountReceived < total)
+        return alert("Invalid amount!");
       changeDue = amountReceived - total;
-      alert(`Change to give: ${changeDue.toLocaleString()} KES`);
     }
 
-    // 2. Prepare Sale Data for PostgreSQL
     const saleData = {
       branchId: activeBranch?.id,
       items: cart.map((item) => ({
         productId: item.id,
         quantity: item.qty,
-        price: item.price, // Ensure this matches the 'unitPrice' logic in backend
+        price: item.price,
       })),
       totalAmount: total,
       subTotal: total,
-      paymentMethod: method, // Must be 'CASH' or 'MPESA' per your Prisma Enum
-      metadata: { phoneNumber }, // Optional: track the number for the demo
+      paymentMethod: method,
     };
 
     try {
-      // 3. Simulate STK Push Delay for M-PESA MVP
-      if (method === "MPESA") {
+      // Simulate Terminal Communication Delay for CARD/MPESA
+      if (method === "CARD" || method === "MPESA") {
         await new Promise((resolve) => setTimeout(resolve, 3000));
       }
 
-      // 4. Send to Backend
       const response = await API.post("/sales", saleData);
 
       if (response.status === 201) {
-        if (method === "MPESA") {
-          alert("M-PESA Payment Confirmed!");
-        }
+        if (method === "CARD") alert("Card Transaction Approved!");
+        if (method === "MPESA") alert("M-PESA Payment Confirmed!");
 
-        // 5. Generate PDF Receipt automatically
         generateReceiptPDF(response.data.sale, {
           received: amountReceived,
           change: changeDue,
         });
 
-        // 6. Clear Cart
         setCart([]);
       }
     } catch (error) {
       console.error("Checkout failed:", error);
-      alert(
-        error.response?.data?.message ||
-          "Transaction failed. Please try again.",
-      );
+      alert("Transaction Failed. Check Terminal Connection.");
     } finally {
-      // 7. Always stop the loading spinner
       setIsProcessing(false);
     }
   };
@@ -256,12 +243,57 @@ export default function POS() {
         e.preventDefault();
         handleCheckout("CARD"); // Matches CARD enum in your Prisma schema
       }
+
+      // Inside handleKeyDown
+      if (e.key === "F9") {
+        e.preventDefault();
+        handleSuspendSale();
+      }
+
+      if (e.key === "F10") {
+        e.preventDefault();
+        if (suspendedSales.length > 0) {
+          // Recall the last one added
+          handleRecallSale(suspendedSales[suspendedSales.length - 1].id);
+        }
+      }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     // Clean up the event listener to prevent memory leaks or duplicate triggers
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [cart, total, activeBranch]); // Include dependencies to ensure handleCheckout uses current state
+
+  const handleSuspendSale = () => {
+    if (cart.length === 0) return;
+
+    const newSuspendedSale = {
+      id: Date.now(),
+      items: [...cart],
+      total: total,
+      time: new Date().toLocaleTimeString(),
+    };
+
+    setSuspendedSales((prev) => [...prev, newSuspendedSale]);
+    setCart([]); // Clear the cart for the next customer
+    alert("Sale Suspended. You can now serve the next customer.");
+  };
+
+  const handleRecallSale = (suspendedId) => {
+    const saleToRecall = suspendedSales.find((s) => s.id === suspendedId);
+    if (saleToRecall) {
+      // If there's already stuff in the cart, warn the cashier
+      if (cart.length > 0) {
+        const confirmOverwrite = window.confirm(
+          "Current cart is not empty. Overwrite with suspended sale?",
+        );
+        if (!confirmOverwrite) return;
+      }
+
+      setCart(saleToRecall.items);
+      setSuspendedSales((prev) => prev.filter((s) => s.id !== suspendedId));
+    }
+  };
 
   return (
     <div className="h-screen flex flex-col bg-[#f4f7f6] overflow-hidden font-sans text-slate-900">
@@ -527,9 +559,45 @@ export default function POS() {
             </div>
 
             <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col gap-2">
-              <button className="w-full py-3 bg-white border border-slate-300 text-slate-600 rounded-md text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-colors">
-                Suspend Sale
+              <button
+                onClick={handleSuspendSale}
+                className="w-full py-3 bg-white border border-slate-300 text-slate-600 rounded-md text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-colors"
+              >
+                Suspend Sale (F9)
               </button>
+
+              {/* RECALL SECTION */}
+              {suspendedSales.length > 0 && (
+                <div className="mt-2">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase mb-2">
+                    Suspended Carts
+                  </p>
+                  <div className="flex flex-col gap-2 max-h-40 overflow-y-auto pr-1">
+                    {suspendedSales.map((sale) => (
+                      <div
+                        key={sale.id}
+                        className="flex items-center justify-between p-2 bg-orange-50 border border-orange-100 rounded-md shadow-sm"
+                      >
+                        <div className="text-left">
+                          <p className="text-[10px] font-bold text-orange-700">
+                            {sale.time}
+                          </p>
+                          <p className="text-[9px] text-orange-600">
+                            {sale.items.length} items •{" "}
+                            {sale.total.toLocaleString()} KES
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => handleRecallSale(sale.id)}
+                          className="px-2 py-1 bg-orange-500 text-white text-[9px] font-bold rounded hover:bg-orange-600 transition-all uppercase"
+                        >
+                          Recall
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -557,6 +625,22 @@ export default function POS() {
             </p>
             <p className="text-sm text-gray-500">
               Please ask the customer to enter their PIN
+            </p>
+          </div>
+        </div>
+      )}
+
+      {isProcessing && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-[100]">
+          <div className="bg-white p-8 rounded-2xl shadow-2xl text-center flex flex-col items-center gap-4 max-w-xs">
+            <div className="w-12 h-12 border-4 border-slate-800 border-t-transparent rounded-full animate-spin"></div>
+            <p className="font-bold text-lg text-gray-800">
+              {/* Dynamic message based on state or logic */}
+              Processing Payment...
+            </p>
+            <p className="text-sm text-gray-500">
+              Please do not refresh or close the browser until the transaction
+              is complete.
             </p>
           </div>
         </div>

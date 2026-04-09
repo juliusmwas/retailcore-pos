@@ -70,11 +70,17 @@ export const getStaff = async (req, res) => {
     const { branchId } = req.query;
     const { businessId } = req.user;
 
-    // 1. Fetch from User table so we don't miss Admins/Owners
+    // 1. Define the time boundaries for "Today" (Midnight to now)
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const endOfToday = new Date();
+    endOfToday.setHours(23, 59, 59, 999);
+
+    // 2. Fetch from User table with the sales relation
     const staff = await prisma.user.findMany({
       where: {
         businessId: businessId,
-        // Filter by branch if branchId is provided and not "ALL"
         ...(branchId && branchId !== "ALL"
           ? {
               branches: {
@@ -89,19 +95,39 @@ export const getStaff = async (req, res) => {
             branch: { select: { name: true } },
           },
         },
+        // This connects to the "sales Sale[]" relation in your User model
+        sales: {
+          where: {
+            createdAt: {
+              gte: startOfToday,
+              lte: endOfToday,
+            },
+            status: "COMPLETED", // Only count successful sales
+          },
+          select: {
+            totalAmount: true,
+          },
+        },
       },
       orderBy: { fullName: "asc" },
     });
 
-    // 2. Flatten the data so the frontend gets a clean object
+    // 3. Flatten the data and sum the totals for the frontend
     const formattedStaff = staff.map((member) => {
-      // Get the first branch name if they are assigned to one
       const assignedBranchName = member.branches?.[0]?.branch?.name;
+
+      // Sum up the totalAmount from today's sales array
+      const dailyTotal = member.sales.reduce(
+        (sum, sale) => sum + sale.totalAmount,
+        0,
+      );
 
       return {
         ...member,
-        // We use the role from the User model, or fallback to the junction table role
-        role: member.branches?.[0]?.role || "ADMIN",
+        // Pull the role from the UserBranch junction table
+        role: member.branches?.[0]?.role || "CASHIER",
+        // This matches the variable name in your Frontend Grid!
+        salesToday: dailyTotal,
         branchName:
           assignedBranchName ||
           (member.staffNumber ? "Unassigned" : "Global/Head Office"),

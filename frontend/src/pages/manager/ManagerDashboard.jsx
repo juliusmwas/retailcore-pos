@@ -171,7 +171,7 @@ const ManagerDashboard = () => {
       {/* Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-black text-gray-900 tracking-tight">
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
             Manager Command Center
           </h1>
           <div className="flex items-center gap-2 mt-1">

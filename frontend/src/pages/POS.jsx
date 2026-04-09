@@ -251,6 +251,11 @@ export default function POS() {
         e.preventDefault();
         handleCheckout("MPESA");
       }
+
+      if (e.key === "F4") {
+        e.preventDefault();
+        handleCheckout("CARD"); // Matches CARD enum in your Prisma schema
+      }
     };
 
     window.addEventListener("keydown", handleKeyDown);

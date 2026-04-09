@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "../auth/AuthContext";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import {
   Search,
   Trash2,
@@ -9,7 +11,6 @@ import {
   CreditCard,
 } from "lucide-react";
 import axios from "axios";
-
 export default function POS() {
   const { user, activeBranch } = useAuth();
   const [cart, setCart] = useState([]);
@@ -25,25 +26,21 @@ export default function POS() {
         searchInputRef.current?.focus();
       }
     };
-
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
   const API = axios.create({
-    baseURL: "http://localhost:5000/api", // Ensure this matches your backend port
+    baseURL: "http://localhost:5000/api",
   });
 
-  // --- Change this block inside your POS component ---
   API.interceptors.request.use((config) => {
-    const authData = localStorage.getItem("auth"); // Changed from "token" to "auth"
+    const authData = localStorage.getItem("auth");
     if (authData) {
       try {
         const parsed = JSON.parse(authData);
-        const token = parsed.token; // Grabs the nested token
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
-        }
+        const token = parsed.token;
+        if (token) config.headers.Authorization = `Bearer ${token}`;
       } catch (e) {
         console.error("Token parsing failed in POS.jsx", e);
       }
@@ -55,11 +52,9 @@ export default function POS() {
     if (e.key === "Enter") {
       e.preventDefault();
       const cleanQuery = searchQuery.trim();
-
       if (!cleanQuery) return;
 
       try {
-        // 1. Request to the new /search route we added to the backend
         const response = await API.get(`/products/search?query=${cleanQuery}`);
         const product = response.data;
 
@@ -71,96 +66,136 @@ export default function POS() {
                 item.id === product.id ? { ...item, qty: item.qty + 1 } : item,
               );
             }
-
-            // 2. Exact mapping to your Prisma 'sellingPrice'
             return [
               {
                 id: product.id,
-                name: product.name, // e.g., "Fanta blackcurrant"
-                barcode: product.barcode, // e.g., "54449000022752"
-                price: parseFloat(product.sellingPrice) || 0, // Ensure it's a number
+                name: product.name,
+                barcode: product.barcode,
+                price: parseFloat(product.sellingPrice) || 0,
                 qty: 1,
               },
               ...prev,
             ];
           });
         }
-
-        // 3. Always clear on success
         setSearchQuery("");
       } catch (error) {
         console.error("Search failed:", error);
-
-        // 4. Handle specific error messages based on your console logs
-        if (error.response?.status === 404) {
-          alert(
-            "Barcode not found in your inventory. Check your Prisma businessId.",
-          );
-        } else if (error.response?.status === 500) {
-          alert(
-            "Server error: Check if 'prisma' is imported in productController.js",
-          );
-        } else {
-          alert(error.response?.data?.message || "Error finding product");
-        }
-
-        // Clear the search bar even on failure so the user can scan the next item
         setSearchQuery("");
       }
     }
   };
 
-  const startCameraScanner = () => {
-    alert("Camera Scanner coming soon! For now, please type and hit Enter.");
+  const generateReceiptPDF = (sale, changeDetails) => {
+    const doc = new jsPDF({
+      unit: "mm",
+      format: [80, 150],
+    });
+
+    // Header
+    doc.setFontSize(12);
+    doc.text("RETAILCORE POS", 40, 10, { align: "center" });
+    doc.setFontSize(8);
+    doc.text(`Branch: ${activeBranch?.name || "Main Branch"}`, 40, 15, {
+      align: "center",
+    });
+    doc.text(`Inv: ${sale.invoiceNo}`, 5, 22);
+    doc.text(`Date: ${new Date().toLocaleString()}`, 5, 26);
+
+    // Table
+    const tableRows = sale.items.map((item) => [
+      item.product?.name || "Product",
+      item.quantity,
+      item.unitPrice.toLocaleString(),
+      (item.quantity * item.unitPrice).toLocaleString(),
+    ]);
+
+    autoTable(doc, {
+      startY: 30,
+      head: [["Item", "Qty", "Price", "Total"]],
+      body: tableRows,
+      theme: "plain",
+      styles: { fontSize: 7, cellPadding: 1 },
+      margin: { left: 5, right: 5 },
+    });
+
+    // Totals
+    const finalY = doc.lastAutoTable.finalY + 5;
+    doc.text(`TOTAL: ${sale.totalAmount.toLocaleString()} KES`, 75, finalY, {
+      align: "right",
+    });
+    doc.text(
+      `Received: ${changeDetails.received.toLocaleString()}`,
+      75,
+      finalY + 4,
+      { align: "right" },
+    );
+    doc.text(
+      `Change: ${changeDetails.change.toLocaleString()}`,
+      75,
+      finalY + 8,
+      { align: "right" },
+    );
+
+    doc.text("Thank you for your business!", 40, finalY + 15, {
+      align: "center",
+    });
+    doc.save(`${sale.invoiceNo}.pdf`);
   };
 
   const handleCheckout = async (method) => {
     if (cart.length === 0) return alert("Cart is empty!");
 
     let amountReceived = total;
+    let changeDue = 0;
 
-    // Add the Change Calculation logic for Cash
     if (method === "CASH") {
       const input = window.prompt(
-        `Total is ${total.toLocaleString()}. Amount Received:`,
+        `Total: ${total.toLocaleString()}. Amount Received:`,
         total,
       );
-
-      if (input === null) return; // User cancelled
-
+      if (input === null) return;
       amountReceived = parseFloat(input);
 
       if (isNaN(amountReceived) || amountReceived < total) {
         alert("Invalid amount or insufficient funds!");
         return;
       }
-
-      const changeDue = amountReceived - total;
+      changeDue = amountReceived - total;
       alert(`Change to give: ${changeDue.toLocaleString()} KES`);
     }
 
-    // Proceed with the API call exactly as before
     const saleData = {
       branchId: activeBranch?.id,
       items: cart.map((item) => ({
         productId: item.id,
         quantity: item.qty,
-        price: item.sellingPrice || item.price, // Fallback to price if sellingPrice is missing
+        price: item.price,
       })),
       totalAmount: total,
-      subTotal: total, // Matches your Prisma model
+      subTotal: total,
       paymentMethod: method,
     };
 
     try {
       const response = await API.post("/sales", saleData);
       if (response.status === 201) {
-        // You could even show the change again in the final success message
+        //
+        generateReceiptPDF(response.data.sale, {
+          received: amountReceived,
+          change: changeDue,
+        });
         setCart([]);
       }
     } catch (error) {
       console.error("Checkout failed:", error);
+      alert(error.response?.data?.message || "Checkout failed");
     }
+  };
+
+  // ... startCameraScanner and other functions ...
+  const startCameraScanner = () => {
+    alert("Camera Scanner coming soon! For now, please type and hit Enter.");
   };
 
   return (

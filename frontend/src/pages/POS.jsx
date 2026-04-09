@@ -117,29 +117,49 @@ export default function POS() {
   const handleCheckout = async (method) => {
     if (cart.length === 0) return alert("Cart is empty!");
 
+    let amountReceived = total;
+
+    // Add the Change Calculation logic for Cash
+    if (method === "CASH") {
+      const input = window.prompt(
+        `Total is ${total.toLocaleString()}. Amount Received:`,
+        total,
+      );
+
+      if (input === null) return; // User cancelled
+
+      amountReceived = parseFloat(input);
+
+      if (isNaN(amountReceived) || amountReceived < total) {
+        alert("Invalid amount or insufficient funds!");
+        return;
+      }
+
+      const changeDue = amountReceived - total;
+      alert(`Change to give: ${changeDue.toLocaleString()} KES`);
+    }
+
+    // Proceed with the API call exactly as before
     const saleData = {
-      branchId: activeBranch?.id, //
+      branchId: activeBranch?.id,
       items: cart.map((item) => ({
         productId: item.id,
         quantity: item.qty,
-        price: item.price,
+        price: item.sellingPrice,
       })),
       totalAmount: total,
+      subTotal: total, // Matches your Prisma model
       paymentMethod: method,
-      paymentStatus: method === "CASH" ? "COMPLETED" : "PENDING",
     };
 
     try {
-      // Using the 'API' instance you defined with the token fix
       const response = await API.post("/sales", saleData);
-
       if (response.status === 201) {
-        alert(`Sale completed via ${method}!`);
-        setCart([]); // Clear cart on success
+        // You could even show the change again in the final success message
+        setCart([]);
       }
     } catch (error) {
       console.error("Checkout failed:", error);
-      alert(error.response?.data?.message || "Checkout failed");
     }
   };
 

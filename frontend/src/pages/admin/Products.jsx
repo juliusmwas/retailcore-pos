@@ -81,19 +81,18 @@ const RETAIL_HIERARCHY = {
 };
 
 export default function AdminProducts() {
-  const { token, user, business, loading } = useAuth();
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedItems, setSelectedItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterBranch, setFilterBranch] = useState("All Branches");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [branches, setBranches] = useState([]);
-  const businessId = user?.businessId || branches?.[0]?.businessId;
   const [prices, setPrices] = useState({ cost: 0, selling: 0, markup: 0 });
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+  const { token, user, business, loading, activeBranch, branches } = useAuth();
+  const businessId =
+    business?.id || user?.businessId || branches?.[0]?.businessId;
 
   useEffect(() => {
     if (editingProduct) {
@@ -109,27 +108,6 @@ export default function AdminProducts() {
   const handleEditClick = (product) => {
     setEditingProduct(product);
     setIsEditModalOpen(true);
-  };
-
-  const fetchBranches = async () => {
-    if (!token) return; // Wait until token is available
-
-    try {
-      const response = await fetch("http://localhost:5000/api/branches", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`, // ✅ Uses token from useAuth()
-        },
-      });
-
-      if (!response.ok) throw new Error("Failed to load branches");
-
-      const result = await response.json();
-      setBranches(Array.isArray(result.data) ? result.data : []);
-    } catch (err) {
-      console.error("Error fetching branches:", err);
-    }
   };
 
   // Updated Fetch Products
@@ -157,25 +135,22 @@ export default function AdminProducts() {
 
   useEffect(() => {
     fetchProducts();
-    fetchBranches(); // Fetch branches on load
   }, []);
 
   const filteredProducts = products.filter((p) => {
-    // 1. Search filter (keep your existing search logic)
+    // 1. Search filter
     const matchesSearch =
       p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.sku?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    // 2. Branch Filter (The likely culprit)
+    // 2. Branch Filter - Now synced with your Topbar's activeBranch
     const matchesBranch =
-      filterBranch === "All Branches" ||
+      !activeBranch || // If activeBranch is null (All Branches), show everything
       p.inventory?.some((inv) => {
-        // Extract the name whether 'branch' is an object or a string
-        const inventoryBranchName =
-          typeof inv.branch === "object" ? inv.branch.name : inv.branch;
-
-        // Use .trim() to ignore accidental spaces and compare
-        return inventoryBranchName?.trim() === filterBranch.trim();
+        // We check for the ID because that's what the Topbar selector uses
+        const inventoryBranchId =
+          typeof inv.branch === "object" ? inv.branch.id : inv.branchId;
+        return inventoryBranchId === activeBranch.id;
       });
 
     return matchesSearch && matchesBranch;
@@ -559,71 +534,103 @@ export default function AdminProducts() {
 
       {/* --- KPI SECTION --- */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {/* Inventory Value */}
+        {/* 1. Inventory Value - Synced with activeBranch */}
         <KPI
           color="indigo"
           label="Inventory Value"
           value={`KES ${products
-            .reduce(
-              (acc, p) =>
-                acc +
-                Number(p.costPrice || 0) *
-                  (p.inventory?.reduce(
+            .reduce((acc, p) => {
+              // Only count stock for the active branch (or all if none selected)
+              const relevantStock = activeBranch
+                ? p.inventory?.find(
+                    (inv) =>
+                      (typeof inv.branch === "object"
+                        ? inv.branch.id
+                        : inv.branchId) === activeBranch.id,
+                  )?.stock || 0
+                : p.inventory?.reduce(
                     (sum, inv) => sum + (inv.stock || 0),
                     0,
-                  ) || 0),
-              0,
-            )
+                  ) || 0;
+
+              return acc + Number(p.costPrice || 0) * relevantStock;
+            }, 0)
             .toLocaleString()}`}
-          sub="Total Cost Basis"
+          sub={
+            activeBranch ? `Cost in ${activeBranch.name}` : "Total Cost Basis"
+          }
           icon={<DollarSign size={18} />}
         />
 
-        {/* Potential Revenue */}
+        {/* 2. Potential Revenue - Synced with activeBranch */}
         <KPI
           color="emerald"
           label="Potential Revenue"
           value={`KES ${products
-            .reduce(
-              (acc, p) =>
-                acc +
-                Number(p.sellingPrice || 0) *
-                  (p.inventory?.reduce(
+            .reduce((acc, p) => {
+              const relevantStock = activeBranch
+                ? p.inventory?.find(
+                    (inv) =>
+                      (typeof inv.branch === "object"
+                        ? inv.branch.id
+                        : inv.branchId) === activeBranch.id,
+                  )?.stock || 0
+                : p.inventory?.reduce(
                     (sum, inv) => sum + (inv.stock || 0),
                     0,
-                  ) || 0),
-              0,
-            )
+                  ) || 0;
+
+              return acc + Number(p.sellingPrice || 0) * relevantStock;
+            }, 0)
             .toLocaleString()}`}
-          sub="Projected Sales"
+          sub={
+            activeBranch ? `Revenue in ${activeBranch.name}` : "Projected Sales"
+          }
           icon={<TrendingUp size={18} />}
         />
 
-        {/* Stock Alerts - FIXED: Uses minStock from your Schema */}
+        {/* 3. Stock Alerts - Specifically for the selected branch */}
         <KPI
           color="orange"
           label="Stock Alerts"
           value={products
-            .filter((p) =>
-              p.inventory?.some(
-                (inv) => (inv.stock || 0) <= (inv.minStock || 0),
-              ),
-            )
+            .filter((p) => {
+              const branchInv = activeBranch
+                ? p.inventory?.filter(
+                    (inv) =>
+                      (typeof inv.branch === "object"
+                        ? inv.branch.id
+                        : inv.branchId) === activeBranch.id,
+                  )
+                : p.inventory || [];
+
+              return branchInv.some(
+                (inv) => (inv.stock || 0) <= (inv.min || 0),
+              );
+            })
             .length.toString()
             .padStart(2, "0")}
-          sub="Items Low/OOS"
+          sub={
+            activeBranch ? `Alerts for ${activeBranch.name}` : "Items Low/OOS"
+          }
           icon={<AlertTriangle size={18} />}
           pulse={products.some((p) =>
-            p.inventory?.some((inv) => (inv.stock || 0) <= (inv.minStock || 0)),
+            p.inventory?.some((inv) => (inv.stock || 0) <= (inv.min || 0)),
           )}
         />
 
-        {/* Global Reach - FIXED: Connected to your branches state */}
+        {/* 4. Active Branch Display */}
         <KPI
           color="slate"
-          label="Global Reach"
-          value={branches.length.toString().padStart(2, "0")}
-          sub="Active Branches"
+          label="Location Context"
+          value={
+            activeBranch ? "01" : branches.length.toString().padStart(2, "0")
+          }
+          sub={
+            activeBranch
+              ? `Viewing: ${activeBranch.name}`
+              : "Total Active Branches"
+          }
           icon={<Store size={18} />}
         />
       </div>
@@ -644,27 +651,6 @@ export default function AdminProducts() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="flex flex-col">
-              <span className="text-[10px] font-bold text-gray-400 uppercase ml-1 mb-1">
-                Branch Filter
-              </span>
-              <select
-                className="px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-600 outline-none cursor-pointer hover:border-indigo-300 transition-colors"
-                value={filterBranch}
-                onChange={(e) => setFilterBranch(e.target.value)}
-              >
-                <option value="All Branches">All Branches</option>
-                {/* Map through the branches from your AuthContext */}
-                {branches &&
-                  branches.map((branch) => (
-                    <option key={branch.id} value={branch.name}>
-                      {branch.name}
-                    </option>
-                  ))}
-              </select>
-            </div>
           </div>
         </div>
 
@@ -895,7 +881,18 @@ export default function AdminProducts() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {filteredProducts.map((p) => {
-                const globalStatus = getGlobalStockStatus(p.inventory || []);
+                // 1. Calculate Branch-Specific Status
+                const currentInventory = activeBranch
+                  ? p.inventory?.filter(
+                      (inv) =>
+                        (typeof inv.branch === "object"
+                          ? inv.branch.id
+                          : inv.branchId) === activeBranch.id,
+                    )
+                  : p.inventory || [];
+
+                // The status badge now reflects the current view (Single Branch vs All)
+                const displayStatus = getGlobalStockStatus(currentInventory);
                 const isSelected = selectedItems.includes(p.id);
 
                 return (
@@ -918,6 +915,7 @@ export default function AdminProducts() {
                         )}
                       </button>
                     </td>
+
                     <td className="px-4 py-6">
                       <div className="flex items-center gap-4">
                         <div className="w-12 h-12 rounded-2xl bg-white border border-gray-200 flex items-center justify-center font-bold text-gray-400 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
@@ -940,13 +938,19 @@ export default function AdminProducts() {
                         </div>
                       </div>
                     </td>
+
+                    {/* INVENTORY COLUMN - UPDATED FOR DYNAMIC VIEW */}
                     <td className="px-8 py-6">
                       <div className="flex flex-wrap gap-2 max-w-[300px]">
-                        {p.inventory?.length > 0 ? (
-                          p.inventory.map((inv, idx) => (
+                        {currentInventory.length > 0 ? (
+                          currentInventory.map((inv, idx) => (
                             <div
                               key={idx}
-                              className={`flex flex-col p-2 rounded-xl border ${inv.stock <= inv.min ? "bg-orange-50 border-orange-100" : "bg-gray-50 border-transparent"}`}
+                              className={`flex flex-col p-2 rounded-xl border ${
+                                inv.stock <= inv.min
+                                  ? "bg-orange-50 border-orange-100"
+                                  : "bg-gray-50 border-transparent"
+                              }`}
                             >
                               <span className="text-[9px] font-bold text-gray-400 uppercase leading-tight">
                                 {typeof inv.branch === "object"
@@ -965,11 +969,14 @@ export default function AdminProducts() {
                           ))
                         ) : (
                           <span className="text-xs text-gray-300 italic">
-                            No inventory assigned
+                            {activeBranch
+                              ? "No stock in this branch"
+                              : "No inventory assigned"}
                           </span>
                         )}
                       </div>
                     </td>
+
                     <td className="px-8 py-6">
                       <div className="space-y-1.5">
                         <div className="flex items-center justify-between w-36 text-xs font-bold bg-gray-50/50 p-1.5 rounded-lg border border-gray-100">
@@ -990,12 +997,14 @@ export default function AdminProducts() {
                         </div>
                       </div>
                     </td>
+
+                    {/* STATUS COLUMN - NOW USES displayStatus */}
                     <td className="px-8 py-6">
                       <div className="flex flex-col items-start gap-1">
                         <span
-                          className={`text-[10px] px-2.5 py-1 rounded-full font-bold border uppercase tracking-wider ${globalStatus.color}`}
+                          className={`text-[10px] px-2.5 py-1 rounded-full font-bold border uppercase tracking-wider ${displayStatus.color}`}
                         >
-                          {globalStatus.label}
+                          {displayStatus.label}
                         </span>
                         <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg mt-1 border border-emerald-100">
                           +{calculateMargin(p.costPrice, p.sellingPrice)}%
@@ -1003,6 +1012,7 @@ export default function AdminProducts() {
                         </span>
                       </div>
                     </td>
+
                     <td className="px-8 py-6 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button
@@ -1011,15 +1021,12 @@ export default function AdminProducts() {
                         >
                           <Edit size={16} />
                         </button>
-
-                        {/* Update this button for Delete */}
                         <button
                           onClick={() => handleDeleteOne(p.id)}
                           className="p-2.5 text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors rounded-xl"
                           title="Delete Product"
                         >
-                          <Trash2 size={18} />{" "}
-                          {/* Changed icon to Trash2 for clarity */}
+                          <Trash2 size={18} />
                         </button>
                       </div>
                     </td>

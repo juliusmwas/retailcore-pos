@@ -23,16 +23,37 @@ export default function POS() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  const API = axios.create({
+    baseURL: "http://localhost:5000/api", // Ensure this matches your backend port
+  });
+
+  // --- Change this block inside your POS component ---
+  API.interceptors.request.use((config) => {
+    const authData = localStorage.getItem("auth"); // Changed from "token" to "auth"
+    if (authData) {
+      try {
+        const parsed = JSON.parse(authData);
+        const token = parsed.token; // Grabs the nested token
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+      } catch (e) {
+        console.error("Token parsing failed in POS.jsx", e);
+      }
+    }
+    return config;
+  });
+
   const handleSearch = async (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
-      if (!searchQuery.trim()) return;
+      const cleanQuery = searchQuery.trim();
+
+      if (!cleanQuery) return;
 
       try {
-        // 1. Fetch from your backend using the barcode or SKU
-        const response = await axios.get(
-          `/api/products/search?query=${searchQuery}`,
-        );
+        // 1. Request to the new /search route we added to the backend
+        const response = await API.get(`/products/search?query=${cleanQuery}`);
         const product = response.data;
 
         if (product) {
@@ -43,27 +64,42 @@ export default function POS() {
                 item.id === product.id ? { ...item, qty: item.qty + 1 } : item,
               );
             }
-            // 2. Add the real product from PostgreSQL to the cart
+
+            // 2. Exact mapping to your Prisma 'sellingPrice'
             return [
               {
                 id: product.id,
-                name: product.name,
-                barcode: product.barcode || product.sku,
-                price: product.sellingPrice, // Matching your Prisma field name
+                name: product.name, // e.g., "Fanta blackcurrant"
+                barcode: product.barcode, // e.g., "54449000022752"
+                price: parseFloat(product.sellingPrice) || 0, // Ensure it's a number
                 qty: 1,
               },
               ...prev,
             ];
           });
-        } else {
-          alert("Product not found!");
         }
+
+        // 3. Always clear on success
+        setSearchQuery("");
       } catch (error) {
         console.error("Search failed:", error);
-        alert("Error finding product");
-      }
 
-      setSearchQuery("");
+        // 4. Handle specific error messages based on your console logs
+        if (error.response?.status === 404) {
+          alert(
+            "Barcode not found in your inventory. Check your Prisma businessId.",
+          );
+        } else if (error.response?.status === 500) {
+          alert(
+            "Server error: Check if 'prisma' is imported in productController.js",
+          );
+        } else {
+          alert(error.response?.data?.message || "Error finding product");
+        }
+
+        // Clear the search bar even on failure so the user can scan the next item
+        setSearchQuery("");
+      }
     }
   };
 
@@ -143,110 +179,141 @@ export default function POS() {
           </div>
           {/* COMPACT ITEM TABLE */}
           <div className="flex-1 bg-white rounded-lg shadow-sm border border-slate-200 flex flex-col overflow-hidden">
-            {/* COMPACT ITEM TABLE */}
-            <div className="flex-1 bg-white rounded-lg shadow-sm border border-slate-200 flex flex-col overflow-hidden">
-              <div className="overflow-y-auto flex-1">
-                <table className="w-full text-sm">
-                  <thead className="bg-slate-800 text-slate-300 sticky top-0 z-10">
-                    <tr>
-                      <th className="px-4 py-3 font-bold uppercase text-[10px] tracking-wider text-left">
-                        Product Description
-                      </th>
-                      <th className="px-4 py-3 font-bold uppercase text-[10px] tracking-wider text-center w-24">
-                        Qty
-                      </th>
-                      <th className="px-4 py-3 font-bold uppercase text-[10px] tracking-wider text-right w-32">
-                        Unit Price
-                      </th>
-                      <th className="px-4 py-3 font-bold uppercase text-[10px] tracking-wider text-right w-32">
-                        Subtotal
-                      </th>
-                      <th className="px-4 py-3 w-12"></th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {cart.length > 0 ? (
-                      cart.map((item, i) => (
-                        <tr
-                          key={item.id || i}
-                          className="hover:bg-blue-50/50 group"
-                        >
-                          <td className="px-4 py-3">
-                            <p className="font-bold text-slate-800 uppercase leading-tight">
-                              {item.name || "Unknown Product"}
-                            </p>
-                            <p className="text-[10px] text-slate-400 font-mono">
-                              {item.barcode || item.sku || "No Barcode"}
-                            </p>
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="flex items-center justify-center bg-slate-50 rounded border border-slate-200 p-1 font-bold text-slate-700">
-                              {item.qty || 1}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-right font-medium text-slate-600 italic">
-                            {(Number(item.price) || 0).toLocaleString()}
-                          </td>
-                          <td className="px-4 py-3 text-right font-black text-slate-900">
-                            {(
-                              (Number(item.price) || 0) * (item.qty || 1)
-                            ).toLocaleString()}
-                          </td>
-                          <td className="px-4 py-3 text-center">
+            <div className="overflow-y-auto flex-1">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-800 text-slate-300 sticky top-0 z-10">
+                  <tr>
+                    <th className="px-4 py-3 font-bold uppercase text-[10px] tracking-wider text-left">
+                      Product Description
+                    </th>
+                    <th className="px-4 py-3 font-bold uppercase text-[10px] tracking-wider text-center w-24">
+                      Qty
+                    </th>
+                    <th className="px-4 py-3 font-bold uppercase text-[10px] tracking-wider text-right w-32">
+                      Unit Price
+                    </th>
+                    <th className="px-4 py-3 font-bold uppercase text-[10px] tracking-wider text-right w-32">
+                      Subtotal
+                    </th>
+                    <th className="px-4 py-3 w-12"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {cart.length > 0 ? (
+                    cart.map((item, i) => (
+                      <tr
+                        key={item.id || i}
+                        className="hover:bg-blue-50/50 group transition-colors"
+                      >
+                        <td className="px-4 py-3">
+                          {/* Field Mapping: name from Product model */}
+                          <p className="font-bold text-slate-800 uppercase">
+                            {item.name}{" "}
+                            {/* Will now show: FANTA BLACKCURRANT */}
+                          </p>
+                          {/* Field Mapping: barcode or sku from Product model */}
+                          <p className="text-[10px] text-slate-400 font-mono">
+                            {item.barcode || item.sku || "No Barcode"}
+                          </p>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center justify-center gap-2 bg-slate-50 rounded border border-slate-200 p-1">
                             <button
                               onClick={() => {
                                 setCart((prev) =>
-                                  prev.filter((c) => c.id !== item.id),
+                                  prev.map((c) =>
+                                    c.id === item.id
+                                      ? { ...c, qty: Math.max(1, c.qty - 1) }
+                                      : c,
+                                  ),
                                 );
                               }}
-                              className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                              className="w-5 h-5 flex items-center justify-center bg-white border rounded text-slate-400 hover:text-blue-600 hover:border-blue-200"
                             >
-                              <Trash2 size={16} />
+                              -
                             </button>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan="5" className="py-20 text-center">
-                          <div className="flex flex-col items-center opacity-20">
-                            <div className="w-16 h-16 border-4 border-dashed border-slate-400 rounded-full flex items-center justify-center mb-4">
-                              <Search size={32} />
-                            </div>
-                            <p className="font-black uppercase tracking-widest text-xs">
-                              Waiting for Scan...
-                            </p>
+                            <span className="font-bold text-slate-700 min-w-[20px] text-center">
+                              {item.qty || 1}
+                            </span>
+                            <button
+                              onClick={() => {
+                                setCart((prev) =>
+                                  prev.map((c) =>
+                                    c.id === item.id
+                                      ? { ...c, qty: c.qty + 1 }
+                                      : c,
+                                  ),
+                                );
+                              }}
+                              className="w-5 h-5 flex items-center justify-center bg-white border rounded text-slate-400 hover:text-blue-600 hover:border-blue-200"
+                            >
+                              +
+                            </button>
                           </div>
                         </td>
+                        <td className="px-4 py-3 text-right font-medium">
+                          {(Number(item.price) || 0).toLocaleString()}{" "}
+                          {/* Will now show: 200 */}
+                        </td>
+                        <td className="px-4 py-3 text-right font-black text-slate-900">
+                          {(
+                            (Number(item.price) || 0) * (item.qty || 1)
+                          ).toLocaleString()}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <button
+                            onClick={() =>
+                              setCart((prev) =>
+                                prev.filter((c) => c.id !== item.id),
+                              )
+                            }
+                            className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </td>
                       </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="5" className="py-20 text-center">
+                        <div className="flex flex-col items-center opacity-20">
+                          <div className="w-16 h-16 border-4 border-dashed border-slate-400 rounded-full flex items-center justify-center mb-4">
+                            <Search size={32} />
+                          </div>
+                          <p className="font-black uppercase tracking-widest text-xs">
+                            Waiting for Scan...
+                          </p>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
 
-              {/* BLACK BOTTOM SUMMARY */}
-              <div className="bg-slate-900 px-6 py-4 flex justify-between items-center border-t border-slate-700">
-                <div className="flex gap-8">
-                  <div className="flex flex-col">
-                    <span className="text-[10px] font-black text-slate-500 uppercase">
-                      Items
-                    </span>
-                    <span className="text-xl font-black text-white">
-                      {cart.reduce((sum, item) => sum + (item.qty || 0), 0)}
-                    </span>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest block">
-                    Amount Due
+            {/* BLACK BOTTOM SUMMARY */}
+            <div className="bg-slate-900 px-6 py-4 flex justify-between items-center border-t border-slate-700">
+              <div className="flex gap-8">
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-black text-slate-500 uppercase">
+                    Items
                   </span>
-                  <span className="text-4xl font-black text-green-400 tracking-tighter">
-                    <span className="text-lg mr-1 text-green-600 font-bold">
-                      KES
-                    </span>
-                    {(total || 0).toLocaleString()}
+                  <span className="text-xl font-black text-white">
+                    {cart.reduce((sum, item) => sum + (item.qty || 0), 0)}
                   </span>
                 </div>
+              </div>
+              <div className="text-right">
+                <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest block">
+                  Amount Due
+                </span>
+                <span className="text-4xl font-black text-green-400 tracking-tighter">
+                  <span className="text-lg mr-1 text-green-600 font-bold uppercase">
+                    KES
+                  </span>
+                  {(total || 0).toLocaleString()}
+                </span>
               </div>
             </div>
           </div>

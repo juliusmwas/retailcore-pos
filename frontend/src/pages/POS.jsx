@@ -145,7 +145,7 @@ export default function POS() {
       items: cart.map((item) => ({
         productId: item.id,
         quantity: item.qty,
-        price: item.sellingPrice,
+        price: item.sellingPrice || item.price, // Fallback to price if sellingPrice is missing
       })),
       totalAmount: total,
       subTotal: total, // Matches your Prisma model

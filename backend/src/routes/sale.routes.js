@@ -2,14 +2,17 @@ import express from "express";
 import {
   getBranchSalesList,
   getSalesStats,
+  createSale, // Add this import
 } from "../controllers/sales.controller.js";
-// Update this line to use the actual exported name: authenticateToken
 import { authenticateToken } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// Use 'authenticateToken' instead of 'protect'
+// Existing routes
 router.get("/list", authenticateToken, getBranchSalesList);
 router.get("/stats", authenticateToken, getSalesStats);
+
+// NEW: This route will handle the POST request from your POS.jsx
+router.post("/", authenticateToken, createSale);
 
 export default router;

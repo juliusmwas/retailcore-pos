@@ -91,57 +91,165 @@ export default function POS() {
   const generateReceiptPDF = (sale, changeDetails) => {
     const doc = new jsPDF({
       unit: "mm",
-      format: [80, 150],
+      format: [80, 200],
     });
 
-    // Header
-    doc.setFontSize(12);
-    doc.text("RETAILCORE POS", 40, 10, { align: "center" });
-    doc.setFontSize(8);
-    doc.text(`Branch: ${activeBranch?.name || "Main Branch"}`, 40, 15, {
+    const pageWidth = 80;
+    const margin = 5;
+    let currentY = 10;
+
+    // 1. Header (Centered) - Fetching Business Name from Auth Context
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+
+    // This pulls the registered business name from your DB via the user object
+    const businessName =
+      user?.businessName || user?.business?.name || "RETAILCORE";
+
+    doc.text(businessName.toUpperCase(), pageWidth / 2, currentY, {
       align: "center",
     });
-    doc.text(`Inv: ${sale.invoiceNo}`, 5, 22);
-    doc.text(`Date: ${new Date().toLocaleString()}`, 5, 26);
 
-    // Table
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    currentY += 5;
+    doc.text(activeBranch?.name || "Main Branch", pageWidth / 2, currentY, {
+      align: "center",
+    });
+    currentY += 4;
+    doc.text(
+      activeBranch?.address || "Nairobi, Kenya",
+      pageWidth / 2,
+      currentY,
+      {
+        align: "center",
+      },
+    );
+    currentY += 4;
+    doc.text(
+      `Tel: ${activeBranch?.phone || "0700000007"}`,
+      pageWidth / 2,
+      currentY,
+      {
+        align: "center",
+      },
+    );
+
+    // 2. Dotted Divider
+    currentY += 5;
+    doc.setFontSize(10);
+    doc.text(
+      "..........................................................................",
+      margin,
+      currentY,
+    );
+
+    // 3. Cashier & Meta Info
+    currentY += 6;
+    doc.setFontSize(9);
+    doc.text(`Cashier:`, margin, currentY);
+    doc.text(
+      `#${user?.id?.substring(0, 3) || "1"}`,
+      pageWidth - margin,
+      currentY,
+      { align: "right" },
+    );
+    currentY += 4;
+    doc.text(`Operator:`, margin, currentY);
+    doc.text(
+      user?.fullName?.toLowerCase() || "staff",
+      pageWidth - margin,
+      currentY,
+      { align: "right" },
+    );
+
+    currentY += 2;
+    doc.text(
+      "..........................................................................",
+      margin,
+      currentY,
+    );
+
+    // 4. Items Table - Adjusted column widths to prevent overlapping
     const tableRows = sale.items.map((item) => [
       item.product?.name || "Product",
       item.quantity,
-      item.unitPrice.toLocaleString(),
-      (item.quantity * item.unitPrice).toLocaleString(),
+      `${item.unitPrice.toLocaleString()}`,
     ]);
 
     autoTable(doc, {
-      startY: 30,
-      head: [["Item", "Qty", "Price", "Total"]],
+      startY: currentY + 2,
+      head: [["Name", "Qty", "Price (KES)"]], // Added KES to header to save space in rows
       body: tableRows,
       theme: "plain",
-      styles: { fontSize: 7, cellPadding: 1 },
-      margin: { left: 5, right: 5 },
+      styles: { fontSize: 8, font: "helvetica", cellPadding: 1 },
+      headStyles: { fontStyle: "normal", textColor: [100, 100, 100] },
+      columnStyles: {
+        0: { cellWidth: 40 }, // Product Name
+        1: { cellWidth: 10, halign: "center" }, // Quantity
+        2: { cellWidth: 20, halign: "right" }, // Price
+      },
+      margin: { left: margin, right: margin },
     });
 
-    // Totals
-    const finalY = doc.lastAutoTable.finalY + 5;
-    doc.text(`TOTAL: ${sale.totalAmount.toLocaleString()} KES`, 75, finalY, {
-      align: "right",
-    });
+    currentY = doc.lastAutoTable.finalY + 2;
     doc.text(
-      `Received: ${changeDetails.received.toLocaleString()}`,
-      75,
-      finalY + 4,
-      { align: "right" },
+      "..........................................................................",
+      margin,
+      currentY,
     );
+
+    // 5. Totals Block
+    currentY += 8;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text("Sub Total", margin, currentY);
     doc.text(
-      `Change: ${changeDetails.change.toLocaleString()}`,
-      75,
-      finalY + 8,
+      `${sale.totalAmount.toLocaleString()} KES`,
+      pageWidth - margin,
+      currentY,
       { align: "right" },
     );
 
-    doc.text("Thank you for your business!", 40, finalY + 15, {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    currentY += 6;
+    doc.text(sale.paymentMethod || "CASH", margin, currentY);
+    doc.text(
+      `${changeDetails.received.toLocaleString()}`,
+      pageWidth - margin,
+      currentY,
+      { align: "right" },
+    );
+
+    currentY += 5;
+    doc.text("CHANGE", margin, currentY);
+    doc.text(
+      `${changeDetails.change.toLocaleString()}`,
+      pageWidth - margin,
+      currentY,
+      { align: "right" },
+    );
+
+    // 6. Footer Divider
+    currentY += 8;
+    doc.text(
+      "..........................................................................",
+      margin,
+      currentY,
+    );
+
+    currentY += 10;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.text("THANK YOU!", pageWidth / 2, currentY, { align: "center" });
+    currentY += 5;
+    doc.setFont("helvetica", "normal");
+    doc.text("Glad to see you again!", pageWidth / 2, currentY, {
       align: "center",
     });
+
+    // 7. Save
     doc.save(`${sale.invoiceNo}.pdf`);
   };
 
@@ -293,6 +401,16 @@ export default function POS() {
       setCart(saleToRecall.items);
       setSuspendedSales((prev) => prev.filter((s) => s.id !== suspendedId));
     }
+  };
+
+  const getInitials = (name) => {
+    if (!name) return "??";
+    const names = name.split(" ");
+    return names
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .substring(0, 2);
   };
 
   return (
@@ -602,16 +720,23 @@ export default function POS() {
           </div>
 
           {/* OPERATOR CARD */}
-          <div className="bg-slate-800 p-4 rounded-lg text-white flex items-center gap-3">
-            <div className="w-8 h-8 rounded bg-blue-500 flex items-center justify-center font-black text-xs">
-              JD
+          <div className="bg-slate-800 p-4 rounded-lg text-white flex items-center gap-3 shadow-inner">
+            <div className="w-10 h-10 rounded bg-blue-600 flex items-center justify-center font-black text-sm border border-white/10">
+              {getInitials(user?.fullName || user?.username)}
             </div>
-            <div className="leading-none">
-              <p className="text-[10px] font-black uppercase text-slate-400">
-                Cashier
+            <div className="leading-tight">
+              <p className="text-[10px] font-black uppercase text-slate-500 tracking-tighter">
+                {user?.role || "Cashier"}
               </p>
-              <p className="text-xs font-bold truncate w-32">Jane Doe</p>
+              <p
+                className="text-xs font-bold truncate w-28"
+                title={user?.fullName}
+              >
+                {user?.fullName || "Guest User"}
+              </p>
             </div>
+            {/* Logout Shortcut Indicator */}
+            <div className="ml-auto opacity-30 text-[9px] font-bold">L</div>
           </div>
         </aside>
       </div>

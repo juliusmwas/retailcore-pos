@@ -85,3 +85,95 @@ export const getBranchSalesList = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch sales history" });
   }
 };
+
+export const createSale = async (req, res) => {
+  const {
+    items,
+    totalAmount,
+    paymentMethod,
+    branchId,
+    subTotal,
+    taxAmount,
+    discount,
+  } = req.body;
+
+  // Extract user and business info from the token/session
+  const businessId = req.user.businessId;
+  const userId = req.user.id;
+
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. Generate a unique Invoice Number
+      const invoiceNo = `INV-${Date.now()}`;
+
+      // 2. Create the Sale record
+      const sale = await tx.sale.create({
+        data: {
+          invoiceNo,
+          subTotal: parseFloat(subTotal || totalAmount),
+          taxAmount: parseFloat(taxAmount || 0),
+          discount: parseFloat(discount || 0),
+          totalAmount: parseFloat(totalAmount),
+          paymentMethod: paymentMethod, // Must match enum: CASH, MPESA, CARD, CREDIT
+          status: "COMPLETED",
+          businessId,
+          branchId,
+          userId,
+          items: {
+            create: items.map((item) => {
+              // Ensure we handle the price field correctly from frontend
+              const unitPrice = parseFloat(item.price);
+              const quantity = parseInt(item.quantity);
+
+              if (isNaN(unitPrice) || isNaN(quantity)) {
+                throw new Error(
+                  `Invalid numeric data for product: ${item.productId}`,
+                );
+              }
+
+              return {
+                productId: item.productId,
+                quantity: quantity,
+                unitPrice: unitPrice,
+                totalPrice: quantity * unitPrice, // Fixes the NaN error
+              };
+            }),
+          },
+        },
+        // Include items in the return so the frontend can print the receipt immediately
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
+          },
+        },
+      });
+
+      // 3. Update Inventory (Deduct stock from the specific branch)
+      for (const item of items) {
+        await tx.productInventory.update({
+          where: {
+            productId_branchId: {
+              productId: item.productId,
+              branchId: branchId,
+            },
+          },
+          data: {
+            stock: { decrement: parseInt(item.quantity) },
+          },
+        });
+      }
+
+      return sale;
+    });
+
+    res.status(201).json({ message: "Sale completed!", sale: result });
+  } catch (error) {
+    console.error("Sale Error:", error);
+    res.status(500).json({
+      message: "Failed to process sale",
+      error: error.message,
+    });
+  }
+};

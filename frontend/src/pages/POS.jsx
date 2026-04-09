@@ -1,6 +1,13 @@
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "../auth/AuthContext";
-import { Search, Trash2, Smartphone, Banknote, Maximize } from "lucide-react";
+import {
+  Search,
+  Trash2,
+  Smartphone,
+  Banknote,
+  Maximize,
+  CreditCard,
+} from "lucide-react";
 import axios from "axios";
 
 export default function POS() {
@@ -105,6 +112,35 @@ export default function POS() {
 
   const startCameraScanner = () => {
     alert("Camera Scanner coming soon! For now, please type and hit Enter.");
+  };
+
+  const handleCheckout = async (method) => {
+    if (cart.length === 0) return alert("Cart is empty!");
+
+    const saleData = {
+      branchId: activeBranch?.id, //
+      items: cart.map((item) => ({
+        productId: item.id,
+        quantity: item.qty,
+        price: item.price,
+      })),
+      totalAmount: total,
+      paymentMethod: method,
+      paymentStatus: method === "CASH" ? "COMPLETED" : "PENDING",
+    };
+
+    try {
+      // Using the 'API' instance you defined with the token fix
+      const response = await API.post("/sales", saleData);
+
+      if (response.status === 201) {
+        alert(`Sale completed via ${method}!`);
+        setCart([]); // Clear cart on success
+      }
+    } catch (error) {
+      console.error("Checkout failed:", error);
+      alert(error.response?.data?.message || "Checkout failed");
+    }
   };
 
   return (
@@ -327,7 +363,11 @@ export default function POS() {
             </h2>
 
             <div className="space-y-2 flex-1">
-              <button className="w-full flex items-center gap-4 p-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-all shadow-md active:scale-95">
+              {/* CASH BUTTON */}
+              <button
+                onClick={() => handleCheckout("CASH")}
+                className="w-full flex items-center gap-4 p-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-all shadow-md active:scale-95"
+              >
                 <Banknote size={24} />
                 <div className="text-left">
                   <p className="text-xs font-black uppercase leading-none">
@@ -337,7 +377,11 @@ export default function POS() {
                 </div>
               </button>
 
-              <button className="w-full flex items-center gap-4 p-4 bg-[#41ab3b] hover:bg-[#368f31] text-white rounded-lg transition-all shadow-md active:scale-95 border-b-4 border-black/20">
+              {/* M-PESA BUTTON */}
+              <button
+                onClick={() => handleCheckout("MPESA")}
+                className="w-full flex items-center gap-4 p-4 bg-[#41ab3b] hover:bg-[#368f31] text-white rounded-lg transition-all shadow-md active:scale-95 border-b-4 border-black/20"
+              >
                 <div className="font-black text-xl italic">M</div>
                 <div className="text-left">
                   <p className="text-xs font-black uppercase leading-none">
@@ -347,8 +391,12 @@ export default function POS() {
                 </div>
               </button>
 
-              <button className="w-full flex items-center gap-4 p-4 bg-slate-800 hover:bg-slate-900 text-white rounded-lg transition-all shadow-md active:scale-95">
-                <creditCard size={24} />
+              {/* CARD BUTTON */}
+              <button
+                onClick={() => handleCheckout("CARD")}
+                className="w-full flex items-center gap-4 p-4 bg-slate-800 hover:bg-slate-900 text-white rounded-lg transition-all shadow-md active:scale-95"
+              >
+                <CreditCard size={24} /> {/* Fixed casing here */}
                 <div className="text-left">
                   <p className="text-xs font-black uppercase leading-none">
                     Card Payment

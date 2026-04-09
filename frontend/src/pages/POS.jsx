@@ -16,6 +16,7 @@ export default function POS() {
   const [cart, setCart] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const searchInputRef = useRef(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const total = cart.reduce((acc, item) => acc + item.price * item.qty, 0);
 
@@ -148,8 +149,21 @@ export default function POS() {
 
     let amountReceived = total;
     let changeDue = 0;
+    let phoneNumber = "";
 
-    if (method === "CASH") {
+    // 1. Handle Payment Method Specifics
+    if (method === "MPESA") {
+      // MVP Demo: Ask for number to simulate the STK Push experience
+      const input = window.prompt(
+        "Enter M-PESA Number (e.g., 254712345678):",
+        "254",
+      );
+      if (!input || input.length < 10) return; // Cancel if no valid-looking number
+      phoneNumber = input;
+
+      // Start the "Processing" overlay
+      setIsProcessing(true);
+    } else if (method === "CASH") {
       const input = window.prompt(
         `Total: ${total.toLocaleString()}. Amount Received:`,
         total,
@@ -165,31 +179,52 @@ export default function POS() {
       alert(`Change to give: ${changeDue.toLocaleString()} KES`);
     }
 
+    // 2. Prepare Sale Data for PostgreSQL
     const saleData = {
       branchId: activeBranch?.id,
       items: cart.map((item) => ({
         productId: item.id,
         quantity: item.qty,
-        price: item.price,
+        price: item.price, // Ensure this matches the 'unitPrice' logic in backend
       })),
       totalAmount: total,
       subTotal: total,
-      paymentMethod: method,
+      paymentMethod: method, // Must be 'CASH' or 'MPESA' per your Prisma Enum
+      metadata: { phoneNumber }, // Optional: track the number for the demo
     };
 
     try {
+      // 3. Simulate STK Push Delay for M-PESA MVP
+      if (method === "MPESA") {
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+      }
+
+      // 4. Send to Backend
       const response = await API.post("/sales", saleData);
+
       if (response.status === 201) {
-        //
+        if (method === "MPESA") {
+          alert("M-PESA Payment Confirmed!");
+        }
+
+        // 5. Generate PDF Receipt automatically
         generateReceiptPDF(response.data.sale, {
           received: amountReceived,
           change: changeDue,
         });
+
+        // 6. Clear Cart
         setCart([]);
       }
     } catch (error) {
       console.error("Checkout failed:", error);
-      alert(error.response?.data?.message || "Checkout failed");
+      alert(
+        error.response?.data?.message ||
+          "Transaction failed. Please try again.",
+      );
+    } finally {
+      // 7. Always stop the loading spinner
+      setIsProcessing(false);
     }
   };
 
@@ -210,6 +245,11 @@ export default function POS() {
       if (e.key === "F2") {
         e.preventDefault();
         handleCheckout("CASH"); // This matches the paymentMethod enum
+      }
+
+      if (e.key === "F3") {
+        e.preventDefault();
+        handleCheckout("MPESA");
       }
     };
 
@@ -502,6 +542,20 @@ export default function POS() {
           </div>
         </aside>
       </div>
+
+      {isProcessing && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100]">
+          <div className="bg-white p-8 rounded-2xl shadow-2xl text-center flex flex-col items-center gap-4">
+            <div className="w-12 h-12 border-4 border-[#41ab3b] border-t-transparent rounded-full animate-spin"></div>
+            <p className="font-bold text-lg text-gray-800">
+              Requesting M-PESA Payment...
+            </p>
+            <p className="text-sm text-gray-500">
+              Please ask the customer to enter their PIN
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

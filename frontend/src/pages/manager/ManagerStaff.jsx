@@ -177,8 +177,8 @@ const ManagerStaff = () => {
         {staff.map((member) => {
           const isMe = member.id === user?.id;
           // Check if the role is a Manager or Admin to hide sales
-          const isManager =
-            member.role === "MANAGER" || member.role === "ADMIN" || isMe;
+          const isManagementRole =
+            member.role === "MANAGER" || member.role === "ADMIN";
 
           return (
             <div
@@ -229,9 +229,11 @@ const ManagerStaff = () => {
                     Sales Today
                   </p>
                   <p
-                    className={`text-sm font-black ${isManager ? "text-gray-400 italic font-medium" : "text-blue-600"}`}
+                    className={`text-sm font-black ${isManagementRole ? "text-gray-400 italic font-medium" : "text-blue-600"}`}
                   >
-                    {isManager ? "N/A (Admin)" : member.salesToday || "KES 0"}
+                    {isManagementRole
+                      ? "N/A (Management)"
+                      : `KES ${Number(member.salesToday || 0).toLocaleString()}`}
                   </p>
                 </div>
                 <div className="sm:pl-2">

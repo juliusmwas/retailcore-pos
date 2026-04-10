@@ -1,4 +1,7 @@
+import axios from "axios";
 import { useState, useEffect } from "react";
+import { useAuth } from "../../auth/AuthContext";
+
 import {
   AreaChart,
   Area,
@@ -25,14 +28,14 @@ import {
 } from "lucide-react";
 
 export default function Reports() {
+  // Pull data from your existing Auth context
+  const { activeBranch, user } = useAuth();
+
   // 1. Unified State
   const [activeTab, setActiveTab] = useState("Week");
   const [loading, setLoading] = useState(false);
-
-  // 2. REACTIVE DATA STATES (Replacing the static arrays)
   const [salesTrend, setSalesTrend] = useState([]);
   const [topProducts, setTopProducts] = useState([]);
-
   const [reportStats, setReportStats] = useState({
     revenue: 0,
     growth: 0,
@@ -41,77 +44,91 @@ export default function Reports() {
     topBranch: "None",
   });
 
-  const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6"];
+  // Add this line inside your Reports component
+  const COLORS = [
+    "#3b82f6",
+    "#10b981",
+    "#f59e0b",
+    "#8b5cf6",
+    "#ec4899",
+    "#8b5cf6",
+  ];
 
-  // 3. Handlers
+  // 2. Export Logic (Fixed to prevent ReferenceError)
   const handleExportData = () => {
     if (!salesTrend || salesTrend.length === 0) return;
 
     const headers = ["Period", "Current Sales", "Previous Period Sales"];
     const csvRows = salesTrend.map(
-      (item) => `${item.day},${item.sales},${item.lastWeek}`,
+      (item) => `"${item.day}",${item.sales},${item.lastWeek}`,
     );
 
     const csvContent = [headers.join(","), ...csvRows].join("\n");
-
     const blob = new Blob([csvContent], { type: "text/csv" });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `RetailCore_Report_${activeTab}_${new Date().toISOString().split("T")[0]}.csv`;
+    a.download = `RetailCore_Report_${activeBranch?.id || "All"}_${activeTab}_${new Date().toISOString().split("T")[0]}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
   };
 
-  // 4. THE MAIN FETCH FUNCTION
+  // 3. THE MAIN FETCH FUNCTION (Synced with Sales Page Logic)
+  const fetchRealReportData = async () => {
+    const businessId = user?.businessId || user?.id;
+    if (!businessId) return;
+
+    setLoading(true);
+    try {
+      // FIX: Matches Sales page token retrieval
+      const authData = JSON.parse(localStorage.getItem("auth") || "{}");
+      const token = authData.token;
+
+      if (!token) throw new Error("Authentication token missing");
+
+      // FIX: Use full URL like the Sales page
+      const BASE_URL = "http://localhost:5000/api/reports/stats";
+
+      const branchId = activeBranch?.id;
+      const branchParam =
+        branchId && branchId !== "ALL" ? `&branchId=${branchId}` : "";
+      const rangeParam = `&range=${activeTab.toLowerCase()}`;
+
+      const response = await axios.get(
+        `${BASE_URL}?businessId=${businessId}${branchParam}${rangeParam}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+
+      const data = response.data;
+
+      setReportStats({
+        revenue: Number(data.totalRevenue || 0),
+        growth: Number(data.percentageGrowth || 0),
+        isPositive: (data.percentageGrowth || 0) >= 0,
+        topCategory: data.bestCategory || "No Sales",
+        topBranch: data.bestBranch || "N/A",
+      });
+
+      setSalesTrend(data.trendData || []);
+      setTopProducts(data.categoryData || []);
+    } catch (error) {
+      console.error(
+        "Reports Fetch Error:",
+        error.response?.data || error.message,
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 4. Re-fetch when branch, tab, or user changes
   useEffect(() => {
-    const fetchRealReportData = async () => {
-      setLoading(true);
-      try {
-        const response = await fetch(
-          `/api/reports/stats?range=${activeTab.toLowerCase()}`,
-        );
-
-        // If the DB is empty or route doesn't exist yet, this will catch
-        if (!response.ok) throw new Error("No data found");
-
-        const data = await response.json();
-
-        // Update Stats
-        setReportStats({
-          revenue: data.totalRevenue || 0,
-          growth: data.percentageGrowth || 0,
-          isPositive: (data.percentageGrowth || 0) >= 0,
-          topCategory: data.bestCategory || "No Sales",
-          topBranch: data.bestBranch || "N/A",
-        });
-
-        // Update Charts
-        setSalesTrend(data.trendData || []);
-        setTopProducts(data.categoryData || []);
-      } catch (error) {
-        console.error("Database fetch failed:", error);
-        // Ensure UI stays at 0/Empty if fetch fails
-        setReportStats({
-          revenue: 0,
-          growth: 0,
-          isPositive: true,
-          topCategory: "None",
-          topBranch: "None",
-        });
-        setSalesTrend([]);
-        setTopProducts([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchRealReportData();
-  }, [activeTab]);
-
-  // Now the return function can follow...
+  }, [activeTab, activeBranch?.id, user?.businessId]);
 
   return (
     <div className="p-8 bg-[#f8fafc] min-h-screen space-y-8">

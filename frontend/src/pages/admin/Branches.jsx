@@ -39,6 +39,8 @@ export default function Branches() {
     managerName: "",
     managerEmail: "",
     managerPhone: "",
+    password: "",
+    confirmPassword: "",
     assistantManager: "",
     reportingTo: "",
     initialStaff: "",
@@ -474,6 +476,22 @@ export default function Branches() {
                     placeholder="Manager Phone *"
                     onChange={handleChange}
                     value={branchForm.managerPhone}
+                  />
+                  <input
+                    type="password"
+                    className={getInputClass(branchForm.password, true)}
+                    name="password"
+                    placeholder="Create Manager Password *"
+                    onChange={handleChange}
+                    value={branchForm.password}
+                  />
+                  <input
+                    type="password"
+                    className={getInputClass(branchForm.confirmPassword, true)}
+                    name="confirmPassword"
+                    placeholder="Confirm Manager Password *"
+                    onChange={handleChange}
+                    value={branchForm.confirmPassword}
                   />
                 </div>
               )}

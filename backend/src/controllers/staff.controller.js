@@ -266,36 +266,31 @@ export const updateSettings = async (req, res) => {
   }
 };
 
-// staff.controller.js
-
 export const updateStaffProfile = async (req, res) => {
   try {
     const { fullName, email } = req.body;
-    // req.user.id should come from your protect/auth middleware
-    const staffId = req.user.id;
+    const { id, businessId } = req.user; // Provided by your authenticateToken
 
-    const updatedStaff = await prisma.staff.update({
-      where: { id: staffId },
-      data: {
-        name: fullName,
-        email: email,
-      },
-      // Exclude password from the return object for security
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-      },
+    // 1. Update the Business Name (The "Prime Supermarket" part)
+    await prisma.business.update({
+      where: { id: businessId },
+      data: { name: fullName },
+    });
+
+    // 2. Update the User Email
+    const updatedUser = await prisma.user.update({
+      where: { id: id },
+      data: { email: email },
+      include: { business: true }, // Include business so frontend gets the fresh name
     });
 
     res.status(200).json({
       success: true,
       message: "Profile updated successfully",
-      data: updatedStaff,
+      user: updatedUser,
     });
   } catch (error) {
-    console.error("Update Profile Error:", error);
+    console.error(error);
     res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 };

@@ -122,15 +122,22 @@ export const getStaff = async (req, res) => {
         0,
       );
 
+      // LOGIC: If they have NO branch links, they are a Global Admin (like Julius)
+      const isGlobalAdmin = !member.branches || member.branches.length === 0;
+
       return {
         ...member,
-        // Pull the role from the UserBranch junction table
-        role: member.branches?.[0]?.role || "CASHIER",
-        // This matches the variable name in your Frontend Grid!
+        // Fix: Prioritize ADMIN role for users without branch links
+        role: isGlobalAdmin ? "ADMIN" : member.branches[0]?.role || "CASHIER",
+
         salesToday: dailyTotal,
-        branchName:
-          assignedBranchName ||
-          (member.staffNumber ? "Unassigned" : "Global/Head Office"),
+
+        // Fix: Show "Global" instead of "Unassigned" for the Admin
+        branchName: assignedBranchName
+          ? assignedBranchName
+          : isGlobalAdmin
+            ? "Global / Head Office"
+            : "Unassigned",
       };
     });
 

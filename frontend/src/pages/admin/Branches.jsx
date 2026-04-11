@@ -156,6 +156,8 @@ export default function Branches() {
       managerName: "",
       managerEmail: "",
       managerPhone: "",
+      password: "",
+      confirmPassword: "",
       assistantManager: "",
       reportingTo: "",
       initialStaff: "",
@@ -198,7 +200,9 @@ export default function Branches() {
         return (
           branchForm.managerName &&
           branchForm.managerEmail &&
-          branchForm.managerPhone
+          branchForm.managerPhone &&
+          branchForm.password &&
+          branchForm.confirmPassword
         );
       case 5:
         return branchForm.currency && branchForm.taxRegion;
@@ -414,7 +418,6 @@ export default function Branches() {
                     <option value="">Select Type *</option>
                     <option>Retail</option>
                     <option>Warehouse</option>
-                    <option>Office</option>
                   </select>
                   <input
                     type="date"

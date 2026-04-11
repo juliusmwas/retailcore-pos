@@ -265,3 +265,37 @@ export const updateSettings = async (req, res) => {
     res.status(500).json({ message: "Server error updating settings" });
   }
 };
+
+// staff.controller.js
+
+export const updateStaffProfile = async (req, res) => {
+  try {
+    const { fullName, email } = req.body;
+    // req.user.id should come from your protect/auth middleware
+    const staffId = req.user.id;
+
+    const updatedStaff = await prisma.staff.update({
+      where: { id: staffId },
+      data: {
+        name: fullName,
+        email: email,
+      },
+      // Exclude password from the return object for security
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      data: updatedStaff,
+    });
+  } catch (error) {
+    console.error("Update Profile Error:", error);
+    res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+};

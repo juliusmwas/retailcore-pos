@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import axios from "axios";
 import {
   User,
   Lock,
@@ -17,17 +18,155 @@ export default function Settings() {
 
   // State Groups
   const [profile, setProfile] = useState({
-    fullName: "John Doe",
-    email: "admin@retailcore.com",
-    role: "Super Admin",
+    fullName: "",
+    email: "",
+    role: "",
   });
+
+  useEffect(() => {
+    const authData = JSON.parse(localStorage.getItem("auth") || "{}");
+
+    if (authData.user) {
+      setProfile({
+        // Look for business name specifically, fall back to empty string if missing
+        fullName: authData.user.business?.name || authData.businessName || "",
+        email: authData.user.email || "",
+        role: authData.user.role || "OWNER",
+      });
+    }
+  }, []);
+
+  const handleProfileChange = (e) => {
+    const { name, value } = e.target;
+    setProfile((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleUpdateProfile = async () => {
+    try {
+      const authData = JSON.parse(localStorage.getItem("auth") || "{}");
+      const token = authData.token;
+
+      if (!token) {
+        alert("Session expired. Please log in again.");
+        return;
+      }
+
+      const response = await axios.put(
+        "http://localhost:5000/api/staff/profile/update",
+        {
+          fullName: profile.fullName,
+          email: profile.email,
+        },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+
+      if (response.data.success) {
+        alert("Business profile updated!");
+
+        const updatedAuth = { ...authData };
+
+        // 1. Force the structure to exist
+        if (!updatedAuth.user.business) updatedAuth.user.business = {};
+
+        // 2. Save "Prime Supermarket" into the nested object
+        updatedAuth.user.business.name = profile.fullName;
+        updatedAuth.user.email = profile.email;
+
+        // 3. Save the WHOLE object back to storage
+        localStorage.setItem("auth", JSON.stringify(updatedAuth));
+      }
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      alert(error.response?.data?.message || "Failed to update profile.");
+    }
+  };
+
+  // State for the Store Settings section
   const [business, setBusiness] = useState({
-    name: "RetailCore Nairobi",
-    address: "Westlands, Nairobi",
-    phone: "+254 700 000 000",
+    name: "",
+    address: "",
+    phone: "",
     taxPercent: 16,
     currency: "KES",
   });
+
+  // Add this handler for business fields
+  const handleBusinessChange = (e) => {
+    const { name, value } = e.target;
+    setBusiness((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  // Update your useEffect to load the initial business data
+  useEffect(() => {
+    const authData = JSON.parse(localStorage.getItem("auth") || "{}");
+
+    if (authData.user) {
+      // Fill Profile State
+      setProfile({
+        fullName: authData.user.business?.name || "",
+        email: authData.user.email || "",
+        role: authData.user.role || "OWNER",
+      });
+
+      // Fill Business State (This fixes the ReferenceError)
+      if (authData.user.business) {
+        setBusiness({
+          name: authData.user.business.name || "",
+          address: authData.user.business.address || "",
+          phone: authData.user.business.phone || "",
+          taxPercent: authData.user.business.taxPercent || 16,
+          currency: authData.user.business.currency || "KES",
+        });
+      }
+    }
+  }, []);
+
+  const handleSyncStoreConfig = async () => {
+    try {
+      const authData = JSON.parse(localStorage.getItem("auth") || "{}");
+      const token = authData.token;
+
+      if (!token) {
+        alert("Your session has expired. Please log in again.");
+        return;
+      }
+
+      const response = await axios.put(
+        "http://localhost:5000/api/business/settings",
+        {
+          name: business.name,
+          address: business.address,
+          phone: business.phone,
+          taxPercent: business.taxPercent,
+          currency: business.currency,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+
+      if (response.data.success) {
+        alert("Store Identity Updated!");
+
+        // Update local storage so "Prime Supermarket" stays after refresh
+        const updatedAuth = { ...authData };
+        updatedAuth.user.business = response.data.business;
+        localStorage.setItem("auth", JSON.stringify(updatedAuth));
+      }
+    } catch (error) {
+      console.error("Sync Error:", error);
+      alert(
+        error.response?.data?.message ||
+          "Internal Server Error - Check Backend Console",
+      );
+    }
+  };
 
   const sidebarItems = [
     {
@@ -120,8 +259,10 @@ export default function Settings() {
                     Full Name
                   </label>
                   <input
+                    name="fullName" // Crucial: must match the state key
                     type="text"
                     value={profile.fullName}
+                    onChange={handleProfileChange}
                     className="w-full bg-gray-50 border-none rounded-2xl p-4 font-bold text-gray-700 focus:ring-2 focus:ring-blue-500 transition-all"
                   />
                 </div>
@@ -130,13 +271,18 @@ export default function Settings() {
                     Email Address
                   </label>
                   <input
+                    name="email" // Crucial: must match the state key
                     type="email"
                     value={profile.email}
+                    onChange={handleProfileChange}
                     className="w-full bg-gray-50 border-none rounded-2xl p-4 font-bold text-gray-700 focus:ring-2 focus:ring-blue-500 transition-all"
                   />
                 </div>
               </div>
-              <button className="flex items-center gap-3 bg-blue-600 text-white px-8 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-blue-700 shadow-lg shadow-blue-200 active:scale-95 transition-all">
+              <button
+                onClick={handleUpdateProfile}
+                className="flex items-center gap-3 bg-blue-600 text-white px-8 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-blue-700 shadow-lg shadow-blue-200 active:scale-95 transition-all"
+              >
                 <Save size={18} /> Update Profile
               </button>
             </div>
@@ -154,9 +300,11 @@ export default function Settings() {
                     Registered Business Name
                   </label>
                   <input
+                    name="name"
                     type="text"
                     value={business.name}
-                    className="w-full bg-gray-50 border-none rounded-2xl p-4 font-bold text-gray-700"
+                    onChange={handleBusinessChange}
+                    className="w-full bg-gray-50 border-none rounded-2xl p-4 font-bold text-gray-700 focus:ring-2 focus:ring-purple-500 transition-all"
                   />
                 </div>
                 <div className="space-y-2">
@@ -164,9 +312,11 @@ export default function Settings() {
                     Physical Address
                   </label>
                   <input
+                    name="address"
                     type="text"
                     value={business.address}
-                    className="w-full bg-gray-50 border-none rounded-2xl p-4 font-bold text-gray-700"
+                    onChange={handleBusinessChange}
+                    className="w-full bg-gray-50 border-none rounded-2xl p-4 font-bold text-gray-700 focus:ring-2 focus:ring-purple-500 transition-all"
                   />
                 </div>
                 <div className="space-y-2">
@@ -174,9 +324,11 @@ export default function Settings() {
                     Contact Number
                   </label>
                   <input
+                    name="phone"
                     type="text"
                     value={business.phone}
-                    className="w-full bg-gray-50 border-none rounded-2xl p-4 font-bold text-gray-700"
+                    onChange={handleBusinessChange}
+                    className="w-full bg-gray-50 border-none rounded-2xl p-4 font-bold text-gray-700 focus:ring-2 focus:ring-purple-500 transition-all"
                   />
                 </div>
                 <div className="space-y-2">
@@ -184,23 +336,33 @@ export default function Settings() {
                     VAT/Tax Percentage (%)
                   </label>
                   <input
+                    name="taxPercent"
                     type="number"
                     value={business.taxPercent}
-                    className="w-full bg-gray-50 border-none rounded-2xl p-4 font-bold text-gray-700"
+                    onChange={handleBusinessChange}
+                    className="w-full bg-gray-50 border-none rounded-2xl p-4 font-bold text-gray-700 focus:ring-2 focus:ring-purple-500 transition-all"
                   />
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold text-gray-400 uppercase ml-2">
                     Default Currency
                   </label>
-                  <select className="w-full bg-gray-50 border-none rounded-2xl p-4 font-bold text-gray-700 appearance-none">
-                    <option>KES - Kenyan Shilling</option>
-                    <option>USD - US Dollar</option>
-                    <option>EUR - Euro</option>
+                  <select
+                    name="currency"
+                    value={business.currency}
+                    onChange={handleBusinessChange}
+                    className="w-full bg-gray-50 border-none rounded-2xl p-4 font-bold text-gray-700 appearance-none focus:ring-2 focus:ring-purple-500 transition-all"
+                  >
+                    <option value="KES">KES - Kenyan Shilling</option>
+                    <option value="USD">USD - US Dollar</option>
+                    <option value="EUR">EUR - Euro</option>
                   </select>
                 </div>
               </div>
-              <button className="flex items-center gap-3 bg-purple-600 text-white px-8 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-purple-700 shadow-lg shadow-purple-200 active:scale-95 transition-all">
+              <button
+                onClick={handleSyncStoreConfig}
+                className="flex items-center gap-3 bg-purple-600 text-white px-8 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-purple-700 shadow-lg shadow-purple-200 active:scale-95 transition-all"
+              >
                 <Save size={18} /> Sync Store Config
               </button>
             </div>

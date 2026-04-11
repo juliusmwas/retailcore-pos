@@ -3,6 +3,7 @@ import {
   addStaff,
   getStaff,
   updateStaff,
+  updateStaffProfile,
 } from "../controllers/staff.controller.js";
 import { verifyToken } from "../middleware/authMiddleware.js";
 import { updateSettings } from "../controllers/staff.controller.js";
@@ -16,5 +17,6 @@ router.get("/", verifyToken, getStaff);
 
 router.put("/:id", verifyToken, updateStaff);
 router.get("/directory", verifyToken, getStaff);
+router.put("/profile/update", verifyToken, updateStaffProfile);
 
 export default router;

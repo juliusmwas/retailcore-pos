@@ -9,6 +9,9 @@ datasource db {
 model Business {
   id        String    @id @default(uuid())
   name      String
+  address   String?
+  taxPercent Float?
+  currency  String?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   country   String?

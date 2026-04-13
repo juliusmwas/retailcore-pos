@@ -169,3 +169,112 @@ export const getReportStats = async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
+export const getManagerSummary = async (req, res) => {
+  try {
+    const { branchId } = req.query;
+    const today = new Date();
+
+    // 1. Fetch Basic Stats (Already working)
+    const [todaySales, yesterdaySales, lowStockItems, activeStaff, branchInfo] =
+      await Promise.all([
+        prisma.sale.aggregate({
+          where: {
+            branchId,
+            createdAt: { gte: startOfDay(today), lte: endOfDay(today) },
+            status: "COMPLETED",
+          },
+          _sum: { totalAmount: true },
+          _count: { id: true },
+        }),
+        prisma.sale.aggregate({
+          where: {
+            branchId,
+            createdAt: {
+              gte: startOfDay(subDays(today, 1)),
+              lte: endOfDay(subDays(today, 1)),
+            },
+            status: "COMPLETED",
+          },
+          _sum: { totalAmount: true },
+        }),
+        prisma.productInventory.count({
+          where: { branchId, stock: { lte: 10 } },
+        }),
+        prisma.userBranch.count({
+          where: { branchId, user: { status: "ACTIVE" } },
+        }),
+        prisma.branch.findUnique({
+          where: { id: branchId },
+          select: { name: true, businessId: true },
+        }),
+      ]);
+
+    // 2. REVENUE VELOCITY (Last 7 Days)
+    const sevenDaysAgo = startOfDay(subDays(today, 6));
+    const dailySales = await prisma.sale.groupBy({
+      by: ["createdAt"],
+      where: {
+        branchId,
+        createdAt: { gte: sevenDaysAgo },
+        status: "COMPLETED",
+      },
+      _sum: { totalAmount: true },
+    });
+
+    // Format for Recharts
+    const revenueVelocity = Array.from({ length: 7 }).map((_, i) => {
+      const date = subDays(today, 6 - i);
+      const dayLabel = format(date, "EEE");
+      const dayData = dailySales.find(
+        (s) => format(s.createdAt, "EEE") === dayLabel,
+      );
+      return {
+        day: dayLabel,
+        amount: dayData?._sum.totalAmount || 0,
+        prevAmount: 0, // You can add logic for previous week here if needed
+      };
+    });
+
+    // 3. CATEGORY SHARE (Top Categories by Inventory Count)
+    const categories = await prisma.category.findMany({
+      select: {
+        name: true,
+        _count: {
+          select: {
+            products: { where: { businessId: branchInfo?.businessId } },
+          },
+        },
+      },
+      take: 4,
+    });
+
+    const categoryShare = categories.map((cat) => ({
+      name: cat.name,
+      value: cat._count.products,
+    }));
+
+    // 4. Calculate Growth
+    const currentRev = todaySales._sum.totalAmount || 0;
+    const prevRev = yesterdaySales._sum.totalAmount || 0;
+    const growth =
+      prevRev > 0
+        ? `${(((currentRev - prevRev) / prevRev) * 100).toFixed(1)}%`
+        : "+0%";
+
+    res.status(200).json({
+      branchName: branchInfo?.name,
+      todaySales: currentRev,
+      salesGrowth: growth,
+      avgTicket:
+        todaySales._count.id > 0 ? currentRev / todaySales._count.id : 0,
+      activeCashiers: activeStaff,
+      lowStockCount: lowStockItems,
+      revenueVelocity, // Now has real data
+      categoryShare, // Now has real data
+    });
+  } catch (error) {
+    console.error("Manager Summary Error:", error);
+    res.status(500).json({ error: "Failed to fetch dashboard data" });
+  }
+};

@@ -64,19 +64,27 @@ export default function Settings() {
       );
 
       if (response.data.success) {
-        alert("Business profile updated!");
+        alert("Admin profile updated!");
 
+        // Clone the current auth data
         const updatedAuth = { ...authData };
 
-        // 1. Force the structure to exist
-        if (!updatedAuth.user.business) updatedAuth.user.business = {};
-
-        // 2. Save "Prime Supermarket" into the nested object
-        updatedAuth.user.business.name = profile.fullName;
+        // Update the USER properties specifically
+        updatedAuth.user.fullName = profile.fullName;
         updatedAuth.user.email = profile.email;
 
-        // 3. Save the WHOLE object back to storage
+        // Note: We do NOT touch updatedAuth.user.business.name here
+        // because that is handled in the Store Settings section.
+
+        // Save the cleaned-up object back to storage
         localStorage.setItem("auth", JSON.stringify(updatedAuth));
+
+        // Optional: Update the state to reflect the sync
+        setProfile((prev) => ({
+          ...prev,
+          fullName: profile.fullName,
+          email: profile.email,
+        }));
       }
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -102,19 +110,19 @@ export default function Settings() {
     }));
   };
 
-  // Update your useEffect to load the initial business data
   useEffect(() => {
     const authData = JSON.parse(localStorage.getItem("auth") || "{}");
 
     if (authData.user) {
-      // Fill Profile State
+      // 1. Set the Person's Profile (Admin details)
       setProfile({
-        fullName: authData.user.business?.name || "",
+        // We look for fullName on the user object, not the business object
+        fullName: authData.user.fullName || "",
         email: authData.user.email || "",
         role: authData.user.role || "OWNER",
       });
 
-      // Fill Business State (This fixes the ReferenceError)
+      // 2. Set the Business Profile (Store details)
       if (authData.user.business) {
         setBusiness({
           name: authData.user.business.name || "",

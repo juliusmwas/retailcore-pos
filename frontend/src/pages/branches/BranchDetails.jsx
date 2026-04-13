@@ -24,6 +24,7 @@ export default function BranchDetails() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editData, setEditData] = useState({});
   const [updating, setUpdating] = useState(false);
+  const [inventory, setInventory] = useState([]);
 
   const handleUpdate = async (e) => {
     e.preventDefault();
@@ -78,25 +79,56 @@ export default function BranchDetails() {
       try {
         setLoading(true);
         const res = await getBranchById(id);
-
-        // Axios result is in res.data
-        // Your controller sends { status: "success", data: branch }
-        // So the branch is at res.data.data
         const branchData = res.data?.data || res.data;
 
         if (branchData && branchData.id) {
-          setBranch(branchData);
+          // 1. Process inventory first
+          const formattedInventory = (branchData.inventory || []).map((inv) => {
+            let currentStatus = "IN STOCK";
+            if (inv.stock <= 0) currentStatus = "OUT OF STOCK";
+            else if (inv.stock <= inv.minStock) currentStatus = "LOW STOCK";
+
+            return {
+              dbId: inv.id,
+              name: inv.product?.name || "Unknown Product",
+              category: inv.product?.category?.name || "General",
+              id: inv.product?.sku || "N/A",
+              stock: inv.stock,
+              minStock: inv.minStock,
+              price: inv.product?.sellingPrice
+                ? Number(inv.product.sellingPrice).toLocaleString()
+                : "0.00",
+              status: currentStatus,
+            };
+          });
+
+          // 2. Set inventory state
+          setInventory(formattedInventory);
+
+          // 3. Set branch state with explicit fallbacks for the stats
+          setBranch({
+            ...branchData,
+            todaySales: branchData.todaySales || 0,
+            // Ensure _count exists so the UI doesn't break
+            _count: branchData._count || {
+              users: 0,
+              inventory: formattedInventory.length,
+            },
+          });
         } else {
-          setBranch(null); // This triggers "Branch not found"
+          setBranch(null);
+          setInventory([]);
         }
       } catch (err) {
         console.error("Error loading branch details:", err);
         setBranch(null);
+        setInventory([]);
       } finally {
         setLoading(false);
       }
     };
-    fetchDetails();
+
+    if (id) fetchDetails();
   }, [id]);
 
   if (loading)
@@ -165,21 +197,26 @@ export default function BranchDetails() {
           icon={<Users className="text-blue-600" />}
           color="bg-blue-50"
         />
+
         <StatCard
           label="Inventory Items"
-          value={branch._count?.products || 0}
+          // Use the local inventory array length as a fallback
+          value={inventory.length || branch?._count?.inventory || 0}
           icon={<Package className="text-orange-600" />}
           color="bg-orange-50"
         />
+
         <StatCard
           label="Today's Sales"
-          value="KES 0.00"
+          value={`KES ${Number(branch.todaySales || 0).toLocaleString()}`} // Matches the new backend key
           icon={<TrendingUp className="text-green-600" />}
           color="bg-green-50"
         />
+
         <StatCard
           label="Capacity"
-          value={`${branch.maxStaff || 0}%`}
+          // Using a simple calculation: (Current Users / Max Staff) * 100
+          value={`${Math.round(((branch._count?.users || 0) / (branch.maxStaff || 1)) * 100)}%`}
           icon={<CheckCircle className="text-purple-600" />}
           color="bg-purple-50"
         />
@@ -361,33 +398,42 @@ export default function BranchDetails() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {branch.inventory?.length > 0 ? (
-                  branch.inventory.map((item) => (
+                {loading ? (
+                  <tr>
+                    <td colSpan="5" className="px-6 py-16 text-center">
+                      <Loader2
+                        className="animate-spin mx-auto text-orange-500"
+                        size={32}
+                      />
+                      <p className="text-gray-500 mt-2 font-medium">
+                        Loading stock data...
+                      </p>
+                    </td>
+                  </tr>
+                ) : inventory.length > 0 ? (
+                  inventory.map((item) => (
                     <tr
-                      key={item.id}
+                      key={item.dbId}
                       className="hover:bg-orange-50/30 transition-colors"
                     >
                       <td className="px-6 py-4 text-center">
                         <div className="font-bold text-gray-900">
-                          {item.product?.name}
+                          {item.name}
                         </div>
                         <div className="text-[10px] text-gray-500 font-bold uppercase">
-                          {item.product?.brand || "Generic"}
+                          {item.category}
                         </div>
                       </td>
                       <td className="px-6 py-4 text-center">
                         <div className="text-sm font-mono text-blue-600 font-bold">
-                          {item.product?.sku}
-                        </div>
-                        <div className="text-[10px] text-gray-400 font-mono">
-                          {item.product?.barcode}
+                          {item.id} {/* This is the SKU from your controller */}
                         </div>
                       </td>
                       <td className="px-6 py-4 text-center">
                         <div className="flex flex-col items-center">
                           <div className="flex items-center gap-2">
                             <span
-                              className={`text-lg font-bold ${item.stock <= item.minStock ? "text-red-600" : "text-gray-900"}`}
+                              className={`text-lg font-bold ${item.status === "LOW STOCK" ? "text-red-600" : "text-gray-900"}`}
                             >
                               {item.stock}
                             </span>
@@ -395,10 +441,10 @@ export default function BranchDetails() {
                               / min {item.minStock}
                             </span>
                           </div>
-                          {/* Visual stock bar */}
+                          {/* Dynamic visual stock bar */}
                           <div className="w-24 h-1.5 bg-gray-100 rounded-full mt-2 overflow-hidden">
                             <div
-                              className={`h-full rounded-full ${item.stock <= item.minStock ? "bg-red-500" : "bg-green-500"}`}
+                              className={`h-full rounded-full ${item.status === "LOW STOCK" ? "bg-red-500" : "bg-green-500"}`}
                               style={{
                                 width: `${Math.min((item.stock / (item.minStock * 3)) * 100, 100)}%`,
                               }}
@@ -408,22 +454,21 @@ export default function BranchDetails() {
                       </td>
                       <td className="px-6 py-4 text-center">
                         <div className="text-sm font-bold text-gray-900">
-                          {item.product?.sellingPrice.toLocaleString()}
-                        </div>
-                        <div className="text-[10px] text-gray-400 italic">
-                          Markup: {item.product?.markup}%
+                          {item.price}
                         </div>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        {item.stock <= item.minStock ? (
-                          <span className="px-3 py-1 bg-red-100 text-red-700 text-[10px] font-bold rounded-full uppercase tracking-tighter border border-red-200">
-                            Reorder
-                          </span>
-                        ) : (
-                          <span className="px-3 py-1 bg-green-100 text-green-700 text-[10px] font-bold rounded-full uppercase tracking-tighter border border-green-200">
-                            Good
-                          </span>
-                        )}
+                        <span
+                          className={`px-3 py-1 text-[10px] font-bold rounded-full uppercase tracking-tighter border ${
+                            item.status === "LOW STOCK"
+                              ? "bg-red-100 text-red-700 border-red-200"
+                              : item.status === "OUT OF STOCK"
+                                ? "bg-gray-100 text-gray-700 border-gray-200"
+                                : "bg-green-100 text-green-700 border-green-200"
+                          }`}
+                        >
+                          {item.status}
+                        </span>
                       </td>
                     </tr>
                   ))

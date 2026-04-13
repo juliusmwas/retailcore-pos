@@ -129,17 +129,20 @@ export const getBranchById = async (req, res) => {
     const { id } = req.params;
     const { businessId } = req.user;
 
+    // 1. Get today's start time for sales calculation
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
     const branch = await prisma.branch.findFirst({
       where: {
         id: id,
         businessId: businessId,
       },
       include: {
-        // 1. Get the staff (UserBranch)
         users: {
           select: {
             id: true,
-            role: true, // Role exists here!
+            role: true,
             createdAt: true,
             user: {
               select: {
@@ -153,11 +156,32 @@ export const getBranchById = async (req, res) => {
             },
           },
         },
-        // 2. Dashboard counts
+        inventory: {
+          include: {
+            product: {
+              select: {
+                name: true,
+                sku: true,
+                sellingPrice: true,
+                category: { select: { name: true } },
+              },
+            },
+          },
+        },
+        // 2. Fetch sales for today to calculate the total
+        sales: {
+          where: {
+            createdAt: { gte: startOfToday },
+            status: "COMPLETED", // Only count successful sales
+          },
+          select: {
+            totalAmount: true,
+          },
+        },
         _count: {
           select: {
             users: true,
-            inventory: true, // Use 'inventory' because 'products' doesn't exist on Branch
+            inventory: true,
           },
         },
       },
@@ -170,17 +194,21 @@ export const getBranchById = async (req, res) => {
       });
     }
 
+    // 3. Calculate today's sales total on the fly
+    const todaySales = branch.sales.reduce(
+      (acc, sale) => acc + (sale.totalAmount || 0),
+      0,
+    );
+
     res.json({
       status: "success",
-      data: branch,
+      data: {
+        ...branch,
+        todaySales, // We inject this so the frontend can just call branch.todaySales
+      },
     });
   } catch (error) {
     console.error("Fetch branch error:", error);
-
-    if (error.code === "P2023") {
-      return res.status(400).json({ message: "Invalid Branch ID format." });
-    }
-
     res.status(500).json({
       status: "error",
       message: "Internal server error while fetching branch.",

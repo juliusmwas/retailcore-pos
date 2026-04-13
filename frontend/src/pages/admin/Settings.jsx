@@ -23,19 +23,6 @@ export default function Settings() {
     role: "",
   });
 
-  useEffect(() => {
-    const authData = JSON.parse(localStorage.getItem("auth") || "{}");
-
-    if (authData.user) {
-      setProfile({
-        // Look for business name specifically, fall back to empty string if missing
-        fullName: authData.user.business?.name || authData.businessName || "",
-        email: authData.user.email || "",
-        role: authData.user.role || "OWNER",
-      });
-    }
-  }, []);
-
   const handleProfileChange = (e) => {
     const { name, value } = e.target;
     setProfile((prev) => ({
@@ -106,33 +93,67 @@ export default function Settings() {
     const { name, value } = e.target;
     setBusiness((prev) => ({
       ...prev,
+      // Keep as string while typing to allow backspacing,
+      // we convert to Float only when sending to backend.
       [name]: value,
     }));
   };
 
   useEffect(() => {
-    const authData = JSON.parse(localStorage.getItem("auth") || "{}");
+    const fetchLatestSettings = async () => {
+      const authData = JSON.parse(localStorage.getItem("auth") || "{}");
+      const token = authData.token;
 
-    if (authData.user) {
-      // 1. Set the Person's Profile (Admin details)
+      if (!authData.user) return;
+
+      // 1. Set what we have locally first
       setProfile({
-        // We look for fullName on the user object, not the business object
         fullName: authData.user.fullName || "",
         email: authData.user.email || "",
         role: authData.user.role || "OWNER",
       });
 
-      // 2. Set the Business Profile (Store details)
-      if (authData.user.business) {
+      // 2. If business data is missing locally, fetch it from the server
+      if (!authData.user.business?.name) {
+        try {
+          const res = await axios.get(
+            "http://localhost:5000/api/business/current",
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            },
+          );
+
+          if (res.data.success) {
+            const b = res.data.business;
+            setBusiness({
+              name: b.name || "",
+              address: b.address || "",
+              phone: b.phone || "",
+              taxPercent: b.taxPercent || 16,
+              currency: b.currency || "KES",
+            });
+
+            // Sync local storage so it's there next time
+            authData.user.business = b;
+            localStorage.setItem("auth", JSON.stringify(authData));
+          }
+        } catch (err) {
+          console.error("Could not fetch business data:", err);
+        }
+      } else {
+        // Data exists locally, just set it
+        const b = authData.user.business;
         setBusiness({
-          name: authData.user.business.name || "",
-          address: authData.user.business.address || "",
-          phone: authData.user.business.phone || "",
-          taxPercent: authData.user.business.taxPercent || 16,
-          currency: authData.user.business.currency || "KES",
+          name: b.name || "",
+          address: b.address || "",
+          phone: b.phone || "",
+          taxPercent: b.taxPercent || 16,
+          currency: b.currency || "KES",
         });
       }
-    }
+    };
+
+    fetchLatestSettings();
   }, []);
 
   const handleSyncStoreConfig = async () => {
@@ -145,34 +166,38 @@ export default function Settings() {
         return;
       }
 
+      // Convert taxPercent to float right before the API call
+      const payload = {
+        ...business,
+        taxPercent: parseFloat(business.taxPercent) || 0,
+      };
+
       const response = await axios.put(
         "http://localhost:5000/api/business/settings",
-        {
-          name: business.name,
-          address: business.address,
-          phone: business.phone,
-          taxPercent: business.taxPercent,
-          currency: business.currency,
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
+        payload,
+        { headers: { Authorization: `Bearer ${token}` } },
       );
 
       if (response.data.success) {
         alert("Store Identity Updated!");
 
-        // Update local storage so "Prime Supermarket" stays after refresh
         const updatedAuth = { ...authData };
+        // Save the returned business object from backend back to local storage
         updatedAuth.user.business = response.data.business;
         localStorage.setItem("auth", JSON.stringify(updatedAuth));
+
+        // Update state to match what the server saved
+        setBusiness({
+          name: response.data.business.name || "",
+          address: response.data.business.address || "",
+          phone: response.data.business.phone || "",
+          taxPercent: response.data.business.taxPercent || 0,
+          currency: response.data.business.currency || "KES",
+        });
       }
     } catch (error) {
       console.error("Sync Error:", error);
-      alert(
-        error.response?.data?.message ||
-          "Internal Server Error - Check Backend Console",
-      );
+      alert(error.response?.data?.message || "Failed to sync store settings.");
     }
   };
 

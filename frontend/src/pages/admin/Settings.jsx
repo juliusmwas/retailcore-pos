@@ -228,6 +228,56 @@ export default function Settings() {
     },
   ];
 
+  const [passwords, setPasswords] = useState({
+    currentPassword: "",
+    newPassword: "",
+    verifyPassword: "",
+  });
+
+  const handlePasswordChange = (e) => {
+    setPasswords({ ...passwords, [e.target.name]: e.target.value });
+  };
+
+  const handleUpdateSecurity = async () => {
+    // 1. Basic Validation
+    if (!passwords.currentPassword || !passwords.newPassword) {
+      return alert("Please fill in all fields");
+    }
+
+    if (passwords.newPassword !== passwords.verifyPassword) {
+      return alert("New passwords do not match!");
+    }
+
+    try {
+      const authData = JSON.parse(localStorage.getItem("auth") || "{}");
+      const token = authData.token;
+
+      const res = await axios.put(
+        "http://localhost:5000/api/auth/update-password",
+        {
+          currentPassword: passwords.currentPassword,
+          newPassword: passwords.newPassword,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+
+      if (res.data.success) {
+        alert("Password updated successfully!");
+        // Clear fields after success
+        setPasswords({
+          currentPassword: "",
+          newPassword: "",
+          verifyPassword: "",
+        });
+      }
+    } catch (error) {
+      alert(error.response?.data?.message || "Failed to update password");
+      console.error("Security Update Error:", error);
+    }
+  };
+
   return (
     <div className="max-w-6xl mx-auto space-y-8 p-4">
       {/* Header Area */}
@@ -417,7 +467,14 @@ export default function Settings() {
                     Add an extra layer of security to your admin account. Highly
                     recommended.
                   </p>
-                  <button className="mt-3 text-red-600 font-bold text-[10px] uppercase underline">
+                  <button
+                    onClick={() =>
+                      alert(
+                        "This feature is coming soon! Dual verification (Email & Phone OTP) is currently in development.",
+                      )
+                    }
+                    className="mt-3 text-red-600 font-bold text-[10px] uppercase underline"
+                  >
                     Enable 2FA Now
                   </button>
                 </div>
@@ -425,23 +482,35 @@ export default function Settings() {
               <div className="space-y-6">
                 <input
                   type="password"
+                  name="currentPassword"
+                  value={passwords.currentPassword}
+                  onChange={handlePasswordChange}
                   placeholder="Current Password"
                   className="w-full bg-gray-50 border-none rounded-2xl p-4 font-bold text-gray-700"
                 />
                 <div className="grid grid-cols-2 gap-4">
                   <input
                     type="password"
+                    name="newPassword"
+                    value={passwords.newPassword}
+                    onChange={handlePasswordChange}
                     placeholder="New Password"
                     className="w-full bg-gray-50 border-none rounded-2xl p-4 font-bold text-gray-700"
                   />
                   <input
                     type="password"
+                    name="verifyPassword"
+                    value={passwords.verifyPassword}
+                    onChange={handlePasswordChange}
                     placeholder="Verify Password"
                     className="w-full bg-gray-50 border-none rounded-2xl p-4 font-bold text-gray-700"
                   />
                 </div>
               </div>
-              <button className="flex items-center gap-3 bg-gray-900 text-white px-8 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-bold transition-all">
+              <button
+                onClick={handleUpdateSecurity}
+                className="flex items-center gap-3 bg-gray-900 text-white px-8 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-black transition-all"
+              >
                 <Lock size={18} /> Update Security
               </button>
             </div>

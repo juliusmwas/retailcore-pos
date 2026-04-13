@@ -276,19 +276,18 @@ export const updateSettings = async (req, res) => {
 export const updateStaffProfile = async (req, res) => {
   try {
     const { fullName, email } = req.body;
-    const { id, businessId } = req.user; // Provided by your authenticateToken
+    const { id } = req.user; // Use the User ID from the token
 
-    // 1. Update the Business Name (The "Prime Supermarket" part)
-    await prisma.business.update({
-      where: { id: businessId },
-      data: { name: fullName },
-    });
-
-    // 2. Update the User Email
+    // Update the User's personal details (Name and Email)
     const updatedUser = await prisma.user.update({
       where: { id: id },
-      data: { email: email },
-      include: { business: true }, // Include business so frontend gets the fresh name
+      data: {
+        fullName: fullName, // Now correctly updates the Admin's name
+        email: email,
+      },
+      include: {
+        business: true, // Keep this to ensure the frontend has business context
+      },
     });
 
     res.status(200).json({
@@ -297,7 +296,12 @@ export const updateStaffProfile = async (req, res) => {
       user: updatedUser,
     });
   } catch (error) {
-    console.error(error);
+    console.error("Update Profile Error:", error);
+    if (error.code === "P2002") {
+      return res
+        .status(400)
+        .json({ success: false, message: "Email already in use." });
+    }
     res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 };

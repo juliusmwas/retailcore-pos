@@ -49,7 +49,7 @@ export default function Sales() {
       const branchParam =
         branchId && branchId !== "ALL" ? `&branchId=${branchId}` : "";
 
-      const BASE_URL = "http://localhost:5000/api/sale";
+      const BASE_URL = "http://localhost:5000/api/sales";
       const config = { headers: { Authorization: `Bearer ${token}` } };
 
       // Execute both requests in parallel

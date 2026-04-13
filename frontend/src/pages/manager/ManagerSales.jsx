@@ -18,8 +18,9 @@ const ManagerSales = () => {
 
       try {
         setLoading(true);
+        // ManagerSales.jsx inside useEffect
         const response = await axios.get(
-          `http://localhost:5000/api/sales/list?branchId=${user.branchId}`,
+          `http://localhost:5000/api/sales/list?businessId=${user.businessId}&branchId=${user.branchId}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           },

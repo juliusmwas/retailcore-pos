@@ -99,17 +99,23 @@ const ManagerDashboard = () => {
   // 4. Data Fetching
   useEffect(() => {
     const fetchStats = async () => {
-      if (!user?.branchId) return;
+      if (!user?.branchId || !token) return;
 
       try {
         setIsLoading(true);
         const response = await axios.get(
-          `http://localhost:5000/api/reports/manager-summary?branchId=${user.branchId}`,
-          { headers: { Authorization: `Bearer ${token}` } },
+          `http://localhost:5000/api/reports/manager-summary`,
+          {
+            params: { branchId: user.branchId },
+            headers: { Authorization: `Bearer ${token}` }, // Critical for verifyToken
+          },
         );
         setDashboardData(response.data);
       } catch (err) {
-        console.error("Dashboard Load Error:", err);
+        console.error(
+          "Dashboard Load Error:",
+          err.response?.data || err.message,
+        );
       } finally {
         setIsLoading(false);
       }

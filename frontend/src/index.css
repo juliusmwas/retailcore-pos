@@ -1,9 +1,17 @@
 @import "tailwindcss";
 
 @keyframes scan-move {
-  0% { transform: translateY(-70px); opacity: 0.3; }
-  50% { opacity: 1; }
-  100% { transform: translateY(70px); opacity: 0.3; }
+  0% {
+    transform: translateY(-70px);
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(70px);
+    opacity: 0.3;
+  }
 }
 
 .animate-laser {

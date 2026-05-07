@@ -1,12 +1,18 @@
 //import { useNavigate } from "react-router-dom";
+import React, { useState } from "react";
+import { Menu, X } from "lucide-react";
 
 function Index() {
   //const navigate = useNavigate();
 
+  const [isOpen, setIsOpen] = useState(false);
+  const toggleMenu = () => setIsOpen(!isOpen);
+
   return (
     <div className=" w-full shadow-sm bg-blue-100">
-      <div className="bg-blue-100 border-b border-gray-100 w-full">
-        <div className="flex justify-between items-center py-4 px-8 max-w-7xl mx-auto">
+      <nav className="bg-blue-100 border-b border-gray-100 w-full sticky top-0 z-50">
+        <div className="flex justify-between items-center py-4 px-6 md:px-8 max-w-7xl mx-auto">
+          {/* Logo Section */}
           <div className="flex items-center">
             <span className="text-2xl font-bold tracking-tight text-slate-900">
               Retail<span className="text-blue-600">Core</span>
@@ -16,6 +22,7 @@ function Index() {
             </span>
           </div>
 
+          {/* Desktop Nav Links - Hidden on Mobile */}
           <ul className="hidden md:flex gap-10 items-center list-none font-medium text-gray-600 text-[15px]">
             <li className="hover:text-blue-600 cursor-pointer transition-colors">
               Features
@@ -31,16 +38,56 @@ function Index() {
             </li>
           </ul>
 
-          <div className="flex gap-3 items-center">
-            <button className="text-sm text-gray-700 font-semibold px-4 py-2 hover:text-blue-600 transition-colors border-white">
+          {/* Desktop Buttons - Hidden on Mobile */}
+          <div className="hidden md:flex gap-3 items-center">
+            <button className="text-sm text-gray-700 font-semibold px-4 py-2 cursor-pointer hover:text-blue-600 hover:bg-blue-200 transition-colors rounded-lg">
               Login
             </button>
             <button className="text-sm bg-blue-600 px-5 py-2.5 rounded-lg text-white font-semibold hover:bg-blue-700 transition-all shadow-sm hover:shadow-md active:scale-95">
               Get Started
             </button>
           </div>
+
+          {/* Mobile Menu Button - Visible only on small screens */}
+          <div className="md:hidden flex items-center">
+            <button
+              onClick={toggleMenu}
+              className="text-gray-700 hover:text-blue-600 cursor-pointer focus:outline-none"
+            >
+              {isOpen ? <X size={28} /> : <Menu size={28} />}
+            </button>
+          </div>
         </div>
-      </div>
+
+        {/* Mobile Menu Overlay */}
+        {isOpen && (
+          <div className="md:hidden bg-white absolute top-full left-0 w-full border-b border-gray-200 shadow-xl animate-in slide-in-from-top duration-300">
+            <ul className="flex flex-col p-6 gap-4 list-none font-medium text-gray-700">
+              <li className="py-2 border-b border-gray-50 hover:text-blue-600 cursor-pointer hover:bg-blue-100 transition-colors">
+                Features
+              </li>
+              <li className="py-2 border-b border-gray-50 hover:text-blue-600 cursor-pointer hover:bg-blue-100 transition-colors">
+                About Us
+              </li>
+              <li className="py-2 border-b border-gray-50 hover:text-blue-600 cursor-pointer hover:bg-blue-100 transition-colors">
+                How it Works
+              </li>
+              <li className="py-2 border-b border-gray-50 hover:text-blue-600 cursor-pointer hover:bg-blue-100 transition-colors">
+                Contact Us
+              </li>
+
+              <div className="flex flex-col gap-3 mt-4">
+                <button className="w-full text-center text-sm text-gray-700 font-semibold py-3 border border-gray-200 rounded-lg cursor-pointer hover:text-blue-600 hover:bg-blue-100 transition-colors">
+                  Login
+                </button>
+                <button className="w-full text-center text-sm bg-blue-600 py-3 rounded-lg text-white font-semibold shadow-sm cursor-pointer hover:bg-blue-700 transition-all active:scale-95">
+                  Get Started
+                </button>
+              </div>
+            </ul>
+          </div>
+        )}
+      </nav>
 
       <section className="relative w-full overflow-hidden bg-[#eef5ff]">
         <div className="absolute inset-0 bg-gradient-to-b from-[#f3f8ff] via-[#e2eeff] to-[#c7e0ff] opacity-80 pointer-events-none" />
@@ -57,7 +104,7 @@ function Index() {
           </p>
 
           <div className="mt-8">
-            <button className="bg-[#0b65f7] hover:bg-[#0952cb] active:scale-95 text-white font-semibold px-8 py-3.5 rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
+            <button className="bg-[#0b65f7] hover:bg-[#0952cb] active:scale-95 text-white font-semibold px-8 py-3.5 rounded-lg shadow-md hover:shadow-lg cursor-pointer hover:bg-blue-700 transition-all active:scale-95">
               Get Started
             </button>
           </div>

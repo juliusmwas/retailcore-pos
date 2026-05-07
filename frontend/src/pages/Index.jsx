@@ -9,7 +9,7 @@ const HowItWorks = () => {
       title: "Connect & Configure",
       desc: "Build your centralized business foundation in minutes. Onboard multiple branches and register your products once in a global catalog for instant distribution.",
       icon: <Settings className="w-6 h-6 text-blue-600" />,
-      image: "/public/step1-mockup.png", // Ensure these are in your /public folder
+      image: "/step1-mockup.png", // Ensure these are in your /public folder
       accent: "from-blue-500/20 to-transparent",
     },
     {
@@ -17,7 +17,7 @@ const HowItWorks = () => {
       title: "Sell & Serve",
       desc: "Turn any device into a high-speed checkout terminal with instant camera-based barcode scanning. Process M-Pesa, Cash, or Card payments seamlessly.",
       icon: <Zap className="w-6 h-6 text-blue-600" />,
-      image: "/public/step2-mockup.png",
+      image: "/step2-mockup.png",
       accent: "from-blue-600/20 to-transparent",
     },
     {
@@ -25,7 +25,7 @@ const HowItWorks = () => {
       title: "Manage & Scale",
       desc: "Monitor entire business performance in real-time through a centralized analytics dashboard. Effortlessly track stock transfers and maintain total transparency.",
       icon: <TrendingUp className="w-6 h-6 text-blue-600" />,
-      image: "/public/step3-mockup.png",
+      image: "/step3-mockup.png",
       accent: "from-blue-700/20 to-transparent",
     },
   ];
@@ -314,7 +314,7 @@ function Index() {
               {/* The Mockup Wrapper */}
               <div className="overflow-hidden rounded-xl bg-slate-50 border border-slate-200 shadow-inner">
                 <img
-                  src="/public/dashboard-mockup.png"
+                  src="/dashboard-mockup.png"
                   alt="RetailCore POS Admin Dashboard"
                   className="w-full h-auto block object-contain shadow-2xl"
                   loading="eager"
@@ -377,7 +377,7 @@ function Index() {
 
           <div className="group flex items-center justify-center grayscale opacity-40 hover:grayscale-0 hover:opacity-100 transition-all duration-300 cursor-pointer">
             <p className="text-2xl md:text-3xl font-bold text-slate-800 tracking-tighter italic text-blue-900">
-              Walmart<span className="text-orange-400 font-black">*</span>
+              Walmart<span className="text-orange-400 font-bold">*</span>
             </p>
           </div>
         </div>
@@ -487,6 +487,146 @@ function Index() {
       </section>
 
       <FAQ />
+
+      <footer className="bg-[#1a232e] text-slate-300 pt-20 pb-10 px-6 md:px-12">
+        <div className="max-w-7xl mx-auto">
+          {/* Top Section: Newsletter & Links */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 mb-16">
+            {/* Logo & Newsletter Column */}
+            <div className="lg:col-span-4 space-y-8">
+              <div className="text-2xl font-bold text-white tracking-tighter">
+                RETAIL<span className="text-blue-500 uppercase">core pos</span>
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="text-white font-semibold text-lg">
+                  Subscribe to Our Newsletter
+                </h4>
+                <div className="flex max-w-sm bg-slate-100 rounded-2xl p-1.5 shadow-inner">
+                  <input
+                    type="email"
+                    placeholder="Enter your email"
+                    className="bg-transparent border-none focus:ring-0 px-4 py-2 w-full text-slate-900 placeholder:text-slate-500"
+                  />
+                  <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-2 rounded-xl transition-all shadow-md active:scale-95">
+                    Subscribe
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Navigation Links Columns */}
+            <div className="lg:col-span-8 grid grid-cols-2 md:grid-cols-3 gap-8">
+              {/* Quick Links */}
+              <div>
+                <h4 className="text-white font-bold mb-6 underline decoration-blue-500/30 underline-offset-8">
+                  Quick Links
+                </h4>
+                <ul className="space-y-4 text-sm font-medium">
+                  <li>
+                    <a
+                      href="#"
+                      className="hover:text-blue-400 transition-colors"
+                    >
+                      Features
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#"
+                      className="hover:text-blue-400 transition-colors"
+                    >
+                      How it Works
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#"
+                      className="hover:text-blue-400 transition-colors"
+                    >
+                      FAQs
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#"
+                      className="hover:text-blue-400 transition-colors"
+                    >
+                      About Us
+                    </a>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Legal & Privacy */}
+              <div>
+                <h4 className="text-white font-bold mb-6 underline decoration-blue-500/30 underline-offset-8">
+                  Legal & Privacy
+                </h4>
+                <ul className="space-y-4 text-sm font-medium">
+                  <li>
+                    <a
+                      href="#"
+                      className="hover:text-blue-400 transition-colors"
+                    >
+                      Privacy Policy
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#"
+                      className="hover:text-blue-400 transition-colors"
+                    >
+                      Terms of Service
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#"
+                      className="hover:text-blue-400 transition-colors"
+                    >
+                      Audit Policy
+                    </a>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Contact & Support */}
+              <div className="col-span-2 md:col-span-1">
+                <h4 className="text-white font-bold mb-6 underline decoration-blue-500/30 underline-offset-8">
+                  Contact & Support
+                </h4>
+                <ul className="space-y-4 text-sm font-medium">
+                  <li className="flex items-center gap-3">
+                    <span className="opacity-70 text-base">📧</span>
+                    <a
+                      href="mailto:hello@retailcore.co.ke"
+                      className="hover:text-blue-400 truncate"
+                    >
+                      hello@retailcore.co.ke
+                    </a>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <span className="opacity-70 text-base">📞</span>
+                    <span className="whitespace-nowrap">
+                      +254 (0) XXX XXX XXX
+                    </span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <span className="opacity-70 text-base">📍</span>
+                    <span>HQ: Nairobi, Kenya</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* Centered Bottom Copyright Bar */}
+          <div className="pt-10 border-t border-slate-700/50 flex justify-center items-center text-xs font-bold text-slate-500 uppercase tracking-widest text-center w-full">
+            <p>© 2026 RetailCore POS. Built for the future of retail.</p>
+          </div>
+        </div>
+      </footer>
     </div>
 
     /*<div className="min-h-screen flex items-center justify-center bg-gray-100 overflow-hidden">

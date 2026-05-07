@@ -90,42 +90,43 @@ function Index() {
       </nav>
 
       <section className="relative w-full overflow-hidden bg-[#eef5ff]">
+        {/* Background Gradient */}
         <div className="absolute inset-0 bg-gradient-to-b from-[#f3f8ff] via-[#e2eeff] to-[#c7e0ff] opacity-80 pointer-events-none" />
 
+        {/* Content Container - Increased pt-20 for mobile to separate from navbar */}
         <div className="relative max-w-7xl mx-auto px-6 pt-20 md:pt-28 flex flex-col items-center text-center z-10">
-          <h1 className="max-w-4xl text-4xl md:text-6xl font-bold text-slate-800 tracking-tight leading-tight md:leading-[1.15]">
+          {/* Heading: Added leading-relaxed for better readability on small screens */}
+          <h1 className="max-w-4xl text-2xl sm:text-4xl md:text-6xl font-bold text-slate-800 tracking-tight leading-[1.3] md:leading-[1.15]">
             Simplify Sales, Inventory &amp; Payment Effortlessly
           </h1>
 
-          <p className="mt-6 max-w-xl text-base md:text-lg text-slate-600 font-medium leading-relaxed">
+          {/* Subtext: Increased mt-8 to create a clear gap from the heading */}
+          <p className="mt-8 md:mt-6 max-w-xl text-base md:text-lg text-slate-600 font-medium leading-relaxed px-2">
             Everything you need to run your store smoothly{" "}
             <br className="hidden sm:inline" />
             All in one smart platform.
           </p>
 
-          <div className="mt-8">
-            <button className="bg-[#0b65f7] hover:bg-[#0952cb] active:scale-95 text-white font-semibold px-8 py-3.5 rounded-lg shadow-md hover:shadow-lg cursor-pointer hover:bg-blue-700 transition-all active:scale-95">
+          {/* CTA Button: Increased mt-10 to make the action stand out */}
+          <div className="mt-10 md:mt-8 w-full sm:w-auto px-10">
+            <button className="w-full sm:w-auto bg-[#0b65f7] hover:bg-[#0952cb] text-white font-semibold px-8 py-4 rounded-xl shadow-md hover:shadow-lg cursor-pointer transition-all active:scale-95 text-lg">
               Get Started
             </button>
           </div>
 
-          {/* Dashboard Image Container */}
-          <div className="relative mt-16 w-full max-w-6xl mx-auto px-4">
-            <div className="relative rounded-xl border border-white/20 bg-white/10 p-2 shadow-2xl backdrop-blur-md">
+          {/* Dashboard Image Container - Increased mt-20 to prevent it from hugging the button */}
+          <div className="relative mt-20 md:mt-16 w-full max-w-6xl mx-auto px-2 sm:px-4 mb-10">
+            <div className="relative rounded-2xl border border-white/20 bg-white/10 p-2 md:p-3 shadow-2xl backdrop-blur-md">
               {/* The Mockup Wrapper */}
-              <div className="overflow-hidden rounded-lg bg-slate-50 border border-slate-200 shadow-inner">
+              <div className="overflow-hidden rounded-xl bg-slate-50 border border-slate-200 shadow-inner">
                 <img
                   src="/public/dashboard-mockup.png"
                   alt="RetailCore POS Admin Dashboard"
-                  /* Using object-contain ensures the whole image fits.
-           We remove h-full to let the image dictate the height naturally.
-        */
                   className="w-full h-auto block object-contain shadow-2xl"
                   loading="eager"
                 />
               </div>
 
-              {/* Optional: Add a subtle glow behind the mockup to blend it into the blue background */}
               <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl blur opacity-10 -z-10"></div>
             </div>
           </div>

@@ -88,7 +88,6 @@ function Index() {
           </div>
         )}
       </nav>
-
       <section className="relative w-full overflow-hidden bg-[#eef5ff]">
         {/* Background Gradient */}
         <div className="absolute inset-0 bg-gradient-to-b from-[#f3f8ff] via-[#e2eeff] to-[#c7e0ff] opacity-80 pointer-events-none" />
@@ -129,6 +128,65 @@ function Index() {
 
               <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl blur opacity-10 -z-10"></div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Trustee section */}
+      <section className="relative w-full overflow-hidden bg-blue-100 py-16 md:py-24">
+        <p className="text-slate-600 font-medium px-6 text-center text-lg md:text-xl max-w-3xl mx-auto">
+          Trusted by over 20+ businesses around the World
+        </p>
+
+        {/* Container: 
+      - flex-wrap: lets logos drop to the next line on small screens.
+      - gap-8 md:gap-16: gives breathing room that tightens on mobile.
+  */}
+        <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16 mt-12 md:mt-16 px-6 max-w-6xl mx-auto">
+          {/* Individual Trustee Item */}
+          <div className="group flex items-center justify-center grayscale opacity-40 hover:grayscale-0 hover:opacity-100 transition-all duration-300 cursor-pointer">
+            <p className="text-2xl md:text-3xl font-bold text-slate-800 tracking-tighter">
+              FedEx
+            </p>
+          </div>
+
+          <div className="group flex items-center justify-center grayscale opacity-40 hover:grayscale-0 hover:opacity-100 transition-all duration-300 cursor-pointer">
+            <p className="text-2xl md:text-3xl font-bold text-slate-800 tracking-tighter">
+              Carrefour
+            </p>
+          </div>
+
+          <div className="group flex items-center justify-center grayscale opacity-40 hover:grayscale-0 hover:opacity-100 transition-all duration-300 cursor-pointer">
+            <p className="text-2xl md:text-3xl font-bold text-slate-800 tracking-tighter">
+              Jumia
+            </p>
+          </div>
+
+          <div className="group flex items-center justify-center grayscale opacity-40 hover:grayscale-0 hover:opacity-100 transition-all duration-300 cursor-pointer">
+            <p className="text-2xl md:text-3xl font-bold text-slate-800 tracking-tighter">
+              Shopify
+            </p>
+          </div>
+
+          {/* Amazon */}
+          <div className="group flex items-center justify-center grayscale opacity-40 hover:grayscale-0 hover:opacity-100 transition-all duration-300 cursor-pointer">
+            <p className="text-2xl md:text-3xl font-bold text-slate-800 tracking-tighter italic">
+              amazon
+            </p>
+          </div>
+
+          {/* Mastercard */}
+          <div className="group flex items-center justify-center grayscale opacity-40 hover:grayscale-0 hover:opacity-100 transition-all duration-300 cursor-pointer">
+            <p className="text-2xl md:text-3xl font-bold text-slate-800 tracking-tighter">
+              mastercard
+            </p>
+          </div>
+
+          {/* Walmart */}
+          <div className="group flex items-center justify-center grayscale opacity-40 hover:grayscale-0 hover:opacity-100 transition-all duration-300 cursor-pointer">
+            <p className="text-2xl md:text-3xl font-bold text-slate-800 tracking-tighter italic text-blue-900">
+              Walmart<span className="text-orange-400 font-black">*</span>
+            </p>
           </div>
         </div>
       </section>

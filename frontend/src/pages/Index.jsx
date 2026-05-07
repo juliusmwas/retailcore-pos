@@ -168,25 +168,93 @@ function Index() {
             </p>
           </div>
 
-          {/* Amazon */}
           <div className="group flex items-center justify-center grayscale opacity-40 hover:grayscale-0 hover:opacity-100 transition-all duration-300 cursor-pointer">
             <p className="text-2xl md:text-3xl font-bold text-slate-800 tracking-tighter italic">
               amazon
             </p>
           </div>
 
-          {/* Mastercard */}
           <div className="group flex items-center justify-center grayscale opacity-40 hover:grayscale-0 hover:opacity-100 transition-all duration-300 cursor-pointer">
             <p className="text-2xl md:text-3xl font-bold text-slate-800 tracking-tighter">
               mastercard
             </p>
           </div>
 
-          {/* Walmart */}
           <div className="group flex items-center justify-center grayscale opacity-40 hover:grayscale-0 hover:opacity-100 transition-all duration-300 cursor-pointer">
             <p className="text-2xl md:text-3xl font-bold text-slate-800 tracking-tighter italic text-blue-900">
               Walmart<span className="text-orange-400 font-black">*</span>
             </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Features section */}
+      <section className="py-24 md:py-32 bg-[#f8fbff] overflow-hidden">
+        <div className="max-w-7xl mx-auto px-6">
+          {/* Section Header */}
+          <div className="text-center mb-20">
+            <h2 className="text-3xl md:text-5xl font-bold text-slate-900 tracking-tight leading-tight">
+              Unlock Premium Benefit With <br className="hidden md:block" />
+              Our <span className="text-blue-600">Advanced Features.</span>
+            </h2>
+          </div>
+
+          {/* Features Grid: Auto-responsive 1 col on mobile, 2 on tablet, 3 on desktop */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {/* Feature Cards Mapping */}
+            {[
+              {
+                id: "01",
+                title: "Staff Accountability",
+                desc: "You control exactly what your staff can see and do.",
+              },
+              {
+                id: "02",
+                title: "Smart Inventory",
+                desc: "Track every item across all your shops in real-time.",
+              },
+              {
+                id: "03",
+                title: "Flexible-Payments",
+                desc: "Get paid faster with integrated mobile and card payments.",
+              },
+              {
+                id: "04",
+                title: "Quick Insights",
+                desc: "Optimize your strategy by seeing your best products and high-performing staff.",
+              },
+              {
+                id: "05",
+                title: "Total Audit",
+                desc: "Full Accountability. Every single price change or refund is logged forever.",
+              },
+              {
+                id: "06",
+                title: "Resilient Connectivity",
+                desc: "Sell without internet; auto-syncs when online.",
+              },
+            ].map((feature) => (
+              <div
+                key={feature.id}
+                className="group relative bg-white p-8 rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-300"
+              >
+                {/* Animated Number Badge */}
+                <div className="mb-8 w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-blue-200 group-hover:scale-110 transition-transform">
+                  {feature.id}
+                </div>
+
+                {/* Text Content */}
+                <h3 className="text-xl font-bold text-slate-900 mb-4 tracking-tight">
+                  {feature.title}
+                </h3>
+                <p className="text-slate-500 leading-relaxed font-medium">
+                  {feature.desc}
+                </p>
+
+                {/* Subtle Background Glow on Hover */}
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-transparent opacity-0 group-hover:opacity-100 rounded-3xl transition-opacity -z-10" />
+              </div>
+            ))}
           </div>
         </div>
       </section>

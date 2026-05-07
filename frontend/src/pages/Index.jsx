@@ -1,6 +1,6 @@
 //import { useNavigate } from "react-router-dom";
 import React, { useState } from "react";
-import { Menu, X, Settings, Zap, TrendingUp } from "lucide-react";
+import { Menu, X, Settings, Zap, TrendingUp, Plus, Minus } from "lucide-react";
 
 const HowItWorks = () => {
   const steps = [
@@ -87,6 +87,106 @@ const HowItWorks = () => {
                       }}
                     />
                   </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
+const FAQ = () => {
+  const [openIndex, setOpenIndex] = useState(null);
+
+  const faqs = [
+    {
+      question:
+        "How does RetailCore ensure service continuity during internet outages?",
+      answer:
+        "Our offline-first engine allows you to process transactions and scan barcodes without a connection. Once your network is restored, the system automatically synchronizes all data to the cloud in the background.",
+    },
+    {
+      question:
+        "Is it possible to manage multiple branches from a single login?",
+      answer:
+        "Yes. You can manage your entire network—from main to regional branches—through a unified dashboard. Effortlessly track branch-specific inventory, monitor staff activities, and view consolidated sales reports.",
+    },
+    {
+      question: "What are the hardware requirements for barcode scanning?",
+      answer:
+        "RetailCore is designed for hardware flexibility. You can utilize the built-in camera of any smartphone, tablet, or laptop to scan barcodes instantly, eliminating the need for expensive external peripherals.",
+    },
+    {
+      question: "How is M-Pesa integration handled within the system?",
+      answer:
+        "We offer native support for mobile payments. Cashiers can trigger real-time M-Pesa push prompts directly from the checkout interface, ensuring a seamless and verifiable payment flow for every customer.",
+    },
+    {
+      question: "How does the system protect sensitive business data?",
+      answer:
+        "Security is built-in via Role-Based Access Control (RBAC). Owners can define granular permissions for Managers and Cashiers, ensuring staff only access the data necessary for their specific roles while maintaining a full audit log of all actions.",
+    },
+  ];
+
+  const toggleFAQ = (index) => {
+    setOpenIndex(openIndex === index ? null : index);
+  };
+
+  return (
+    <section className="py-24 bg-white px-6">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-16">
+          <h2 className="text-3xl md:text-5xl font-bold text-slate-900 tracking-tight mb-4">
+            Frequently Asked Questions
+          </h2>
+          <p className="text-slate-500 font-medium text-lg">
+            Find quick answers to common queries
+          </p>
+        </div>
+
+        {/* FAQ List */}
+        <div className="space-y-4">
+          {faqs.map((faq, index) => (
+            <div
+              key={index}
+              className={`border rounded-2xl transition-all duration-300 ${
+                openIndex === index
+                  ? "border-blue-200 bg-blue-50/30"
+                  : "border-slate-100 bg-slate-50/50 hover:border-slate-200"
+              }`}
+            >
+              <button
+                onClick={() => toggleFAQ(index)}
+                className="w-full flex items-center justify-between p-6 text-left focus:outline-none"
+              >
+                <span
+                  className={`text-lg font-bold pr-8 ${openIndex === index ? "text-blue-600" : "text-slate-800"}`}
+                >
+                  {faq.question}
+                </span>
+                <div
+                  className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-colors ${openIndex === index ? "bg-blue-600 text-white" : "bg-slate-200 text-slate-600"}`}
+                >
+                  {openIndex === index ? (
+                    <Minus size={18} />
+                  ) : (
+                    <Plus size={18} />
+                  )}
+                </div>
+              </button>
+
+              <div
+                className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                  openIndex === index
+                    ? "max-h-96 opacity-100"
+                    : "max-h-0 opacity-0"
+                }`}
+              >
+                <div className="p-6 pt-0 text-slate-600 leading-relaxed font-medium border-t border-blue-100/50 mt-2">
+                  {faq.answer}
                 </div>
               </div>
             </div>
@@ -355,6 +455,38 @@ function Index() {
       </section>
 
       <HowItWorks />
+
+      <section className="py-20 md:py-32 bg-white px-6">
+        <div className="max-w-6xl mx-auto">
+          {/* Main Banner Container */}
+          <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-t from-[#053ea3] via-[#0b65f7] to-[#0b65f7] px-8 py-16 md:py-24 text-center shadow-2xl">
+            {/* Decorative Background Elements */}
+            <div className="absolute top-0 left-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+            <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-400/20 rounded-full blur-3xl translate-x-1/3 translate-y-1/3" />
+
+            {/* Content */}
+            <div className="relative z-10 max-w-3xl mx-auto">
+              <h2 className="text-3xl md:text-5xl font-bold text-white tracking-tight leading-tight">
+                Upgrade Your Business With Our{" "}
+                <br className="hidden md:block" /> Cutting-Edge POS Solutions!
+              </h2>
+
+              <p className="mt-6 text-blue-100 text-lg md:text-xl font-medium leading-relaxed">
+                Experience the future of transactions! Start today and witness
+                how our POS solution can revolutionize your business.
+              </p>
+
+              <div className="mt-10">
+                <button className="w-full sm:w-auto bg-white text-blue-500 hover:bg-blue-50 cursor-pointer font-bold px-10 py-4 rounded-xl shadow-lg transition-all active:scale-95 text-lg">
+                  Get Started
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <FAQ />
     </div>
 
     /*<div className="min-h-screen flex items-center justify-center bg-gray-100 overflow-hidden">

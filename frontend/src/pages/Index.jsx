@@ -1,6 +1,101 @@
 //import { useNavigate } from "react-router-dom";
 import React, { useState } from "react";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Settings, Zap, TrendingUp } from "lucide-react";
+
+const HowItWorks = () => {
+  const steps = [
+    {
+      id: "01",
+      title: "Connect & Configure",
+      desc: "Build your centralized business foundation in minutes. Onboard multiple branches and register your products once in a global catalog for instant distribution.",
+      icon: <Settings className="w-6 h-6 text-blue-600" />,
+      image: "/public/step1-mockup.png", // Ensure these are in your /public folder
+      accent: "from-blue-500/20 to-transparent",
+    },
+    {
+      id: "02",
+      title: "Sell & Serve",
+      desc: "Turn any device into a high-speed checkout terminal with instant camera-based barcode scanning. Process M-Pesa, Cash, or Card payments seamlessly.",
+      icon: <Zap className="w-6 h-6 text-blue-600" />,
+      image: "/public/step2-mockup.png",
+      accent: "from-blue-600/20 to-transparent",
+    },
+    {
+      id: "03",
+      title: "Manage & Scale",
+      desc: "Monitor entire business performance in real-time through a centralized analytics dashboard. Effortlessly track stock transfers and maintain total transparency.",
+      icon: <TrendingUp className="w-6 h-6 text-blue-600" />,
+      image: "/public/step3-mockup.png",
+      accent: "from-blue-700/20 to-transparent",
+    },
+  ];
+
+  return (
+    <section className="py-24 bg-blue-100 overflow-hidden">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="text-center mb-20 md:mb-32">
+          <h2 className="text-3xl md:text-5xl font-bold text-slate-900 tracking-tight">
+            How It Works
+          </h2>
+          <p className="mt-6 text-slate-600 font-medium max-w-2xl mx-auto text-lg leading-relaxed">
+            From setup to scale get your business running on autopilot with our
+            streamlined onboarding process.
+          </p>
+        </div>
+
+        <div className="space-y-24 md:space-y-40">
+          {steps.map((step, index) => (
+            <div
+              key={step.id}
+              className={`flex flex-col ${index % 2 === 0 ? "md:flex-row" : "md:flex-row-reverse"} items-center gap-12 md:gap-24`}
+            >
+              {/* Text Side */}
+              <div className="flex-1 space-y-6">
+                <div className="inline-flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-white shadow-md flex items-center justify-center border border-slate-100">
+                    {step.icon}
+                  </div>
+                  <span className="text-blue-600 font-bold tracking-widest text-sm uppercase">
+                    Step {step.id}
+                  </span>
+                </div>
+
+                <h3 className="text-2xl md:text-4xl font-bold text-slate-900 tracking-tight">
+                  {step.title}
+                </h3>
+
+                <p className="text-slate-600 text-lg leading-relaxed">
+                  {step.desc}
+                </p>
+              </div>
+
+              {/* Image Side */}
+              <div className="flex-1 relative w-full group">
+                <div
+                  className={`absolute -inset-4 bg-gradient-to-br ${step.accent} blur-2xl rounded-full opacity-50 group-hover:opacity-80 transition-opacity duration-500`}
+                />
+
+                <div className="relative rounded-3xl border border-white/40 bg-white/40 p-2 md:p-3 shadow-2xl backdrop-blur-sm transform group-hover:scale-[1.02] transition-transform duration-500">
+                  <div className="overflow-hidden rounded-2xl bg-slate-100 border border-slate-200 aspect-video flex items-center justify-center">
+                    <img
+                      src={step.image}
+                      alt={step.title}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.src =
+                          "https://via.placeholder.com/600x400?text=Dashboard+Mockup";
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
 
 function Index() {
   //const navigate = useNavigate();
@@ -189,7 +284,7 @@ function Index() {
       </section>
 
       {/* Features section */}
-      <section className="py-24 md:py-32 bg-[#f8fbff] overflow-hidden">
+      <section className="py-24 md:py-32 bg-blue-100 overflow-hidden">
         <div className="max-w-7xl mx-auto px-6">
           {/* Section Header */}
           <div className="text-center mb-20">
@@ -258,6 +353,8 @@ function Index() {
           </div>
         </div>
       </section>
+
+      <HowItWorks />
     </div>
 
     /*<div className="min-h-screen flex items-center justify-center bg-gray-100 overflow-hidden">

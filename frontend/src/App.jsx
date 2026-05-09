@@ -8,6 +8,7 @@ import Login from "./pages/Login";
 import SelectBranch from "./pages/SelectBranch";
 import POS from "./pages/POS";
 import About from "./About";
+import Contact from "./pages/Contact";
 
 // Admin Layout + Pages
 import AdminLayout from "./components/admin/AdminLayout";
@@ -37,6 +38,7 @@ function App() {
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
           <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
 
           {/* 2. SHARED ROUTES (Roles that need to pick a branch) */}
           <Route

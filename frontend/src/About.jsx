@@ -44,94 +44,166 @@ export default function About() {
       */}
       <section className="relative min-h-[90vh] flex items-center pt-20 md:pt-24 pb-20 overflow-hidden bg-[#05070A]">
         <div className="container mx-auto px-6 relative z-10">
-          <div className="max-w-4xl mx-auto md:mx-0">
-            {/* Brand Tagline */}
-            <div className="flex items-center gap-2 md:gap-3 mb-4 md:mb-6">
-              <span className="h-[1px] w-6 md:w-8 bg-blue-500"></span>
-              <span className="text-blue-400 font-mono text-[10px] md:text-xs tracking-[0.2em] md:tracking-[0.3em] uppercase">
-                Next-Gen Inventory Control
-              </span>
-            </div>
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* LEFT COLUMN: Content */}
+            <div className="max-w-4xl">
+              {/* Brand Tagline */}
+              <div className="flex items-center gap-2 md:gap-3 mb-4 md:mb-6">
+                <span className="h-[1px] w-6 md:w-8 bg-blue-500"></span>
+                <span className="text-blue-400 font-mono text-[10px] md:text-xs tracking-[0.2em] md:tracking-[0.3em] uppercase">
+                  Next-Gen Inventory Control
+                </span>
+              </div>
 
-            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black mb-6 md:mb-8 tracking-tighter leading-[0.95] md:leading-[0.9]">
-              Built for <span className="text-blue-500">Retail.</span>
-              <br className="md:block" />
-              Hardened for{" "}
-              <span className="text-slate-500 italic font-serif">Kenya.</span>
-            </h1>
+              <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold mb-6 md:mb-8 tracking-tighter leading-[0.95] md:leading-[0.9] text-white">
+                Built for <span className="text-blue-500">Retail.</span>
+                <br className="md:block" />
+                Hardened for{" "}
+                <span className="text-slate-500 italic font-serif">Kenya.</span>
+              </h1>
 
-            <p className="text-lg md:text-2xl text-slate-400 max-w-2xl leading-relaxed mb-12 md:mb-16">
-              RetailCore is a multi-branch point-of-sale system engineered to
-              solve the real-world complexities of inventory, privacy, and
-              localized payments. We bridge the gap between high-end enterprise
-              power and local market simplicity.
-            </p>
+              <p className="text-lg md:text-2xl text-slate-400 max-w-2xl leading-relaxed mb-12 md:mb-16">
+                RetailCore is a multi-branch point-of-sale system engineered to
+                solve the real-world complexities of inventory, privacy, and
+                localized payments. We bridge the gap between high-end
+                enterprise power and local market simplicity.
+              </p>
 
-            {/* REFINED SOCIAL PROOF & STATUS BAR */}
-            {/* 
-                Responsive Notes:
-                - flex-wrap gap-8 adjusts automatically.
-                - Stack sm:block ensures the text aligns on larger screens.
-                - md:block h-10 w-[1px] creates a separator on desktop only.
-                - Padding, gap and text sizes adjust (px-4, py-2, gap-2, text-sm).
-            */}
-            <div className="flex flex-wrap gap-6 md:gap-8 items-center border-t border-white/5 pt-6 md:pt-8">
-              <div className="flex items-center gap-3 md:gap-4">
-                {/* Avatar Stack */}
-                <div className="flex -space-x-3 overflow-hidden">
-                  {[
-                    {
-                      alt: "Agrovet Partner",
-                      src: "https://images.unsplash.com/photo-1592982537447-7440770cbfc9?auto=format&fit=crop&q=80&w=100",
-                    },
-                    {
-                      alt: "Boutique Owner",
-                      src: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100",
-                    },
-                    {
-                      alt: "Electronics Retail",
-                      src: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=100",
-                    },
-                  ].map((user, i) => (
-                    <div
-                      key={i}
-                      className="relative inline-block w-10 h-10 md:w-12 md:h-12 rounded-full border-2 border-[#05070A] bg-slate-800 transition-transform hover:translate-y-[-4px] hover:z-20"
-                    >
-                      <img
-                        className="h-full w-full rounded-full object-cover grayscale hover:grayscale-0 transition-all"
-                        src={user.src}
-                        alt={user.alt}
-                      />
+              {/* REFINED SOCIAL PROOF & STATUS BAR */}
+              <div className="flex flex-wrap gap-6 md:gap-8 items-center border-t border-white/5 pt-6 md:pt-8">
+                <div className="flex items-center gap-3 md:gap-4">
+                  {/* Avatar Stack */}
+                  <div className="flex -space-x-3 overflow-hidden">
+                    {[
+                      {
+                        alt: "Agrovet Partner",
+                        src: "https://images.unsplash.com/photo-1592982537447-7440770cbfc9?auto=format&fit=crop&q=80&w=100",
+                      },
+                      {
+                        alt: "Boutique Owner",
+                        src: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100",
+                      },
+                      {
+                        alt: "Electronics Retail",
+                        src: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=100",
+                      },
+                    ].map((user, i) => (
+                      <div
+                        key={i}
+                        className="relative inline-block w-10 h-10 md:w-12 md:h-12 rounded-full border-2 border-[#05070A] bg-slate-800 transition-transform hover:translate-y-[-4px] hover:z-20"
+                      >
+                        <img
+                          className="h-full w-full rounded-full object-cover grayscale hover:grayscale-0 transition-all"
+                          src={user.src}
+                          alt={user.alt}
+                        />
+                      </div>
+                    ))}
+                    <div className="flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-full border-2 border-[#05070A] bg-blue-600 text-[10px] md:text-[11px] font-bold tracking-tighter text-white z-10 shadow-lg">
+                      +10
                     </div>
-                  ))}
-                  {/* Dynamic Count Indicator */}
-                  <div className="flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-full border-2 border-[#05070A] bg-blue-600 text-[10px] md:text-[11px] font-bold tracking-tighter text-white z-10 shadow-lg">
-                    +10
+                  </div>
+
+                  <div>
+                    <p className="text-[9px] md:text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-none mb-1">
+                      Active Installs
+                    </p>
+                    <p className="text-xs md:text-sm font-mono text-white tracking-tighter">
+                      Central Region
+                    </p>
                   </div>
                 </div>
 
-                <div className="sm:block">
-                  <p className="text-[9px] md:text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-none mb-1">
-                    Active Installs
-                  </p>
-                  <p className="text-xs md:text-sm font-mono text-white">
-                    Central Region
+                <div className="hidden md:block h-10 w-[1px] bg-white/10"></div>
+
+                {/* Live System Status */}
+                <div className="flex items-center gap-2 md:gap-3 px-4 py-2 md:px-5 md:py-2.5 bg-blue-500/5 border border-blue-500/10 rounded-full">
+                  <div className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                  </div>
+                  <p className="text-[10px] md:text-xs font-mono text-blue-400 tracking-[0.1em] md:tracking-[0.2em] uppercase">
+                    // Production Ready
                   </p>
                 </div>
               </div>
+            </div>
 
-              {/* Desktop Separator */}
-              <div className="hidden md:block h-10 w-[1px] bg-white/10"></div>
+            {/* RIGHT COLUMN: The Visual Anchor (System Preview) */}
+            <div className="hidden lg:flex relative justify-center items-center">
+              {/* Decorative Background Glow for the Card */}
+              <div className="absolute w-[500px] h-[500px] bg-blue-600/10 blur-[100px] rounded-full"></div>
 
-              {/* Live System Status */}
-              <div className="flex items-center gap-2 md:gap-3 px-4 py-2 md:px-5 md:py-2.5 bg-blue-500/5 border border-blue-500/10 rounded-full">
-                <div className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+              <div className="relative w-full max-w-md bg-slate-900/40 backdrop-blur-3xl border border-white/10 rounded-[2rem] p-8 shadow-2xl overflow-hidden group hover:border-blue-500/30 transition-colors duration-700">
+                {/* Dashboard Header */}
+                <div className="flex justify-between items-center mb-10">
+                  <div>
+                    <div className="h-1 w-8 bg-blue-500 mb-2 rounded-full"></div>
+                    <h4 className="text-white font-bold text-xl tracking-tight">
+                      Branch Node 04
+                    </h4>
+                    <p className="text-slate-500 font-mono text-[10px] uppercase tracking-widest">
+                      Nairobi CBD Terminal
+                    </p>
+                  </div>
+                  <div className="px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-md">
+                    <span className="text-[10px] font-bold text-green-500 uppercase">
+                      Synced
+                    </span>
+                  </div>
                 </div>
-                <p className="text-[10px] md:text-xs font-mono text-blue-400 tracking-[0.1em] md:tracking-[0.2em] uppercase">
-                  // Production Ready
-                </p>
+
+                {/* Activity Bars */}
+                <div className="space-y-6">
+                  {[
+                    {
+                      label: "Inventory Velocity",
+                      val: "High",
+                      width: "w-[85%]",
+                      color: "bg-blue-500",
+                    },
+                    {
+                      label: "M-Pesa API Latency",
+                      val: "14ms",
+                      width: "w-[92%]",
+                      color: "bg-cyan-400",
+                    },
+                    {
+                      label: "Database Health",
+                      val: "99.9%",
+                      width: "w-[99%]",
+                      color: "bg-emerald-500",
+                    },
+                  ].map((metric, i) => (
+                    <div key={i} className="space-y-2">
+                      <div className="flex justify-between items-end">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                          {metric.label}
+                        </span>
+                        <span className="text-xs font-mono text-white">
+                          {metric.val}
+                        </span>
+                      </div>
+                      <div className="h-[2px] w-full bg-white/5 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full ${metric.color} ${metric.width} rounded-full`}
+                        ></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Terminal Footer Snippet */}
+                <div className="mt-10 pt-6 border-t border-white/5 font-mono text-[10px] text-slate-500 space-y-1">
+                  <p className="text-blue-500/60 font-bold">
+                    &gt; Initializing local_sync.sh
+                  </p>
+                  <p>&gt; Encrypting branch_payload... DONE</p>
+                  <p>
+                    &gt; Status:{" "}
+                    <span className="text-white">Active Operational</span>
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -140,7 +212,7 @@ export default function About() {
         {/* Ambient Background Elements */}
         <div className="absolute top-1/4 right-0 w-[400px] md:w-[600px] h-[400px] md:h-[600px] bg-blue-600/5 blur-[100px] md:blur-[120px] rounded-full animate-pulse"></div>
         <div
-          className="absolute inset-0 opacity-[0.03]"
+          className="absolute inset-0 opacity-[0.03] pointer-events-none"
           style={{
             backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
           }}

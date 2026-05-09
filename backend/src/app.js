@@ -12,36 +12,23 @@ import businessRoutes from "./routes/business.routes.js";
 
 const app = express();
 
-// 1. CONFIGURE CORS
-// This handles the standard CORS handshake
+// 1. DYNAMIC ORIGIN
+// We use process.env.FRONTEND_URL. If it's not set, we fall back to localhost.
+const allowedOrigin = process.env.FRONTEND_URL || "http://localhost:5173";
+
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: allowedOrigin,
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
 
-// 2. CUSTOM CORS OVERRIDE & PREFLIGHT
-// This ensures the browser definitely sees the correct headers
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "http://localhost:5173");
-  res.header("Access-Control-Allow-Credentials", "true");
-  res.header(
-    "Access-Control-Allow-Methods",
-    "GET, POST, PUT, DELETE, PATCH, OPTIONS",
-  );
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(200);
-  }
-  next();
-});
-
-// 3. MIDDLEWARE
+// 2. MIDDLEWARE
 app.use(express.json());
 
-// 4. ROUTES
+// 3. ROUTES
 app.use("/api/branches", branchRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/dashboard", dashboardRoutes);
@@ -53,7 +40,7 @@ app.use("/api/inventory", inventoryRoutes);
 app.use("/api/business", businessRoutes);
 
 app.get("/", (req, res) => {
-  res.send("Backend is running!");
+  res.send("RetailCore POS Backend is running!");
 });
 
 export default app;

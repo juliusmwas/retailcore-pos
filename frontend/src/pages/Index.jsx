@@ -31,7 +31,7 @@ const HowItWorks = () => {
   ];
 
   return (
-    <section className="py-24 bg-blue-100 overflow-hidden">
+    <section className="py-24 bg-blue-100 overflow-hidden" id="how-it-works">
       <div className="max-w-7xl mx-auto px-6">
         <div className="text-center mb-20 md:mb-32">
           <h2 className="text-3xl md:text-5xl font-bold text-slate-900 tracking-tight">
@@ -220,16 +220,16 @@ function Index() {
           {/* Desktop Nav Links - Hidden on Mobile */}
           <ul className="hidden md:flex gap-10 items-center list-none font-medium text-gray-600 text-[15px]">
             <li className="hover:text-blue-600 cursor-pointer transition-colors">
-              Features
+              <a href="#features">Features</a>
             </li>
             <li className="hover:text-blue-600 cursor-pointer transition-colors">
-              About Us
+              <a href="/about">About Us</a>
             </li>
             <li className="hover:text-blue-600 cursor-pointer transition-colors">
-              How it Works
+              <a href="#how-it-works">How it Works</a>
             </li>
             <li className="hover:text-blue-600 cursor-pointer transition-colors">
-              Contact Us
+              <a href="/contact">Contact Us</a>
             </li>
           </ul>
 
@@ -259,16 +259,16 @@ function Index() {
           <div className="md:hidden bg-white absolute top-full left-0 w-full border-b border-gray-200 shadow-xl animate-in slide-in-from-top duration-300">
             <ul className="flex flex-col p-6 gap-4 list-none font-medium text-gray-700">
               <li className="py-2 border-b border-gray-50 hover:text-blue-600 cursor-pointer hover:bg-blue-100 transition-colors">
-                Features
+                <a href="#features">Features</a>
               </li>
               <li className="py-2 border-b border-gray-50 hover:text-blue-600 cursor-pointer hover:bg-blue-100 transition-colors">
-                About Us
+                <a href="/about">About Us</a>
               </li>
               <li className="py-2 border-b border-gray-50 hover:text-blue-600 cursor-pointer hover:bg-blue-100 transition-colors">
-                How it Works
+                <a href="#how-it-works">How it Works</a>
               </li>
               <li className="py-2 border-b border-gray-50 hover:text-blue-600 cursor-pointer hover:bg-blue-100 transition-colors">
-                Contact Us
+                <a href="/contact">Contact Us</a>
               </li>
 
               <div className="flex flex-col gap-3 mt-4">
@@ -384,7 +384,10 @@ function Index() {
       </section>
 
       {/* Features section */}
-      <section className="py-24 md:py-32 bg-blue-100 overflow-hidden">
+      <section
+        className="py-24 md:py-32 bg-blue-100 overflow-hidden"
+        id="features"
+      >
         <div className="max-w-7xl mx-auto px-6">
           {/* Section Header */}
           <div className="text-center mb-20">
@@ -456,7 +459,7 @@ function Index() {
 
       <HowItWorks />
 
-      <section className="py-20 md:py-32 bg-white px-6">
+      <section className="py-20 md:py-32 bg-white px-6" id="contact">
         <div className="max-w-6xl mx-auto">
           {/* Main Banner Container */}
           <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-t from-[#053ea3] via-[#0b65f7] to-[#0b65f7] px-8 py-16 md:py-24 text-center shadow-2xl">
@@ -525,7 +528,7 @@ function Index() {
                 <ul className="space-y-4 text-sm font-medium">
                   <li>
                     <a
-                      href="#"
+                      href="#features"
                       className="hover:text-blue-400 transition-colors"
                     >
                       Features
@@ -533,7 +536,7 @@ function Index() {
                   </li>
                   <li>
                     <a
-                      href="#"
+                      href="#how-it-works"
                       className="hover:text-blue-400 transition-colors"
                     >
                       How it Works
@@ -541,18 +544,18 @@ function Index() {
                   </li>
                   <li>
                     <a
-                      href="#"
+                      href="/about"
                       className="hover:text-blue-400 transition-colors"
                     >
-                      FAQs
+                      About Us
                     </a>
                   </li>
                   <li>
                     <a
-                      href="#"
+                      href="/contact"
                       className="hover:text-blue-400 transition-colors"
                     >
-                      About Us
+                      Contact Us
                     </a>
                   </li>
                 </ul>
@@ -566,7 +569,7 @@ function Index() {
                 <ul className="space-y-4 text-sm font-medium">
                   <li>
                     <a
-                      href="#"
+                      href="/privacy-policy"
                       className="hover:text-blue-400 transition-colors"
                     >
                       Privacy Policy
@@ -574,7 +577,7 @@ function Index() {
                   </li>
                   <li>
                     <a
-                      href="#"
+                      href="/terms-of-service"
                       className="hover:text-blue-400 transition-colors"
                     >
                       Terms of Service
@@ -582,7 +585,7 @@ function Index() {
                   </li>
                   <li>
                     <a
-                      href="#"
+                      href="/audit-policy"
                       className="hover:text-blue-400 transition-colors"
                     >
                       Audit Policy
@@ -608,9 +611,7 @@ function Index() {
                   </li>
                   <li className="flex items-center gap-3">
                     <span className="opacity-70 text-base">📞</span>
-                    <span className="whitespace-nowrap">
-                      +254 (0) XXX XXX XXX
-                    </span>
+                    <span className="whitespace-nowrap">+254707759667</span>
                   </li>
                   <li className="flex items-center gap-3">
                     <span className="opacity-70 text-base">📍</span>

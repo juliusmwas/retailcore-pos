@@ -17,3 +17,7 @@
 .animate-laser {
   animation: scan-move 2s ease-in-out infinite;
 }
+
+html {
+  scroll-behavior: smooth;
+}

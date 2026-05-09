@@ -631,8 +631,12 @@ function Index() {
         </div>
       </footer>
     </div>
+  );
+}
 
-    /*<div className="min-h-screen flex items-center justify-center bg-gray-100 overflow-hidden">
+export default Index;
+
+/*<div className="min-h-screen flex items-center justify-center bg-gray-100 overflow-hidden">
       <div className="flex flex-col items-center animate-in fade-in duration-1000">
         <img src="/public/lg.png" alt="Logo" className="w-96 h-auto block" />
         <button
@@ -643,7 +647,3 @@ function Index() {
         </button>
       </div>
     </div>*/
-  );
-}
-
-export default Index;

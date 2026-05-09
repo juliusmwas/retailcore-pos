@@ -1,4 +1,4 @@
-//import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 
 import React, { useState } from "react";
@@ -200,7 +200,7 @@ const FAQ = () => {
 };
 
 function Index() {
-  //const navigate = useNavigate();
+  const navigate = useNavigate();
 
   const [isOpen, setIsOpen] = useState(false);
   const toggleMenu = () => setIsOpen(!isOpen);
@@ -237,10 +237,16 @@ function Index() {
 
           {/* Desktop Buttons - Hidden on Mobile */}
           <div className="hidden md:flex gap-3 items-center">
-            <button className="text-sm text-gray-700 font-semibold px-4 py-2 cursor-pointer hover:text-blue-600 hover:bg-blue-200 transition-colors rounded-lg">
+            <button
+              onClick={() => navigate("/login")}
+              className="text-sm text-gray-700 font-semibold px-4 py-2 cursor-pointer hover:text-blue-600 hover:bg-blue-200 transition-colors rounded-lg"
+            >
               Login
             </button>
-            <button className="text-sm bg-blue-600 px-5 py-2.5 rounded-lg text-white font-semibold hover:bg-blue-700 transition-all shadow-sm hover:shadow-md active:scale-95">
+            <button
+              onClick={() => navigate("/login")}
+              className="text-sm bg-blue-600 px-5 py-2.5 rounded-lg text-white font-semibold hover:bg-blue-700 transition-all shadow-sm hover:shadow-md active:scale-95"
+            >
               Get Started
             </button>
           </div>
@@ -274,10 +280,16 @@ function Index() {
               </li>
 
               <div className="flex flex-col gap-3 mt-4">
-                <button className="w-full text-center text-sm text-gray-700 font-semibold py-3 border border-gray-200 rounded-lg cursor-pointer hover:text-blue-600 hover:bg-blue-100 transition-colors">
+                <button
+                  onClick={() => navigate("/login")}
+                  className="w-full text-center text-sm text-gray-700 font-semibold py-3 border border-gray-200 rounded-lg cursor-pointer hover:text-blue-600 hover:bg-blue-100 transition-colors"
+                >
                   Login
                 </button>
-                <button className="w-full text-center text-sm bg-blue-600 py-3 rounded-lg text-white font-semibold shadow-sm cursor-pointer hover:bg-blue-700 transition-all active:scale-95">
+                <button
+                  onClick={() => navigate("/login")}
+                  className="w-full text-center text-sm bg-blue-600 py-3 rounded-lg text-white font-semibold shadow-sm cursor-pointer hover:bg-blue-700 transition-all active:scale-95"
+                >
                   Get Started
                 </button>
               </div>
@@ -305,7 +317,10 @@ function Index() {
 
           {/* CTA Button: Increased mt-10 to make the action stand out */}
           <div className="mt-10 md:mt-8 w-full sm:w-auto px-10">
-            <button className="w-full sm:w-auto bg-[#0b65f7] hover:bg-[#0952cb] text-white font-semibold px-8 py-4 rounded-xl shadow-md hover:shadow-lg cursor-pointer transition-all active:scale-95 text-lg">
+            <button
+              onClick={() => navigate("/login")}
+              className="w-full sm:w-auto bg-[#0b65f7] hover:bg-[#0952cb] text-white font-semibold px-8 py-4 rounded-xl shadow-md hover:shadow-lg cursor-pointer transition-all active:scale-95 text-lg"
+            >
               Get Started
             </button>
           </div>
@@ -482,7 +497,10 @@ function Index() {
               </p>
 
               <div className="mt-10">
-                <button className="w-full sm:w-auto bg-white text-blue-500 hover:bg-blue-50 cursor-pointer font-bold px-10 py-4 rounded-xl shadow-lg transition-all active:scale-95 text-lg">
+                <button
+                  onClick={() => navigate("/login")}
+                  className="w-full sm:w-auto bg-white text-blue-500 hover:bg-blue-50 cursor-pointer font-bold px-10 py-4 rounded-xl shadow-lg transition-all active:scale-95 text-lg"
+                >
                   Get Started
                 </button>
               </div>

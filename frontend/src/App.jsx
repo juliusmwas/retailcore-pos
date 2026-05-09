@@ -28,6 +28,7 @@ import ManagerSales from "./pages/manager/ManagerSales";
 import ManagerInventory from "./pages/manager/ManagerInventory";
 import ManagerStaff from "./pages/manager/ManagerStaff";
 import ManagerSettings from "./pages/manager/ManagerSettings";
+import PrivacyPolicy from "./pages/Privacy-policy";
 
 function App() {
   return (
@@ -39,6 +40,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
 
           {/* 2. SHARED ROUTES (Roles that need to pick a branch) */}
           <Route

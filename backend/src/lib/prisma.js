@@ -7,22 +7,34 @@ dotenv.config();
 
 const { PrismaClient } = pkg;
 
-// 1. Create the Postgres pool (The connection lives here)
+// 1. Create the Postgres pool
+// We add production-grade settings here to handle cloud hosting better
 const pool = new pg.Pool({
   connectionString: process.env.DATABASE_URL,
+  max: 10, // Maximum number of clients in the pool
+  idleTimeoutMillis: 30000, // How long a client is allowed to sit idle before being closed
+  connectionTimeoutMillis: 2000, // How long to wait for a connection before timing out
 });
 
 // 2. Setup the adapter
 const adapter = new PrismaPg(pool);
 
-// 3. Instantiate PrismaClient (Just pass the adapter)
-// We remove the 'datasource' block entirely to satisfy Prisma 7
-export const prisma = new PrismaClient({ 
-  adapter 
+// 3. Instantiate PrismaClient
+export const prisma = new PrismaClient({
+  adapter,
 });
 
-// Test connection
-pool.on('error', (err) => {
-  console.error('Unexpected error on idle client', err);
-  process.exit(-1);
+// 4. Enhanced Error Handling
+// This helps you see exactly what goes wrong if the database disconnects
+pool.on("error", (err) => {
+  console.error("❌ RetailCore Database Pool Error:", err.message);
+});
+
+// A small test to log when the connection is successful (only once)
+pool.connect((err, client, release) => {
+  if (err) {
+    return console.error("❌ Error acquiring client", err.stack);
+  }
+  console.log("✅ Connected to PostgreSQL successfully!");
+  release();
 });

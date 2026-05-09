@@ -1,11 +1,17 @@
-import { defineConfig } from "prisma/config";
-import dotenv from "dotenv";
-
-dotenv.config();
+import "dotenv/config";
+import { defineConfig, env } from "prisma/config";
 
 export default defineConfig({
+  // 1. Tell Prisma where your schema is
+  schema: "./prisma/schema.prisma",
+
+  // 2. Configure the datasource for the CLI (Migrations, Introspection)
   datasource: {
-    // Prisma 7 looks for the connection string here for migrations
-    url: process.env.DATABASE_URL 
-  }
+    url: env("DATABASE_URL"),
+  },
+
+  // 3. (Optional) Helpful if you want to name your migrations folder
+  migrations: {
+    path: "prisma/migrations",
+  },
 });

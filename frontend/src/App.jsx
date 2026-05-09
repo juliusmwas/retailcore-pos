@@ -30,6 +30,7 @@ import ManagerStaff from "./pages/manager/ManagerStaff";
 import ManagerSettings from "./pages/manager/ManagerSettings";
 import PrivacyPolicy from "./pages/Privacy-policy";
 import TermsOfService from "./pages/Terms-of-service";
+import AuditPolicy from "./pages/Audit-policy";
 
 function App() {
   return (
@@ -43,6 +44,7 @@ function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms-of-service" element={<TermsOfService />} />
+          <Route path="/audit-policy" element={<AuditPolicy />} />
 
           {/* 2. SHARED ROUTES (Roles that need to pick a branch) */}
           <Route

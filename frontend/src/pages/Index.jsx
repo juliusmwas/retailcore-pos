@@ -1,4 +1,6 @@
 //import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
+
 import React, { useState } from "react";
 import { Menu, X, Settings, Zap, TrendingUp, Plus, Minus } from "lucide-react";
 
@@ -543,12 +545,12 @@ function Index() {
                     </a>
                   </li>
                   <li>
-                    <a
-                      href="/about"
+                    <Link
+                      to="/about"
                       className="hover:text-blue-400 transition-colors"
                     >
                       About Us
-                    </a>
+                    </Link>
                   </li>
                   <li>
                     <a

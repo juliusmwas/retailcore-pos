@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import SelectBranch from "./pages/SelectBranch";
 import POS from "./pages/POS";
+import About from "./About";
 
 // Admin Layout + Pages
 import AdminLayout from "./components/admin/AdminLayout";
@@ -21,7 +22,7 @@ import BranchDetails from "./pages/branches/BranchDetails";
 
 // Manager Pages (Add ManagerLayout here later if you create one)
 import ManagerDashboard from "./pages/manager/ManagerDashboard";
-import ManagerLayout from "./components/manager/ManagerLayout"; 
+import ManagerLayout from "./components/manager/ManagerLayout";
 import ManagerSales from "./pages/manager/ManagerSales";
 import ManagerInventory from "./pages/manager/ManagerInventory";
 import ManagerStaff from "./pages/manager/ManagerStaff";
@@ -35,6 +36,7 @@ function App() {
           {/* 1. PUBLIC ROUTES */}
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/about" element={<About />} />
 
           {/* 2. SHARED ROUTES (Roles that need to pick a branch) */}
           <Route
@@ -81,16 +83,16 @@ function App() {
             path="/manager"
             element={
               <ProtectedRoute roles={["MANAGER", "OWNER"]}>
-                <ManagerLayout /> 
+                <ManagerLayout />
               </ProtectedRoute>
             }
           >
             <Route path="dashboard" element={<ManagerDashboard />} />
             {/* We will add these pages next: */}
-            <Route path="sales" element={<ManagerSales />} /> 
-            <Route path="inventory" element={<ManagerInventory />} /> 
-            <Route path="staff" element={<ManagerStaff />} /> 
-            <Route path="settings" element={<ManagerSettings />} /> 
+            <Route path="sales" element={<ManagerSales />} />
+            <Route path="inventory" element={<ManagerInventory />} />
+            <Route path="staff" element={<ManagerStaff />} />
+            <Route path="settings" element={<ManagerSettings />} />
           </Route>
 
           {/* Fallback */}

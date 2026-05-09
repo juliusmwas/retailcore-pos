@@ -33,8 +33,8 @@ export default function PrivacyPolicy() {
 
   return (
     <div className="bg-white min-h-screen text-slate-900 font-sans antialiased">
-      {/* HEADER */}
-      <nav className="max-w-4xl mx-auto px-6 py-12 flex justify-between items-center">
+      {/* HEADER - Responsive padding and flex behavior */}
+      <nav className="max-w-4xl mx-auto px-4 sm:px-6 py-8 md:py-12 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <a
           href="/"
           className="flex items-center gap-2 group text-slate-500 hover:text-blue-600 transition-colors"
@@ -45,35 +45,42 @@ export default function PrivacyPolicy() {
           />
           <span className="font-bold tracking-tight">Back to Home</span>
         </a>
-        <span className="text-sm font-medium text-slate-400">
+        <span className="text-xs sm:text-sm font-medium text-slate-400">
           Last Updated: {lastUpdated}
         </span>
       </nav>
 
-      <main className="max-w-4xl mx-auto px-6 pb-24">
-        <header className="mb-16">
-          <h1 className="text-5xl md:text-6xl font-bold tracking-tighter mb-6">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 pb-24">
+        {/* HERO SECTION - Dynamic text sizing */}
+        <header className="mb-12 md:mb-16">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tighter mb-6">
             Privacy <span className="text-blue-600">Policy.</span>
           </h1>
-          <p className="text-xl text-slate-500 leading-relaxed max-w-2xl">
+          <p className="text-lg sm:text-xl text-slate-500 leading-relaxed max-w-2xl">
             At RetailCore, we treat your business data with the same precision
             as your inventory. Learn how we protect your information in a
             multi-branch retail environment.
           </p>
         </header>
 
-        <div className="space-y-12">
+        {/* POLICY SECTIONS - Optimized Grid */}
+        <div className="space-y-10 md:space-y-12">
           {sections.map((section, index) => (
             <section
               key={index}
-              className="grid grid-cols-1 md:grid-cols-3 gap-8 border-t border-slate-100 pt-12"
+              className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 border-t border-slate-100 pt-10 md:pt-12"
             >
-              <div className="flex items-center gap-4 md:items-start">
-                <div className="p-3 bg-blue-50 rounded-2xl">{section.icon}</div>
-                <h2 className="text-xl font-bold">{section.title}</h2>
+              <div className="flex flex-row md:flex-col items-center md:items-start gap-4">
+                <div className="p-3 bg-blue-50 rounded-2xl shrink-0">
+                  {/* Icon size remains constant for visual balance */}
+                  {section.icon}
+                </div>
+                <h2 className="text-xl font-bold leading-tight">
+                  {section.title}
+                </h2>
               </div>
               <div className="md:col-span-2">
-                <p className="text-slate-600 leading-relaxed text-lg">
+                <p className="text-slate-600 leading-relaxed text-base sm:text-lg">
                   {section.content}
                 </p>
               </div>
@@ -81,26 +88,27 @@ export default function PrivacyPolicy() {
           ))}
         </div>
 
-        {/* CONTACT CALLOUT */}
-        <div className="mt-24 p-8 md:p-12 bg-slate-50 rounded-[2.5rem] border border-slate-100 text-center">
-          <h3 className="text-2xl font-bold mb-4">
+        {/* CONTACT CALLOUT - Responsive border-radius and padding */}
+        <div className="mt-16 md:mt-24 p-6 sm:p-10 md:p-12 bg-slate-50 rounded-[1.5rem] sm:rounded-[2.5rem] border border-slate-100 text-center">
+          <h3 className="text-xl sm:text-2xl font-bold mb-4">
             Questions about your data?
           </h3>
-          <p className="text-slate-500 mb-8 max-w-md mx-auto">
+          <p className="text-slate-500 mb-8 text-sm sm:text-base max-w-md mx-auto">
             Our data protection officer is available to discuss our security
             protocols or compliance details.
           </p>
           <a
             href="mailto:privacy@retailcore.co.ke"
-            className="inline-block bg-white border border-slate-200 px-8 py-4 rounded-xl font-bold hover:border-blue-500 hover:text-blue-600 transition-all"
+            className="inline-block w-full sm:w-auto bg-white border border-slate-200 px-8 py-4 rounded-xl font-bold hover:border-blue-500 hover:text-blue-600 transition-all text-center"
           >
             Contact Privacy Team
           </a>
         </div>
       </main>
 
-      <footer className="max-w-4xl mx-auto px-6 py-12 border-t border-slate-100 text-center">
-        <p className="text-sm text-slate-400 font-medium">
+      {/* FOOTER - Center-aligned for mobile, elegant spacing */}
+      <footer className="max-w-4xl mx-auto px-6 py-8 md:py-12 border-t border-slate-100 text-center">
+        <p className="text-xs sm:text-sm text-slate-400 font-medium">
           © 2026 RetailCore Technologies. Built for Kenyan Retailers.
         </p>
       </footer>
